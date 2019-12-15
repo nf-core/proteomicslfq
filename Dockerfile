@@ -1,4 +1,4 @@
-FROM nfcore/base
+FROM nfcore/base:1.7
 LABEL authors="The Heumos Brothers - Simon and Lukas" \
       description="Docker image containing all requirements for nf-core/proteomicslfq pipeline"
 
