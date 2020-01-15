@@ -64,9 +64,18 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
  */
 if (params.spectra)
 {
-    raw = hasExtension(params.spectra.first(), 'raw')
-    if (raw){
-        Channel
+    if (params.spectra instanceof String) {
+        in_is_raw = hasExtension(params.spectra, 'raw')
+        in_is_mzml = hasExtension(params.spectra, 'mzML')
+    } else if (params.spectra instanceof List){
+        in_is_raw = hasExtension(params.spectra.first(), 'raw')
+        in_is_mzml = hasExtension(params.spectra.first(), 'mzML')
+    } else {
+      log.error "Specify list or wildcard string"
+    }
+
+    if (in_is_raw){
+        channel
             .fromPath(params.spectra)
             .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
             .into { rawfiles }
@@ -80,7 +89,7 @@ if (params.spectra)
              file "*.mzML" into mzmls, mzmls_plfq
 
             when:
-             raw
+             in_is_raw
          
             script:
              """
@@ -88,7 +97,7 @@ if (params.spectra)
              """
         }
     }
-    else if (hasExtension(params.spectra.first(), 'mzML')) {
+    else if (in_is_mzml) {
             Channel
                 .fromPath(params.spectra)
                 .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
