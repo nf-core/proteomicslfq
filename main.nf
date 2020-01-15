@@ -29,6 +29,7 @@ def helpMessage() {
 
     Options:
       --expdesign                   Path to experimental design file
+      --adddecoys                   Add decoys to the given fasta
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -62,54 +63,44 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 /*
  * Create a channel for input read files
  */
-if (params.spectra)
-{
-    if (params.spectra instanceof String) {
-        in_is_raw = hasExtension(params.spectra, 'raw')
-        in_is_mzml = hasExtension(params.spectra, 'mzML')
-    } else if (params.spectra instanceof List){
-        in_is_raw = hasExtension(params.spectra.first(), 'raw')
-        in_is_mzml = hasExtension(params.spectra.first(), 'mzML')
-    } else {
-      log.error "Specify list or wildcard string"
-    }
 
-    if (in_is_raw){
-        Channel
-            .fromPath(params.spectra)
-            .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
-            .into { rawfiles }
+ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
+if (!params.spectra) { exit 1, "Please provide --spectra as input!" }
 
-        process raw_file_conversion {
+//use a branch operator for this sort of thing and access the files accordingly!
 
-            input:
-             file rawfile from rawfiles
-
-            output:
-             file "*.mzML" into mzmls, mzmls_plfq
-
-            when:
-             in_is_raw
-         
-            script:
-             """
-             mv ${rawfile} ${rawfile.baseName}.mzML
-             """
-        }
-    }
-    else if (in_is_mzml) {
-            Channel
-                .fromPath(params.spectra)
-                .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
-                .into { mzmls; mzmls_plfq}
-    }
-    else {
-        log.error "Unsupported spectra file type"
-    }
+ch_spectra
+.branch {
+        raw: hasExtension(it, 'raw')
+        mzML_for_mix: hasExtension(it, 'mzML')
 }
-else {
-    log.error "No spectra provided"
+.set {branched_input}
+
+//Push raw files through process that does the conversion, everything else directly to downstream Channel with mzMLs
+
+
+//This piece only runs on data that is a.) raw and b.) needs conversion
+//mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-) 
+
+
+process raw_file_conversion {
+
+    input:
+        file rawfile from branched_input.raw
+
+    output:
+        file "*.mzML" into mzmls_converted
+    
+    script:
+        """
+        mv ${rawfile} ${rawfile.baseName}.mzML
+        """
 }
+
+//Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
+
+branched_input.mzML_for_mix.mix(mzmls_converted).into{mzmls; mzmls_plfq}
+
 
 if (params.expdesign)
 {
@@ -120,34 +111,33 @@ if (params.expdesign)
 }
 
 
+//Create channel from database, then depending on when add decoys or not
+Channel.fromPath(params.database).set{ db_for_decoy_creation }
 
-if (params.database) {
-    Channel
-        .fromPath(params.database)
-        .ifEmpty { exit 1, "params.database was empty - no input files supplied" }
-        .into { searchengine_in_db; pepidx_in_db; plfq_in_db }
-}
-else {
-    //WHY IS THE WHEN: NOT ENOUGH??
-    process generate_decoy_database {
+//Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
+(searchengine_in_db, pepidx_in_db, plfq_in_db) = ( params.adddecoys
+                    ? [ Channel.empty(), Channel.empty(), Channel.empty() ]
+                    : [ Channel.fromPath(params.database),Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )   
 
-    input:
-     file mydatabase from params.database
+//Add decoys if params.adddecoys is set appropriately
+process generate_decoy_database {
 
-    output:
-     file "${database.baseName}_decoy.fasta" into searchengine_in_db, pepidx_in_db, plfq_in_db
-    
-    when:
-     !params.database
- 
-    script:
-     """
-     DecoyDatabase  -in ${mydatabase} \\
-                    -out ${mydatabase.baseName}_decoy.fasta \\
-                    -decoy_string DECOY_ \\
-                    -decoy_string_position prefix
-     """
-    }
+input:
+    file(mydatabase) from db_for_decoy_creation
+
+output:
+    file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy, pepidx_in_db_decoy, plfq_in_db_decoy
+    //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
+
+when: params.adddecoys
+
+script:
+    """
+    DecoyDatabase  -in ${mydatabase} \\
+                -out ${mydatabase.baseName}_decoy.fasta \\
+                -decoy_string DECOY_ \\
+                -decoy_string_position prefix
+    """
 }
 
 
@@ -195,7 +185,7 @@ else {
 process search_engine {
 
     input:
-     file database from searchengine_in_db.first()
+     file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      file mzml_file from mzmls
 
     output:
@@ -234,7 +224,7 @@ process index_peptides {
  
     input:
      file id_file from id_files
-     file database from pepidx_in_db.first()
+     file database from pepidx_in_db.mix(pepidx_in_db_decoy)
 
     output:
      file "${id_file.baseName}_idx.idXML" into id_files_idx
@@ -351,7 +341,7 @@ process proteomicslfq {
      file mzmls from mzmls_plfq.collect()
      file id_files from id_files_idx_feat_perc_fdr_filter_switched.collect()
      file expdes from expdesign
-     file fasta from plfq_in_db
+     file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
      file "out.mzTab" into out_mzTab
