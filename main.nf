@@ -267,8 +267,8 @@ process percolator {
 
     script:
      """
-     PercolatorAdapter -in ${id_file_idx_feat} \\
-                        -out ${id_file_idx_feat.baseName}_perc.idXML \\
+     PercolatorAdapter -in ${id_file} \\
+                        -out ${id_file.baseName}_perc.idXML \\
                         -threads ${task.cpus} \\
                         -post-processing-tdc -subset-max-train 100000
      """
@@ -285,8 +285,8 @@ process fdr {
 
     script:
      """
-     FalseDiscoveryRate -in ${id_file_idx_feat_perc} \\
-                        -out ${id_file_idx_feat_perc.baseName}_fdr.idXML \\
+     FalseDiscoveryRate -in ${id_file} \\
+                        -out ${id_file.baseName}_fdr.idXML \\
                         -threads ${task.cpus} \\
                         -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
      """
@@ -305,8 +305,8 @@ process idfilter {
 
     script:
      """
-     IDFilter -in ${id_file_idx_feat_perc_fdr} \\
-                        -out ${id_file_idx_feat_perc_fdr.baseName}_filter.idXML \\
+     IDFilter -in ${id_file} \\
+                        -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
                         -score:pep 0.05
      """
@@ -324,8 +324,8 @@ process idscoreswitcher {
 
     script:
      """
-     IDFilter -in ${id_file_idx_feat_perc_fdr_filter} \\
-                        -out ${id_file_idx_feat_perc_fdr_filter.baseName}_switched.idXML \\
+     IDFilter -in ${id_file} \\
+                        -out ${id_file.baseName}_switched.idXML \\
                         -threads ${task.cpus} \\
                         -score:pep 0.05
                         -old_score q-value -new_score MS:1001493 -new_score_orientation lower_better -new_score_type "Posterior Error Probability"
