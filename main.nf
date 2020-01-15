@@ -270,7 +270,7 @@ process percolator {
      PercolatorAdapter -in ${id_file} \\
                         -out ${id_file.baseName}_perc.idXML \\
                         -threads ${task.cpus} \\
-                        -post-processing-tdc -subset-max-train 100000
+                        -post-processing-tdc -subset-max-train 100000 -decoy-pattern "DECOY_"
      """
 
 }
