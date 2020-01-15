@@ -64,7 +64,7 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
  */
 if (params.spectra)
 {
-    raw = hasExtension(params.spectra, 'raw')
+    raw = hasExtension(params.spectra.first(), 'raw')
     if (raw){
         Channel
             .fromPath(params.spectra)
@@ -88,7 +88,7 @@ if (params.spectra)
              """
         }
     }
-    else if (hasExtension(params.spectra, 'mzML')) {
+    else if (hasExtension(params.spectra.first(), 'mzML')) {
             Channel
                 .fromPath(params.spectra)
                 .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
