@@ -75,7 +75,7 @@ if (params.spectra)
     }
 
     if (in_is_raw){
-        channel
+        Channel
             .fromPath(params.spectra)
             .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
             .into { rawfiles }
