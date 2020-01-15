@@ -447,7 +447,7 @@ process get_software_versions {
 /*
  * STEP 3 - Output Description HTML
  */
-process output_documentation {
+/*process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
     input:
@@ -461,7 +461,7 @@ process output_documentation {
     markdown_to_html.r $output_docs results_description.html
     """
 }
-
+*/
 
 
 /*
