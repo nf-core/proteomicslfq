@@ -1,0 +1,20 @@
+name: nf-core proteomicslfq CI
+#This workflow is triggered on pushes and PRs to the repository.
+on: [push, pull_request]  
+
+jobs:
+  github_actions_ci:
+    runs-on: ubuntu-latest
+    env:
+      NXF_ANSI_LOG: 0
+    steps:
+      - uses: actions/checkout@v1
+      - name: Docker pull OpenMS image
+        run: docker pull openms/executables
+      - name: Install Nextflow
+        run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+      - name:  BASIC Run the basic pipeline with the test
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} -profile test,docker
