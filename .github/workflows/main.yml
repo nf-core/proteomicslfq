@@ -18,3 +18,7 @@ jobs:
       - name:  BASIC Run the basic pipeline with the test
         run: |
           nextflow run ${GITHUB_WORKSPACE} -profile test,docker
+      - uses: actions/upload-artifact@v1
+          with:
+            name: workspace
+            path: work/
