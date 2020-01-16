@@ -193,12 +193,10 @@ process search_engine {
  
     script:
      """
-     XTandemAdapter  -in ${mzml_file} \\
+     MSGFPlusAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
-                   -database ${database} \\
-                   -precursor_mass_tolerance 50 \\
-                   -missed_cleavages 2
+                   -database ${database}
      """
 }
 
