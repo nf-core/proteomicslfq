@@ -193,6 +193,7 @@ process search_engine {
  
     script:
      """
+     echo $PATH
      MSGFPlusAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
