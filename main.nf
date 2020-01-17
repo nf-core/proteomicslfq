@@ -29,6 +29,7 @@ def helpMessage() {
 
     Options:
       --expdesign                   Path to experimental design file
+      --adddecoys                   Add decoys to the given fasta
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -62,45 +63,44 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 /*
  * Create a channel for input read files
  */
-if (params.spectra)
-{
-    raw = hasExtension(params.spectra, 'raw')
-    if (raw){
-        Channel
-            .fromPath(params.spectra)
-            .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
-            .into { rawfiles }
 
-        process raw_file_conversion {
+ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
+if (!params.spectra) { exit 1, "Please provide --spectra as input!" }
 
-            input:
-             file rawfile from rawfiles
+//use a branch operator for this sort of thing and access the files accordingly!
 
-            output:
-             file "*.mzML" into mzmls, mzmls_plfq
-
-            when:
-             raw
-         
-            script:
-             """
-             mv ${rawfile} ${rawfile.baseName}.mzML
-             """
-        }
-    }
-    else if (hasExtension(params.spectra, 'mzML')) {
-            Channel
-                .fromPath(params.spectra)
-                .ifEmpty { exit 1, "params.spectra was empty - no input files supplied" }
-                .into { mzmls; mzmls_plfq}
-    }
-    else {
-        log.error "Unsupported spectra file type"
-    }
+ch_spectra
+.branch {
+        raw: hasExtension(it, 'raw')
+        mzML_for_mix: hasExtension(it, 'mzML')
 }
-else {
-    log.error "No spectra provided"
+.set {branched_input}
+
+//Push raw files through process that does the conversion, everything else directly to downstream Channel with mzMLs
+
+
+//This piece only runs on data that is a.) raw and b.) needs conversion
+//mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-) 
+
+
+process raw_file_conversion {
+
+    input:
+        file rawfile from branched_input.raw
+
+    output:
+        file "*.mzML" into mzmls_converted
+    
+    script:
+        """
+        mv ${rawfile} ${rawfile.baseName}.mzML
+        """
 }
+
+//Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
+
+branched_input.mzML_for_mix.mix(mzmls_converted).into{mzmls; mzmls_plfq}
+
 
 if (params.expdesign)
 {
@@ -111,34 +111,33 @@ if (params.expdesign)
 }
 
 
+//Create channel from database, then depending on when add decoys or not
+Channel.fromPath(params.database).set{ db_for_decoy_creation }
 
-if (params.database) {
-    Channel
-        .fromPath(params.database)
-        .ifEmpty { exit 1, "params.database was empty - no input files supplied" }
-        .into { searchengine_in_db; pepidx_in_db; plfq_in_db }
-}
-else {
-    //WHY IS THE WHEN: NOT ENOUGH??
-    process generate_decoy_database {
+//Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
+(searchengine_in_db, pepidx_in_db, plfq_in_db) = ( params.adddecoys
+                    ? [ Channel.empty(), Channel.empty(), Channel.empty() ]
+                    : [ Channel.fromPath(params.database),Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )   
 
-    input:
-     file mydatabase from params.database
+//Add decoys if params.adddecoys is set appropriately
+process generate_decoy_database {
 
-    output:
-     file "${database.baseName}_decoy.fasta" into searchengine_in_db, pepidx_in_db, plfq_in_db
-    
-    when:
-     !params.database
- 
-    script:
-     """
-     DecoyDatabase  -in ${mydatabase} \\
-                    -out ${mydatabase.baseName}_decoy.fasta \\
-                    -decoy_string DECOY_ \\
-                    -decoy_string_position prefix
-     """
-    }
+input:
+    file(mydatabase) from db_for_decoy_creation
+
+output:
+    file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy, pepidx_in_db_decoy, plfq_in_db_decoy
+    //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
+
+when: params.adddecoys
+
+script:
+    """
+    DecoyDatabase  -in ${mydatabase} \\
+                -out ${mydatabase.baseName}_decoy.fasta \\
+                -decoy_string DECOY_ \\
+                -decoy_string_position prefix
+    """
 }
 
 
@@ -184,9 +183,9 @@ else {
 /// Search engine
 // TODO parameterize
 process search_engine {
-
+    echo true
     input:
-     file database from searchengine_in_db.first()
+     file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      file mzml_file from mzmls
 
     output:
@@ -194,39 +193,21 @@ process search_engine {
  
     script:
      """
-     CometAdapter  -in ${mzml_file} \\
+     echo $PATH
+     MSGFPlusAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
-                   -database ${database} \\
-  
+                   -database ${database}
      """
-                   //-precursor_mass_tolerance ${params.precursor_mass_tolerance} \\
-                   //-fragment_bin_tolerance ${params.fragment_mass_tolerance} \\
-                   //-fragment_bin_offset ${params.fragment_bin_offset} \\
-                   //-num_hits ${params.num_hits} \\
-                   //-digest_mass_range ${params.digest_mass_range} \\
-                   //-max_variable_mods_in_peptide ${params.number_mods} \\
-                   //-allowed_missed_cleavages 0 \\
-                   //-precursor_charge ${params.prec_charge} \\
-                   //-activation_method ${params.activation_method} \\
-                   //-use_NL_ions true \\
-                   //-variable_modifications ${params.variable_mods.tokenize(',').collect { "'${it}'" }.join(" ") } \\
-                   //-fixed_modifications ${params.fixed_mods.tokenize(',').collect { "'${it}'"}.join(" ")} \\
-                   //-enzyme '${params.enzyme}' \\
-                   //-spectrum_batch_size ${params.spectrum_batch_size} \\
-                   //$a_ions \\
-                   //$c_ions \\
-                   //$x_ions \\
-                   //$z_ions \\   
 }
 
 
 process index_peptides {
- 
+    echo true
     input:
      file id_file from id_files
-     file database from pepidx_in_db.first()
-
+     file database from pepidx_in_db.mix(pepidx_in_db_decoy)
+     
     output:
      file "${id_file.baseName}_idx.idXML" into id_files_idx
 
@@ -268,10 +249,10 @@ process percolator {
 
     script:
      """
-     PercolatorAdapter -in ${id_file_idx_feat} \\
-                        -out ${id_file_idx_feat.baseName}_perc.idXML \\
+     PercolatorAdapter -in ${id_file} \\
+                        -out ${id_file.baseName}_perc.idXML \\
                         -threads ${task.cpus} \\
-                        -post-processing-tdc -subset-max-train 100000
+                        -post-processing-tdc -subset-max-train 100000 -decoy-pattern "rev"
      """
 
 }
@@ -286,8 +267,8 @@ process fdr {
 
     script:
      """
-     FalseDiscoveryRate -in ${id_file_idx_feat_perc} \\
-                        -out ${id_file_idx_feat_perc.baseName}_fdr.idXML \\
+     FalseDiscoveryRate -in ${id_file} \\
+                        -out ${id_file.baseName}_fdr.idXML \\
                         -threads ${task.cpus} \\
                         -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
      """
@@ -306,8 +287,8 @@ process idfilter {
 
     script:
      """
-     IDFilter -in ${id_file_idx_feat_perc_fdr} \\
-                        -out ${id_file_idx_feat_perc_fdr.baseName}_filter.idXML \\
+     IDFilter -in ${id_file} \\
+                        -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
                         -score:pep 0.05
      """
@@ -325,8 +306,8 @@ process idscoreswitcher {
 
     script:
      """
-     IDFilter -in ${id_file_idx_feat_perc_fdr_filter} \\
-                        -out ${id_file_idx_feat_perc_fdr_filter.baseName}_switched.idXML \\
+     IDFilter -in ${id_file} \\
+                        -out ${id_file.baseName}_switched.idXML \\
                         -threads ${task.cpus} \\
                         -score:pep 0.05
                         -old_score q-value -new_score MS:1001493 -new_score_orientation lower_better -new_score_type "Posterior Error Probability"
@@ -342,7 +323,7 @@ process proteomicslfq {
      file mzmls from mzmls_plfq.collect()
      file id_files from id_files_idx_feat_perc_fdr_filter_switched.collect()
      file expdes from expdesign
-     file fasta from plfq_in_db
+     file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
      file "out.mzTab" into out_mzTab
@@ -438,7 +419,7 @@ process get_software_versions {
 /*
  * STEP 3 - Output Description HTML
  */
-process output_documentation {
+/*process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
     input:
@@ -452,7 +433,7 @@ process output_documentation {
     markdown_to_html.r $output_docs results_description.html
     """
 }
-
+*/
 
 
 /*
