@@ -27,4 +27,4 @@ The nf-core/proteomicslfq pipeline comes with documentation about the pipeline, 
 <!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
 ## Credits
-nf-core/proteomicslfq was originally written by The Heumos Brothers - Simon and Lukas.
+nf-core/proteomicslfq was originally written by [Julianus Pfeuffer](https://github.com/jpfeuffer), [Lukas Heumos](github.com/zethson), [Timo Sachsenberg](https://github.com/timosachsenberg) and [Leon Bichmann](https://github.com/Leon-Bichmann).
