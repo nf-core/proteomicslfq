@@ -419,8 +419,8 @@ process proteomicslfq {
      //id_files_str = id_files.sort().join(' ')
      //mzmls_str = mzmls.sort().join(' ')
      """
-     ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
-                    -ids ${(id_files as List).join(' ')} \\
+     ProteomicsLFQ -in ${(mzmls as List).sort().join(' ')} \\
+                    -ids ${(id_files as List).sort().join(' ')} \\
                     -design ${expdes} \\
                     -fasta ${fasta} \\
                     -targeted_only "true" \\
