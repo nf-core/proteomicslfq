@@ -11,7 +11,6 @@
 
 
 def helpMessage() {
-    // TODO nf-core: Add to this help message with new command line parameters
     log.info nfcoreHeader()
     log.info"""
 
@@ -19,13 +18,22 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run nf-core/proteomicslfq --reads '*.mzML' -profile docker
+    nextflow run nf-core/proteomicslfq --spectra '*.mzML' --database '*.fasta' -profile docker
 
     Mandatory arguments:
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --database                    Path to input protein database as fasta
       -profile                      Configuration profile to use. Can use multiple (comma separated)
                                     Available: conda, docker, singularity, awsbatch, test and more.
+
+    Mass Spectrometry Search:
+      --enzyme                      Enzymatic cleavage ('unspecific cleavage', 'Trypsin', see OpenMS enzymes)
+      --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
+      --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
+      --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
+      --allowed_missed_cleavages    Allowed missed cleavages 
+      --psm_level_fdr_cutoff        Identification PSM-level FDR 
+      --protein_level_fdr_cutoff    Identification protein-level FDR
 
     Options:
       --expdesign                   Path to experimental design file
@@ -43,7 +51,7 @@ def helpMessage() {
  * SET UP CONFIGURATION VARIABLES
  */
 
-// Show help emssage
+// Show help message
 if (params.help){
     helpMessage()
     exit 0
@@ -57,15 +65,21 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 }
 
 // Stage config files
-//ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
+
+// Validate inputs
+params.spectra = params.spectra ?: { log.error "No read data privided. Make sure you have used the '--spectra' option."; exit 1 }()
+params.database = params.database ?: { log.error "No read data privided. Make sure you have used the '--database' option."; exit 1 }()
+// params.expdesign = params.expdesign ?: { log.error "No read data privided. Make sure you have used the '--design' option."; exit 1 }()
+params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
 /*
  * Create a channel for input read files
  */
 
 ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
-if (!params.spectra) { exit 1, "Please provide --spectra as input!" }
+ch_database = Channel.fromPath(params.database).set{ db_for_decoy_creation }
+// ch_expdesign = Channel.fromPath(params.design, checkIfExists: true)
 
 //use a branch operator for this sort of thing and access the files accordingly!
 
@@ -82,7 +96,9 @@ ch_spectra
 //This piece only runs on data that is a.) raw and b.) needs conversion
 //mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-) 
 
-
+/*
+ * STEP 1 - Raw file conversion
+ */
 process raw_file_conversion {
 
     input:
@@ -107,12 +123,9 @@ if (params.expdesign)
     Channel
         .fromPath(params.expdesign)
         .ifEmpty { exit 1, "params.expdesign was empty - no input files supplied" }
-        .into { expdesign }
+        .set { expdesign }
 }
 
-
-//Create channel from database, then depending on when add decoys or not
-Channel.fromPath(params.database).set{ db_for_decoy_creation }
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db, pepidx_in_db, plfq_in_db) = ( params.adddecoys
