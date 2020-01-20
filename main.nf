@@ -241,14 +241,13 @@ if (params.se == "msgf")
     echo true
     input:
      file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-     file mzml_file from mzmls
+     each file(mzml_file) from mzmls
 
     output:
      file "${mzml_file.baseName}.idXML" into id_files
  
     script:
      """
-     echo $PATH
      MSGFPlusAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
@@ -267,7 +266,6 @@ if (params.se == "msgf")
  
     script:
      """
-     echo $PATH
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
@@ -405,8 +403,8 @@ process proteomicslfq {
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
     
     input:
-     file mzmls from mzmls_plfq.collect()
-     file id_files from id_files_idx_feat_perc_fdr_filter_switched.mix(id_files_idx_feat_perc_fdr_filter_2).collect()
+     file mzmls from mzmls_plfq.toSortedList({ a, b -> b.baseName <=> a.baseName }).view()
+     file id_files from id_files_idx_feat_perc_fdr_filter_switched.mix(id_files_idx_feat_perc_fdr_filter_2).toSortedList({ a, b -> b.baseName <=> a.baseName }).view()
      file expdes from expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
@@ -416,11 +414,9 @@ process proteomicslfq {
      file "out.csv" into out_msstats
 
     script:
-     //id_files_str = id_files.sort().join(' ')
-     //mzmls_str = mzmls.sort().join(' ')
      """
-     ProteomicsLFQ -in ${(mzmls as List).sort().join(' ')} \\
-                    -ids ${(id_files as List).sort().join(' ')} \\
+     ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
+                    -ids ${(id_files as List).join(' ')} \\
                     -design ${expdes} \\
                     -fasta ${fasta} \\
                     -targeted_only "true" \\
