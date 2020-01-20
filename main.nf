@@ -68,8 +68,8 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
 // Validate inputs
-params.spectra = params.spectra ?: { log.error "No read data privided. Make sure you have used the '--spectra' option."; exit 1 }()
-params.database = params.database ?: { log.error "No read data privided. Make sure you have used the '--database' option."; exit 1 }()
+params.spectra = params.spectra ?: { log.error "No spectra data provided. Make sure you have used the '--spectra' option."; exit 1 }()
+params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
 // params.expdesign = params.expdesign ?: { log.error "No read data privided. Make sure you have used the '--design' option."; exit 1 }()
 params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
@@ -86,9 +86,30 @@ ch_database = Channel.fromPath(params.database).set{ db_for_decoy_creation }
 ch_spectra
 .branch {
         raw: hasExtension(it, 'raw')
-        mzML_for_mix: hasExtension(it, 'mzML')
+        mzML: hasExtension(it, 'mzML')
 }
 .set {branched_input}
+
+
+//TODO we could also check for outdated mzML versions and try to update them
+branched_input.mzML
+.branch {
+        nonIndexedMzML: file(it).withReader {
+                            f = it;
+                            1.upto(5) {
+                              if (f.readLine().contains("indexedmzML")) return false;
+                            }
+                            return true;
+                        }
+        inputIndexedMzML: file(it).withReader {
+                            f = it;
+                            1.upto(5) {
+                              if (f.readLine().contains("indexedmzML")) return true;
+                            }
+                            return false;
+                        }
+}
+.set {branched_input_mzMLs}
 
 //Push raw files through process that does the conversion, everything else directly to downstream Channel with mzMLs
 
@@ -97,7 +118,7 @@ ch_spectra
 //mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-) 
 
 /*
- * STEP 1 - Raw file conversion
+ * STEP 0.1 - Raw file conversion
  */
 process raw_file_conversion {
 
@@ -107,15 +128,34 @@ process raw_file_conversion {
     output:
         file "*.mzML" into mzmls_converted
     
+    // TODO use actual ThermoRawfileConverter!!
     script:
         """
         mv ${rawfile} ${rawfile.baseName}.mzML
         """
 }
 
+/*
+ * STEP 0.2 - MzML indexing
+ */
+process mzml_indexing {
+
+    input:
+        file mzmlfile from branched_input_mzMLs.nonIndexedMzML
+
+    output:
+        file "out/*.mzML" into mzmls_indexed
+    
+    script:
+        """
+        mkdir out
+        FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML
+        """
+}
+
 //Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
 
-branched_input.mzML_for_mix.mix(mzmls_converted).into{mzmls; mzmls_plfq}
+branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls; mzmls_plfq}
 
 
 if (params.expdesign)
@@ -195,7 +235,9 @@ script:
 
 /// Search engine
 // TODO parameterize
-process search_engine {
+if (params.se == "msgf")
+{
+   process search_engine_msgf {
     echo true
     input:
      file database from searchengine_in_db.mix(searchengine_in_db_decoy)
@@ -212,17 +254,38 @@ process search_engine {
                    -threads ${task.cpus} \\
                    -database ${database}
      """
+     }
+} else {
+    process search_engine_comet {
+    echo true
+    input:
+     file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+     each file(mzml_file) from mzmls
+
+    output:
+     file "${mzml_file.baseName}.idXML" into id_files
+ 
+    script:
+     """
+     echo $PATH
+     CometAdapter  -in ${mzml_file} \\
+                   -out ${mzml_file.baseName}.idXML \\
+                   -threads ${task.cpus} \\
+                   -database ${database}
+     """
+     }
 }
+
 
 
 process index_peptides {
     echo true
     input:
-     file id_file from id_files
+     each file(id_file) from id_files
      file database from pepidx_in_db.mix(pepidx_in_db_decoy)
      
     output:
-     file "${id_file.baseName}_idx.idXML" into id_files_idx
+     file "${id_file.baseName}_idx.idXML" into id_files_idx, id_files_idx_2
 
     script:
      """
@@ -242,6 +305,9 @@ process extract_perc_features {
     output:
      file "${id_file.baseName}_feat.idXML" into id_files_idx_feat
 
+    when:
+     !params.skipPercolator
+
     script:
      """
      PSMFeatureExtractor -in ${id_file} \\
@@ -251,7 +317,7 @@ process extract_perc_features {
 
 }
 
-//TODO parameterize
+//TODO parameterize and find a way to run across all runs merged
 process percolator {
  
     input:
@@ -259,6 +325,9 @@ process percolator {
 
     output:
      file "${id_file.baseName}_perc.idXML" into id_files_idx_feat_perc
+
+    when:
+     !params.skipPercolator
 
     script:
      """
@@ -270,10 +339,11 @@ process percolator {
 
 }
 
+//TODO probably not needed when using Percolator. You can use the qval from there
 process fdr {
  
     input:
-     file id_file from id_files_idx_feat_perc
+     file id_file from id_files_idx_feat_perc.mix(id_files_idx_2)
 
     output:
      file "${id_file.baseName}_fdr.idXML" into id_files_idx_feat_perc_fdr
@@ -283,7 +353,7 @@ process fdr {
      FalseDiscoveryRate -in ${id_file} \\
                         -out ${id_file.baseName}_fdr.idXML \\
                         -threads ${task.cpus} \\
-                        -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
+                        -protein false -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
      """
 
 }
@@ -296,7 +366,7 @@ process idfilter {
      file id_file from id_files_idx_feat_perc_fdr
 
     output:
-     file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_fdr_filter
+     file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_fdr_filter, id_files_idx_feat_perc_fdr_filter_2 
 
     script:
      """
@@ -317,12 +387,14 @@ process idscoreswitcher {
     output:
      file "${id_file.baseName}_switched.idXML" into id_files_idx_feat_perc_fdr_filter_switched
 
+    when:
+     !params.skipPercolator
+
     script:
      """
-     IDFilter -in ${id_file} \\
+     IDScoreSwitcher -in ${id_file} \\
                         -out ${id_file.baseName}_switched.idXML \\
                         -threads ${task.cpus} \\
-                        -score:pep 0.05
                         -old_score q-value -new_score MS:1001493 -new_score_orientation lower_better -new_score_type "Posterior Error Probability"
      """
 
@@ -334,7 +406,7 @@ process proteomicslfq {
     
     input:
      file mzmls from mzmls_plfq.collect()
-     file id_files from id_files_idx_feat_perc_fdr_filter_switched.collect()
+     file id_files from id_files_idx_feat_perc_fdr_filter_switched.mix(id_files_idx_feat_perc_fdr_filter_2).collect()
      file expdes from expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
@@ -344,11 +416,11 @@ process proteomicslfq {
      file "out.csv" into out_msstats
 
     script:
-     id_files_str = id_files.sort().join(' ')
-     mzmls_str = mzmls.sort().join(' ')
+     //id_files_str = id_files.sort().join(' ')
+     //mzmls_str = mzmls.sort().join(' ')
      """
-     ProteomicsLFQ -in ${mzmls_str}
-                    -ids ${id_files_str} \\
+     ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
+                    -ids ${(id_files as List).join(' ')} \\
                     -design ${expdes} \\
                     -fasta ${fasta} \\
                     -targeted_only "true" \\
