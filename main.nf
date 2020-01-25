@@ -314,9 +314,7 @@ process search_engine_comet {
      """
 }
 
-id_files = Channel.create()
-id_files.mix(id_files_msgf, id_files_comet)
-
+id_files = Channel.create().mix(id_files_msgf, id_files_comet)
 
 process index_peptides {
     echo true
