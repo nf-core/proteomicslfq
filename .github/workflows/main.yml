@@ -29,6 +29,7 @@ jobs:
         run: |
           nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME-basic" -profile test,docker
       - uses: actions/upload-artifact@v1
+        if: always()
         name: Upload results
         with:
           name: results

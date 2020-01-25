@@ -593,6 +593,7 @@ process proteomicslfq {
                     -threads ${task.cpus} \\
                     -out_msstats out.csv \\
                     -out_cxml out.consensusXML \\
+                    -proteinFDR ${params.protein_level_fdr_cutoff} \\
                     -debug 667
 
      """
