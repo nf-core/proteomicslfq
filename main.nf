@@ -23,26 +23,51 @@ def helpMessage() {
     Mandatory arguments:
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --database                    Path to input protein database as fasta
-      -profile                      Configuration profile to use. Can use multiple (comma separated)
-                                    Available: conda, docker, singularity, awsbatch, test and more.
 
-    Mass Spectrometry Search:
+
+    Database Search:
+      --search_engine               Which search engine: "comet" or "msgf"
       --enzyme                      Enzymatic cleavage ('unspecific cleavage', 'Trypsin', see OpenMS enzymes)
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
       --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
       --allowed_missed_cleavages    Allowed missed cleavages 
-      --psm_level_fdr_cutoff        Identification PSM-level FDR 
-      --protein_level_fdr_cutoff    Identification protein-level FDR
+      --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
+      --posterior_probabilities     How to calculate posterior probabilities for PSMs:
+                                    "percolator" = Re-score based on PSM-feature-based SVM and transform distance
+                                        to hyperplane for posteriors 
+                                    "fit_distributions" = Fit positive and negative distributions to scores
+                                        (similar to PeptideProphet)
 
-    Options:
-      --expdesign                   Path to experimental design file
-      --adddecoys                   Add decoys to the given fasta
 
-    Other options:
+    Inference:
+      --protein_inference           Infer proteins through:
+                                    "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum)
+                                    "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
+      --protein_level_fdr_cutoff    Identification protein-level FDR cutoff
+
+    Quantification:
+      --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
+                                    increased memory consumption)
+      --targeted_only               Only ID based quantification
+      --mass_recalibration          Recalibrates masses to correct for instrument biases
+      --protein_quantification      Quantify proteins based on:
+                                    "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
+                                    "strictly_unique_peptides" = use peptides mapping to a unique single protein only
+                                    "shared_peptides" = use shared peptides only for its best group (by inference score)
+
+    General Options:
+      --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)
+      --add_decoys                  Add decoys to the given fasta
+
+    Other nextflow options:
       --outdir                      The output directory where the results will be saved
-      --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
-      -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+      --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the
+                                    run sent to you when the workflow exits
+      -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random
+                                    mnemonic.
+      -profile                      Configuration profile to use. Can use multiple (comma separated)
+                                    Available: conda, docker, singularity, awsbatch, test and more.
 
     """.stripIndent()
 }
@@ -68,8 +93,8 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
 // Validate inputs
-params.spectra = params.spectra ?: { log.error "No read data privided. Make sure you have used the '--spectra' option."; exit 1 }()
-params.database = params.database ?: { log.error "No read data privided. Make sure you have used the '--database' option."; exit 1 }()
+params.spectra = params.spectra ?: { log.error "No spectra data provided. Make sure you have used the '--spectra' option."; exit 1 }()
+params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
 // params.expdesign = params.expdesign ?: { log.error "No read data privided. Make sure you have used the '--design' option."; exit 1 }()
 params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
@@ -86,9 +111,30 @@ ch_database = Channel.fromPath(params.database).set{ db_for_decoy_creation }
 ch_spectra
 .branch {
         raw: hasExtension(it, 'raw')
-        mzML_for_mix: hasExtension(it, 'mzML')
+        mzML: hasExtension(it, 'mzML')
 }
 .set {branched_input}
+
+
+//TODO we could also check for outdated mzML versions and try to update them
+branched_input.mzML
+.branch {
+        nonIndexedMzML: file(it).withReader {
+                            f = it;
+                            1.upto(5) {
+                              if (f.readLine().contains("indexedmzML")) return false;
+                            }
+                            return true;
+                        }
+        inputIndexedMzML: file(it).withReader {
+                            f = it;
+                            1.upto(5) {
+                              if (f.readLine().contains("indexedmzML")) return true;
+                            }
+                            return false;
+                        }
+}
+.set {branched_input_mzMLs}
 
 //Push raw files through process that does the conversion, everything else directly to downstream Channel with mzMLs
 
@@ -96,8 +142,20 @@ ch_spectra
 //This piece only runs on data that is a.) raw and b.) needs conversion
 //mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-) 
 
+
+//GENERAL TODOS
+// - Check why we depend on full filepaths and if that is needed
+/* Proposition from nextflow gitter https://gitter.im/nextflow-io/nextflow?at=5e25fabea259cb0f0607a1a1
+*
+* unless the specific filenames are important (depends on the tool you're using), I usually use the pattern outlined here:
+* https://www.nextflow.io/docs/latest/process.html#multiple-input-files
+* e.g: file "?????.mzML" from mzmls_plfq.toSortedList() and ProteomicsLFQ -in *.mzML -ids *.id
+*/
+// - Check how to avoid copying of the database for example (currently we get one copy for each SE run). Is it the
+//   "each file()" pattern I used?
+
 /*
- * STEP 1 - Raw file conversion
+ * STEP 0.1 - Raw file conversion
  */
 process raw_file_conversion {
 
@@ -107,15 +165,34 @@ process raw_file_conversion {
     output:
         file "*.mzML" into mzmls_converted
     
+    // TODO use actual ThermoRawfileConverter!!
     script:
         """
         mv ${rawfile} ${rawfile.baseName}.mzML
         """
 }
 
+/*
+ * STEP 0.2 - MzML indexing
+ */
+process mzml_indexing {
+
+    input:
+        file mzmlfile from branched_input_mzMLs.nonIndexedMzML
+
+    output:
+        file "out/*.mzML" into mzmls_indexed
+    
+    script:
+        """
+        mkdir out
+        FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML
+        """
+}
+
 //Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
 
-branched_input.mzML_for_mix.mix(mzmls_converted).into{mzmls; mzmls_plfq}
+branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls; mzmls_plfq}
 
 
 if (params.expdesign)
@@ -128,51 +205,30 @@ if (params.expdesign)
 
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
-(searchengine_in_db, pepidx_in_db, plfq_in_db) = ( params.adddecoys
+(searchengine_in_db, pepidx_in_db, plfq_in_db) = ( params.add_decoys
                     ? [ Channel.empty(), Channel.empty(), Channel.empty() ]
                     : [ Channel.fromPath(params.database),Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )   
 
-//Add decoys if params.adddecoys is set appropriately
+//Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
 
-input:
-    file(mydatabase) from db_for_decoy_creation
+    input:
+        file(mydatabase) from db_for_decoy_creation
 
-output:
-    file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy, pepidx_in_db_decoy, plfq_in_db_decoy
-    //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
+    output:
+        file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy, pepidx_in_db_decoy, plfq_in_db_decoy
+        //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
 
-when: params.adddecoys
+    when: params.add_decoys
 
-script:
-    """
-    DecoyDatabase  -in ${mydatabase} \\
-                -out ${mydatabase.baseName}_decoy.fasta \\
-                -decoy_string DECOY_ \\
-                -decoy_string_position prefix
-    """
+    script:
+        """
+        DecoyDatabase  -in ${mydatabase} \\
+                    -out ${mydatabase.baseName}_decoy.fasta \\
+                    -decoy_string DECOY_ \\
+                    -decoy_string_position prefix
+        """
 }
-
-
-// Test
-//process generate_simple_exp_design_file {
-//    publishDir "${params.outdir}", mode: 'copy'
-//    input:
-//     val mymzmls from mzmls.collect()
-
-//    output:
-//     file "expdesign.csv" into expdesign
-
-//    when:
-//     !params.expdesign 
- 
-//    script:
-//     strng = mymzmls.join(',')
-//     """
-//       echo ${strng} > expdesign.csv
-//     """
-//}
-
 
 // Doesnt work. Py script needs all the inputs to be together in a folder
 // Wont work with nextflow. It needs to accept a list of paths for the inputs!!
@@ -194,35 +250,66 @@ script:
 //}
 
 /// Search engine
-// TODO parameterize
-process search_engine {
-    echo true
-    input:
-     file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-     file mzml_file from mzmls
+// TODO parameterize more
+if (params.search_engine == "msgf")
+{
+   search_engine_score = "SpecEValue"
 
-    output:
-     file "${mzml_file.baseName}.idXML" into id_files
- 
-    script:
-     """
-     echo $PATH
-     MSGFPlusAdapter  -in ${mzml_file} \\
-                   -out ${mzml_file.baseName}.idXML \\
-                   -threads ${task.cpus} \\
-                   -database ${database}
-     """
+    process search_engine_msgf {
+        echo true
+        input:
+         tuple file(database), file(mzml_file) from searchengine_in_db.mix(searchengine_in_db_decoy).combine(mzmls)
+         
+         // This was another way of handling the combination
+         //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+         //each file(mzml_file) from mzmls
+
+
+        output:
+         file "${mzml_file.baseName}.idXML" into id_files
+     
+        script:
+         """
+         MSGFPlusAdapter  -in ${mzml_file} \\
+                       -out ${mzml_file.baseName}.idXML \\
+                       -threads ${task.cpus} \\
+                       -database ${database}
+         """
+     }
+
+} else {
+
+    search_engine_score = "expect"
+
+    process search_engine_comet {
+        echo true
+        input:
+         file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+         each file(mzml_file) from mzmls
+
+        output:
+         file "${mzml_file.baseName}.idXML" into id_files
+     
+        script:
+         """
+         CometAdapter  -in ${mzml_file} \\
+                       -out ${mzml_file.baseName}.idXML \\
+                       -threads ${task.cpus} \\
+                       -database ${database}
+         """
+     }
 }
+
 
 
 process index_peptides {
     echo true
     input:
-     file id_file from id_files
+     each file(id_file) from id_files
      file database from pepidx_in_db.mix(pepidx_in_db_decoy)
      
     output:
-     file "${id_file.baseName}_idx.idXML" into id_files_idx
+     file "${id_file.baseName}_idx.idXML" into id_files_idx_ForPerc, id_files_idx_ForIDPEP
 
     script:
      """
@@ -234,13 +321,21 @@ process index_peptides {
 
 }
 
+
+// ---------------------------------------------------------------------
+// Branch a) Q-values and PEP from Percolator
+
+
 process extract_perc_features {
  
     input:
-     file id_file from id_files_idx
+     file id_file from id_files_idx_ForPerc
 
     output:
      file "${id_file.baseName}_feat.idXML" into id_files_idx_feat
+
+    when:
+     params.posterior_probabilities == "percolator"
 
     script:
      """
@@ -251,7 +346,7 @@ process extract_perc_features {
 
 }
 
-//TODO parameterize
+//TODO parameterize and find a way to run across all runs merged
 process percolator {
  
     input:
@@ -259,6 +354,9 @@ process percolator {
 
     output:
      file "${id_file.baseName}_perc.idXML" into id_files_idx_feat_perc
+
+    when:
+     params.posterior_probabilities == "percolator"
 
     script:
      """
@@ -270,71 +368,207 @@ process percolator {
 
 }
 
-process fdr {
+process idfilter {
  
+    publishDir "${params.outdir}/ids", mode: 'copy'
+
     input:
      file id_file from id_files_idx_feat_perc
 
     output:
-     file "${id_file.baseName}_fdr.idXML" into id_files_idx_feat_perc_fdr
+     file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_filter
 
-    script:
-     """
-     FalseDiscoveryRate -in ${id_file} \\
-                        -out ${id_file.baseName}_fdr.idXML \\
-                        -threads ${task.cpus} \\
-                        -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
-     """
-
-}
-
-
-// TODO parameterize
-process idfilter {
- 
-    input:
-     file id_file from id_files_idx_feat_perc_fdr
-
-    output:
-     file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_fdr_filter
+    when:
+     params.posterior_probabilities == "percolator"
 
     script:
      """
      IDFilter -in ${id_file} \\
                         -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
-                        -score:pep 0.05
+                        -score:pep ${params.psm_level_fdr_cutoff}
      """
 
 }
 
-//TODO check if needed
 process idscoreswitcher {
  
     input:
-     file id_file from id_files_idx_feat_perc_fdr_filter
+     file id_file from id_files_idx_feat_perc_filter
 
     output:
      file "${id_file.baseName}_switched.idXML" into id_files_idx_feat_perc_fdr_filter_switched
 
+    when:
+     params.posterior_probabilities == "percolator"
+
     script:
      """
-     IDFilter -in ${id_file} \\
+     IDScoreSwitcher    -in ${id_file} \\
                         -out ${id_file.baseName}_switched.idXML \\
                         -threads ${task.cpus} \\
-                        -score:pep 0.05
-                        -old_score q-value -new_score MS:1001493 -new_score_orientation lower_better -new_score_type "Posterior Error Probability"
+                        -old_score q-value \\
+                        -new_score MS:1001493 \\
+                        -new_score_orientation lower_better \\
+                        -new_score_type "Posterior Error Probability"
      """
 
 }
+
+
+
+// ---------------------------------------------------------------------
+// Branch b) Q-values and PEP from OpenMS
+
+process fdr {
+ 
+    input:
+     file id_file from id_files_idx_ForIDPEP
+
+    output:
+     file "${id_file.baseName}_fdr.idXML" into id_files_idx_ForIDPEP_fdr
+
+    when:
+     params.posterior_probabilities != "percolator"
+
+    script:
+     """
+     FalseDiscoveryRate -in ${id_file} \\
+                        -out ${id_file.baseName}_fdr.idXML \\
+                        -threads ${task.cpus} \\
+                        -protein false -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
+     """
+
+}
+
+process idscoreswitcher1 {
+ 
+    input:
+     file id_file from id_files_idx_ForIDPEP_fdr
+
+    output:
+     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch
+
+    when:
+     params.posterior_probabilities != "percolator"
+
+    script:
+     """
+     IDScoreSwitcher    -in ${id_file} \\
+                        -out ${id_file.baseName}_switched.idXML \\
+                        -threads ${task.cpus} \\
+                        -old_score q-value \\
+                        -new_score ${search_engine_score}_score \\
+                        -new_score_orientation lower_better \\
+                        -new_score_type ${search_engine_score}
+     """
+
+}
+
+//TODO probably not needed when using Percolator. You can use the qval from there
+process idpep {
+ 
+    input:
+     file id_file from id_files_idx_ForIDPEP_fdr_switch
+
+    output:
+     file "${id_file.baseName}_idpep.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep
+
+    when:
+     params.posterior_probabilities != "percolator"
+
+    script:
+     """
+     IDPosteriorErrorProbability    -in ${id_file} \\
+                                    -out ${id_file.baseName}_idpep.idXML \\
+                                    -threads ${task.cpus}
+     """
+
+}
+
+process idscoreswitcher2 {
+ 
+    input:
+     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep
+
+    output:
+     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+
+    when:
+     params.posterior_probabilities != "percolator"
+
+    script:
+     """
+     IDScoreSwitcher    -in ${id_file} \\
+                        -out ${id_file.baseName}_switched.idXML \\
+                        -threads ${task.cpus} \\
+                        -old_score "Posterior Error Probability" \\
+                        -new_score q-value \\
+                        -new_score_orientation lower_better
+     """
+
+}
+
+process idfilter2 {
+ 
+    publishDir "${params.outdir}/ids", mode: 'copy'
+
+    input:
+     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+
+    output:
+     file "${id_file.baseName}_filter.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+
+    when:
+     params.posterior_probabilities != "percolator"
+      
+    script:
+     """
+     IDFilter -in ${id_file} \\
+                        -out ${id_file.baseName}_filter.idXML \\
+                        -threads ${task.cpus} \\
+                        -score:pep ${params.psm_level_fdr_cutoff}
+     """
+
+}
+
+process idscoreswitcher3 {
+ 
+    input:
+     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+
+    output:
+     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch
+
+    when:
+     params.posterior_probabilities != "percolator"
+
+    script:
+     """
+     IDScoreSwitcher    -in ${id_file} \\
+                        -out ${id_file.baseName}_switched.idXML \\
+                        -threads ${task.cpus} \\
+                        -old_score q-value \\
+                        -new_score "Posterior Error Probability" \\
+                        -new_score_orientation lower_better
+     """
+
+}
+
+
+// ---------------------------------------------------------------------
+// Main Branch
 
 process proteomicslfq {
  
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
     
     input:
-     file mzmls from mzmls_plfq.collect()
-     file id_files from id_files_idx_feat_perc_fdr_filter_switched.collect()
+     file mzmls from mzmls_plfq.toSortedList({ a, b -> b.baseName <=> a.baseName }).view()
+     file id_files from id_files_idx_feat_perc_fdr_filter_switched
+         .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
+         .toSortedList({ a, b -> b.baseName <=> a.baseName })
+         .view()
      file expdes from expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
@@ -342,26 +576,38 @@ process proteomicslfq {
      file "out.mzTab" into out_mzTab
      file "out.consensusXML" into out_consensusXML
      file "out.csv" into out_msstats
+     file "debug_mergedIDs.idXML" into debug_id
+     file "debug_mergedIDs_inference.idXML" into debug_id_inf
+     //file "debug_mergedIDsGreedyResolved.idXML" into debug_id_resolve
 
     script:
-     id_files_str = id_files.sort().join(' ')
-     mzmls_str = mzmls.sort().join(' ')
      """
-     ProteomicsLFQ -in ${mzmls_str}
-                    -ids ${id_files_str} \\
+     ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
+                    -ids ${(id_files as List).join(' ')} \\
                     -design ${expdes} \\
                     -fasta ${fasta} \\
                     -targeted_only "true" \\
                     -mass_recalibration "false" \\
+                    -transfer_ids "false" \\
                     -out out.mzTab \\
                     -threads ${task.cpus} \\
                     -out_msstats out.csv \\
                     -out_cxml out.consensusXML \\
+                    -proteinFDR ${params.protein_level_fdr_cutoff} \\
                     -debug 667
 
      """
 
 }
+
+
+
+
+
+//--------------------------------------------------------------- //
+//---------------------- Nextflow specifics --------------------- //
+//--------------------------------------------------------------- //
+
 
 // Header log info
 log.info nfcoreHeader()
@@ -432,7 +678,8 @@ process get_software_versions {
 /*
  * STEP 3 - Output Description HTML
  */
-/*process output_documentation {
+/* TODO Deactivated for now
+process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
     input:
