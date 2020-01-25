@@ -576,6 +576,9 @@ process proteomicslfq {
      file "out.mzTab" into out_mzTab
      file "out.consensusXML" into out_consensusXML
      file "out.csv" into out_msstats
+     file "debug_mergedIDs.idXML" into debug_id
+     file "debug_mergedIDs_inference.idXML" into debug_id_inf
+     file "debug_mergedIDsGreedyResolved.idXML" into debug_id_resolve
 
     script:
      """
