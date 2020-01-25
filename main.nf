@@ -257,64 +257,55 @@ process generate_decoy_database {
 //}
 
 /// Search engine
-
-searchengine_in_db.into { searchengine_in_db_msgf; searchengine_in_db_comet }
-searchengine_in_db_decoy.into { searchengine_in_db_decoy_msgf; searchengine_in_db_decoy_comet }
-mzmls.into { mzmls_msgf; mzmls_comet }
-
 // TODO parameterize more
-process search_engine_msgf {
-    echo true
+if (params.search_engine == "msgf")
+{
+    search_engine_score = "SpecEValue"
 
-    input:
-     tuple file(database), file(mzml_file) from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf)
-        
-    // This was another way of handling the combination
-    //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-    //each file(mzml_file) from mzmls
+    process search_engine_msgf {
+        echo true
+        input:
+         tuple file(database), file(mzml_file) from searchengine_in_db.mix(searchengine_in_db_decoy).combine(mzmls)
+         
+         // This was another way of handling the combination
+         //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+         //each file(mzml_file) from mzmls
 
 
-    output:
-     file "${mzml_file.baseName}.idXML" into id_files_msgf
+        output:
+         file "${mzml_file.baseName}.idXML" into id_files
 
-    when:
-     params.search_engine == "msgf"
-    
-    script:
-     search_engine_score = "SpecEValue"
-     """
-     MSGFPlusAdapter  -in ${mzml_file} \\
-                 -out ${mzml_file.baseName}.idXML \\
-                 -threads ${task.cpus} \\
-                 -database ${database}
-     """
+        script:
+         """
+         MSGFPlusAdapter -in ${mzml_file} \\
+                         -out ${mzml_file.baseName}.idXML \\
+                         -threads ${task.cpus} \\
+                         -database ${database}
+         """
+     }
+
+} else {
+
+    search_engine_score = "expect"
+
+    process search_engine_comet {
+        echo true
+        input:
+         file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+         each file(mzml_file) from mzmls
+
+        output:
+         file "${mzml_file.baseName}.idXML" into id_files
+
+        script:
+         """
+         CometAdapter  -in ${mzml_file} \\
+                       -out ${mzml_file.baseName}.idXML \\
+                       -threads ${task.cpus} \\
+                       -database ${database}
+         """
+     }
 }
-
-    
-process search_engine_comet {
-    echo true
-
-    input:
-     file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
-     each file(mzml_file) from mzmls_comet
-
-    output:
-     file "${mzml_file.baseName}.idXML" into id_files_comet
-    
-    when:
-     params.search_engine == "comet"
-
-    script:
-     search_engine_score = "expect"
-     """
-     CometAdapter -in ${mzml_file} \\
-                 -out ${mzml_file.baseName}.idXML \\
-                 -threads ${task.cpus} \\
-                 -database ${database}
-     """
-}
-
-id_files = Channel.create().mix(id_files_msgf, id_files_comet)
 
 process index_peptides {
     echo true
