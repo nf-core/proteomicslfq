@@ -45,6 +45,12 @@ def helpMessage() {
                                     "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum)
                                     "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
       --protein_level_fdr_cutoff    Identification protein-level FDR cutoff
+      --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0.
+      --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result. 
+      --percolator_enzyme           Type of enzyme
+      --FDR_level                   Level of FDR calculation ('peptide-level-fdrs', 'psm-level-fdrs', 'protein-level-fdrs')
+      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration) 
+      --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude.
 
     Quantification:
       --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
@@ -119,20 +125,20 @@ ch_spectra
 //TODO we could also check for outdated mzML versions and try to update them
 branched_input.mzML
 .branch {
-        nonIndexedMzML: file(it).withReader {
-                            f = it;
-                            1.upto(5) {
-                              if (f.readLine().contains("indexedmzML")) return false;
-                            }
-                            return true;
+    nonIndexedMzML: file(it).withReader {
+                        f = it;
+                        1.upto(5) {
+                            if (f.readLine().contains("indexedmzML")) return false;
                         }
-        inputIndexedMzML: file(it).withReader {
-                            f = it;
-                            1.upto(5) {
-                              if (f.readLine().contains("indexedmzML")) return true;
-                            }
-                            return false;
+                        return true;
+                    }
+    inputIndexedMzML: file(it).withReader {
+                        f = it;
+                        1.upto(5) {
+                            if (f.readLine().contains("indexedmzML")) return true;
                         }
+                        return false;
+                    }
 }
 .set {branched_input_mzMLs}
 
@@ -160,16 +166,16 @@ branched_input.mzML
 process raw_file_conversion {
 
     input:
-        file rawfile from branched_input.raw
+     file rawfile from branched_input.raw
 
     output:
-        file "*.mzML" into mzmls_converted
+     file "*.mzML" into mzmls_converted
     
     // TODO use actual ThermoRawfileConverter!!
     script:
-        """
-        mv ${rawfile} ${rawfile.baseName}.mzML
-        """
+     """
+     mv ${rawfile} ${rawfile.baseName}.mzML
+     """
 }
 
 /*
@@ -178,16 +184,16 @@ process raw_file_conversion {
 process mzml_indexing {
 
     input:
-        file mzmlfile from branched_input_mzMLs.nonIndexedMzML
+     file mzmlfile from branched_input_mzMLs.nonIndexedMzML
 
     output:
-        file "out/*.mzML" into mzmls_indexed
+     file "out/*.mzML" into mzmls_indexed
     
     script:
-        """
-        mkdir out
-        FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML
-        """
+     """
+     mkdir out
+     FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML
+     """
 }
 
 //Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
@@ -213,21 +219,22 @@ if (params.expdesign)
 process generate_decoy_database {
 
     input:
-        file(mydatabase) from db_for_decoy_creation
+     file(mydatabase) from db_for_decoy_creation
 
     output:
-        file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy, pepidx_in_db_decoy, plfq_in_db_decoy
-        //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
+     file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy, pepidx_in_db_decoy, plfq_in_db_decoy
+     //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
 
-    when: params.add_decoys
+    when:
+     params.add_decoys
 
     script:
-        """
-        DecoyDatabase  -in ${mydatabase} \\
-                    -out ${mydatabase.baseName}_decoy.fasta \\
-                    -decoy_string DECOY_ \\
-                    -decoy_string_position prefix
-        """
+     """
+     DecoyDatabase  -in ${mydatabase} \\
+                 -out ${mydatabase.baseName}_decoy.fasta \\
+                 -decoy_string DECOY_ \\
+                 -decoy_string_position prefix
+     """
 }
 
 // Doesnt work. Py script needs all the inputs to be together in a folder
@@ -251,59 +258,61 @@ process generate_decoy_database {
 
 /// Search engine
 // TODO parameterize more
-if (params.search_engine == "msgf")
-{
-   search_engine_score = "SpecEValue"
+process search_engine_msgf {
+    echo true
 
-    process search_engine_msgf {
-        echo true
-        input:
-         tuple file(database), file(mzml_file) from searchengine_in_db.mix(searchengine_in_db_decoy).combine(mzmls)
-         
-         // This was another way of handling the combination
-         //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-         //each file(mzml_file) from mzmls
+    input:
+     tuple file(database), file(mzml_file) from searchengine_in_db.mix(searchengine_in_db_decoy).combine(mzmls)
+        
+    // This was another way of handling the combination
+    //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+    //each file(mzml_file) from mzmls
 
 
-        output:
-         file "${mzml_file.baseName}.idXML" into id_files
-     
-        script:
-         """
-         MSGFPlusAdapter  -in ${mzml_file} \\
-                       -out ${mzml_file.baseName}.idXML \\
-                       -threads ${task.cpus} \\
-                       -database ${database}
-         """
-     }
+    output:
+     file "${mzml_file.baseName}.idXML" into id_files
 
-} else {
-
-    search_engine_score = "expect"
-
-    process search_engine_comet {
-        echo true
-        input:
-         file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-         each file(mzml_file) from mzmls
-
-        output:
-         file "${mzml_file.baseName}.idXML" into id_files
-     
-        script:
-         """
-         CometAdapter  -in ${mzml_file} \\
-                       -out ${mzml_file.baseName}.idXML \\
-                       -threads ${task.cpus} \\
-                       -database ${database}
-         """
-     }
+    when:
+     params.search_engine == "msgf"
+    
+    script:
+     search_engine_score = "SpecEValue"
+     """
+     MSGFPlusAdapter  -in ${mzml_file} \\
+                 -out ${mzml_file.baseName}.idXML \\
+                 -threads ${task.cpus} \\
+                 -database ${database}
+     """
 }
 
+    
+process search_engine_comet {
+    echo true
+
+    input:
+        file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+        each file(mzml_file) from mzmls
+
+    output:
+        file "${mzml_file.baseName}.idXML" into id_files
+    
+    when:
+        params.search_engine == "comet"
+
+    script:
+        search_engine_score = "expect"
+        """
+        CometAdapter -in ${mzml_file} \\
+                    -out ${mzml_file.baseName}.idXML \\
+                    -threads ${task.cpus} \\
+                    -database ${database}
+        """
+}
 
 
 process index_peptides {
     echo true
+
     input:
      each file(id_file) from id_files
      file database from pepidx_in_db.mix(pepidx_in_db_decoy)
@@ -318,7 +327,6 @@ process index_peptides {
                     -threads ${task.cpus} \\
                     -fasta ${database}
      """
-
 }
 
 
@@ -340,10 +348,9 @@ process extract_perc_features {
     script:
      """
      PSMFeatureExtractor -in ${id_file} \\
-                        -out ${id_file.baseName}_feat.idXML \\
-                        -threads ${task.cpus}
+                         -out ${id_file.baseName}_feat.idXML \\
+                         -threads ${task.cpus}
      """
-
 }
 
 //TODO parameterize and find a way to run across all runs merged
@@ -358,14 +365,18 @@ process percolator {
     when:
      params.posterior_probabilities == "percolator"
 
+    if (params.klammer && params.description_correct_features == 0) {
+        log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
+        log.warn('Klammer has been turned off!')
+    }
+
     script:
      """
-     PercolatorAdapter -in ${id_file} \\
+     PercolatorAdapter  -in ${id_file} \\
                         -out ${id_file.baseName}_perc.idXML \\
                         -threads ${task.cpus} \\
                         -post-processing-tdc -subset-max-train 100000 -decoy-pattern "rev"
      """
-
 }
 
 process idfilter {
@@ -388,7 +399,6 @@ process idfilter {
                         -threads ${task.cpus} \\
                         -score:pep ${params.psm_level_fdr_cutoff}
      """
-
 }
 
 process idscoreswitcher {
@@ -412,7 +422,6 @@ process idscoreswitcher {
                         -new_score_orientation lower_better \\
                         -new_score_type "Posterior Error Probability"
      """
-
 }
 
 
@@ -438,7 +447,6 @@ process fdr {
                         -threads ${task.cpus} \\
                         -protein false -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
      """
-
 }
 
 process idscoreswitcher1 {
@@ -462,7 +470,6 @@ process idscoreswitcher1 {
                         -new_score_orientation lower_better \\
                         -new_score_type ${search_engine_score}
      """
-
 }
 
 //TODO probably not needed when using Percolator. You can use the qval from there
@@ -483,7 +490,6 @@ process idpep {
                                     -out ${id_file.baseName}_idpep.idXML \\
                                     -threads ${task.cpus}
      """
-
 }
 
 process idscoreswitcher2 {
@@ -506,7 +512,6 @@ process idscoreswitcher2 {
                         -new_score q-value \\
                         -new_score_orientation lower_better
      """
-
 }
 
 process idfilter2 {
@@ -529,7 +534,6 @@ process idfilter2 {
                         -threads ${task.cpus} \\
                         -score:pep ${params.psm_level_fdr_cutoff}
      """
-
 }
 
 process idscoreswitcher3 {
@@ -552,7 +556,6 @@ process idscoreswitcher3 {
                         -new_score "Posterior Error Probability" \\
                         -new_score_orientation lower_better
      """
-
 }
 
 
@@ -595,9 +598,7 @@ process proteomicslfq {
                     -out_cxml out.consensusXML \\
                     -proteinFDR ${params.protein_level_fdr_cutoff} \\
                     -debug 667
-
      """
-
 }
 
 
@@ -631,7 +632,6 @@ if(params.config_profile_contact)     summary['Config Contact']     = params.con
 if(params.config_profile_url)         summary['Config URL']         = params.config_profile_url
 if(params.email) {
   summary['E-mail Address']  = params.email
-  summary['MultiQC maxsize'] = params.maxMultiqcEmailFileSize
 }
 log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
 log.info "\033[2m----------------------------------------------------\033[0m"
@@ -730,21 +730,6 @@ workflow.onComplete {
     email_fields['summary']['Nextflow Build'] = workflow.nextflow.build
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
-    // TODO nf-core: If not using MultiQC, strip out this code (including params.maxMultiqcEmailFileSize)
-    // On success try attach the multiqc report
-    def mqc_report = null
-    try {
-        if (workflow.success) {
-            mqc_report = multiqc_report.getVal()
-            if (mqc_report.getClass() == ArrayList){
-                log.warn "[nf-core/proteomicslfq] Found multiple reports from process 'multiqc', will use only one"
-                mqc_report = mqc_report[0]
-            }
-        }
-    } catch (all) {
-        log.warn "[nf-core/proteomicslfq] Could not attach MultiQC report to summary email"
-    }
-
     // Render the TXT template
     def engine = new groovy.text.GStringTemplateEngine()
     def tf = new File("$baseDir/assets/email_template.txt")
@@ -757,7 +742,7 @@ workflow.onComplete {
     def email_html = html_template.toString()
 
     // Render the sendmail template
-    def smail_fields = [ email: params.email, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report, mqcMaxSize: params.maxMultiqcEmailFileSize.toBytes() ]
+    def smail_fields = [ email: params.email, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report ]
     def sf = new File("$baseDir/assets/sendmail_template.txt")
     def sendmail_template = engine.createTemplate(sf).make(smail_fields)
     def sendmail_html = sendmail_template.toString()
