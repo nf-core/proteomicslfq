@@ -45,12 +45,23 @@ def helpMessage() {
                                     "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum)
                                     "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
       --protein_level_fdr_cutoff    Identification protein-level FDR cutoff
-      --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0.
-      --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result. 
+      --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
+      --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
       --percolator_enzyme           Type of enzyme
       --FDR_level                   Level of FDR calculation ('peptide-level-fdrs', 'psm-level-fdrs', 'protein-level-fdrs')
       --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration) 
-      --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude.
+      --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude
+      --isotope_error_range         Range of allowed isotope peak errors
+      --fragment_method             Used fragmentation method
+      --instrument                  Type of instrument that generated the data
+      --protocol                    Used labeling or enrichment protocol (if any)
+      --tryptic                     Level of required cleavage specificity
+      --min_precursor_charge        Minimum precursor ion charge (only used for spectra without charge information
+      --max_precursor_charge        Maximum precursor ion charge (only used for spectra without charge information        
+      --min_peptide_length          Minimum peptide length to consider
+      --max_peptide_length          Maximum peptide length to consider
+      --matches_per_spec            Number of matches per spectrum to be reported
+      --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
 
     Quantification:
       --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
