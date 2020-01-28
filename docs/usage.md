@@ -20,7 +20,24 @@
   * [`--variable_mods`](#--variable_mods)
   * [`--allowed_missed cleavages`](#--allowed_missed_cleavages)
   * [`--psm_level_fdr_cutoff`](#--psm_level_fdr_cutoff)
-  * [`--protein_level_fdr_cutoff](#--protein_level_fdr_cutoff)
+* [Protein inference](#Protein-Inference)
+  * [`--protein_level_fdr_cutoff`](#--protein_level_fdr_cutoff)
+  * [`--train_FDR`](#--train_FDR)
+  * [`--test_FDR`](#--test_FDR)
+  * [`--FDR_level`](#--FDR_level)
+  * [`--klammer`](#--klammer)
+  * [`--description_correct_features`](#--description_correct_features)
+  * [`--isotope_error_range`](#--isotope_error_range)
+  * [`--fragment_method`](#--fragment_method)
+  * [`--instrument`](#--instrument)
+  * [`--protocol`](#--protocol)
+  * [`--tryptic`](#--tryptic)
+  * [`--min_precursor_charge`](#--min_precursor_charge)
+  * [`--max_precursor_charge`](#--max_precursor_charge)
+  * [`--min_peptide_length`](#--min_peptide_length)
+  * [`--max_peptide_length`](#--max_peptide_length)
+  * [`--matches_per_spec`](#--matches_per_spec)
+  * [`--max_mods`](#--max_mods)
 * [Job resources](#job-resources)
   * [Automatic resubmission](#automatic-resubmission)
   * [Custom resource requests](#custom-resource-requests)
@@ -131,7 +148,6 @@ If `-profile` is not specified at all the pipeline will be run locally and expec
   * A profile with a complete configuration for automated testing
   * Includes links to test data and therefore doesn't need additional parameters
 
-
 ## Mass Spectrometry Search
 
 ### `--precursor_mass_tolerance`
@@ -152,21 +168,93 @@ Specify which variable modifications should be applied to the database search (e
 
 Multiple fixed or variable modifications can be specified comma separated (e.g. 'Carbamidomethyl (C),Oxidation (M)')
 
-## `--allowed_missed_cleavages`
+### `--allowed_missed_cleavages`
 
 Specify the number of allowed missed enzyme cleavages in a peptide. The parameter is not applied if the no-enzyme option is specified for comet.
 
-## `--psm_level_fdr_cutoff`
+### `--psm_level_fdr_cutoff`
 
 Specify the PSM level cutoff for the identification FDR for IDFilter.
 
-## `--protein_level_fdr_cutoff`
+## Protein Inference
+
+### `--protein_level_fdr_cutoff`
 
 Specify the protein level cutoff for the identification FDR of PLFQ
 
-Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
+### `--train_FDR`
 
-<!-- TODO nf-core: Describe reference path flags -->
+Percolator: False discovery rate threshold to define positive examples in training. Set to testFDR if 0.
+
+### `--test_FDR`
+
+Percolator: False discovery rate threshold for evaluating best cross validation result and reported end result. 
+
+### `--FDR_level`
+
+Percolator: Level of FDR calculation ('peptide-level-fdrs', 'psm-level-fdrs', 'protein-level-fdrs').
+
+### `--klammer`
+
+Percolator: Retention time features are calculated as in Klammer et al. instead of with Elude. Only available if --description_correct_features is set.
+
+### `--description_correct_features`
+
+Percolator provides the possibility to use so called description of correct features, i.e. features for which desirable values are learnt from the previously identified target PSMs. The absolute value of the difference between desired value and observed value is the used as predictive features.
+
+1 iso-electric point
+
+2 mass calibration
+
+4 retention time
+
+8 delta_retention_time*delta_mass_calibration
+
+### `--isotope_error_range`
+
+Range of allowed isotope peak errors (MS-GF+ parameter '-ti'). Takes into account the error introduced by choosing a non-monoisotopic peak for fragmentation. Combined with 'precursor_mass_tolerance'/'precursor_error_units', this determines the actual precursor mass tolerance. E.g. for experimental mass 'exp' and calculated mass 'calc', '-precursor_mass_tolerance 20 -precursor_error_units ppm -isotope_error_range -1,2' tests '|exp - calc - n * 1.00335 Da| < 20 ppm' for n = -1, 0, 1, 2.
+
+### `--fragment_method`
+
+MSGFPlus: Fragmentation method ('from_spectrum' relies on spectrum meta data and uses CID as fallback option; MS-GF+ parameter '-m')
+
+### `--instrument`
+
+MSGFPlus: Instrument that generated the data ('low_res'/'high_res' refer to LCQ and LTQ instruments; MS-GF+ parameter '-inst')
+
+### `--protocol`
+
+MSGFPlus: Labeling or enrichment protocol used, if any (MS-GF+ parameter '-p')
+
+### `--tryptic`
+
+MSGFPlus: Level of cleavage specificity required (MS-GF+ parameter '-ntt')
+
+### `--min_precursor_charge`
+
+MSGFPlus: Minimum precursor ion charge (only used for spectra without charge information; MS-GF+ parameter '-minCharge')
+
+### `--max_precursor_charge`
+
+MSGFPlus: Maximum precursor ion charge (only used for spectra without charge information; MS-GF+ parameter '-maxCharge')
+
+### `--min_peptide_length`
+
+MSGFPlus: Minimum peptide length to consider (MS-GF+ parameter '-minLength')
+
+### `--max_peptide_length`
+
+MSGFPlus: Maximum peptide length to consider (MS-GF+ parameter '-maxLength')
+
+### `--matches_per_spec`
+
+MSGFPLus: Number of matches per spectrum to be reported (MS-GF+ parameter '-n')
+
+### `--max_mods`
+
+MSGFPlus: Maximum number of modifications per peptide. If this value is large, the search may take very long.
+
+Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
 
 ## Job resources
 ### Automatic resubmission
