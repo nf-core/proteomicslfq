@@ -84,18 +84,24 @@ def helpMessage() {
       
       //TODO add more options for rescoring part
 
-    Inference:
+    Inference and Quantification:
+      --inf_quant_debug             Debug level during inference and quantification. (WARNING: Higher than 666 may produce a lot
+                                    of additional output files)
+      Inference:
       --protein_inference           Infer proteins through:
                                     "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum)
                                     "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
                                     ("percolator" not yet supported)
       --protein_level_fdr_cutoff    Protein level FDR cutoff (this affects and chooses the peptides used for quantification)
 
-    Quantification:
+      Quantification:
       --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
-                                    increased memory consumption)
-      --targeted_only               Only ID based quantification
-      --mass_recalibration          Recalibrates masses to correct for instrument biases
+                                    increased memory consumption). (default: false) TODO must specify true or false
+      --targeted_only               Only ID based quantification. (default: true) TODO must specify true or false
+      --mass_recalibration          Recalibrates masses to correct for instrument biases. (default: false) TODO must specify true
+                                    or false
+
+      //TODO the following need to be passed still                              
       --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
                                     If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
                                     peptide will be reported.
@@ -413,7 +419,7 @@ process percolator {
             log.warn('Klammer will be implicitly off!')
         }
 
-        def pptdc = params.post-processing-tdc ? "" : "-post-processing-tdc"
+        def pptdc = params.post_processing_tdc ? "" : "-post-processing-tdc"
 
         """
         PercolatorAdapter  -in ${id_file} \\
@@ -626,9 +632,12 @@ process proteomicslfq {
      file "out.mzTab" into out_mzTab
      file "out.consensusXML" into out_consensusXML
      file "out.csv" into out_msstats
-     file "debug_mergedIDs.idXML" into debug_id
-     file "debug_mergedIDs_inference.idXML" into debug_id_inf
-     //file "debug_mergedIDsGreedyResolved.idXML" into debug_id_resolve
+     file "debug_mergedIDs.idXML" optional true
+     file "debug_mergedIDs_inference.idXML" optional true
+     file "debug_mergedIDsGreedyResolved.idXML" optional true
+     file "debug_mergedIDsGreedyResolvedFDR.idXML" optional true
+     file "debug_mergedIDsGreedyResolvedFDRFiltered.idXML" optional true
+     file "debug_mergedIDsFDRFilteredStrictlyUniqueResolved.idXML" optional true
 
     script:
      """
@@ -636,15 +645,16 @@ process proteomicslfq {
                     -ids ${(id_files as List).join(' ')} \\
                     -design ${expdes} \\
                     -fasta ${fasta} \\
-                    -targeted_only "true" \\
-                    -mass_recalibration "false" \\
-                    -transfer_ids "false" \\
+                    -protein_inference ${params.protein_inference} \\
+                    -targeted_only ${params.targeted_only} \\
+                    -mass_recalibration ${params.mass_recalibration} \\
+                    -transfer_ids ${params.transfer_ids} \\
                     -out out.mzTab \\
                     -threads ${task.cpus} \\
                     -out_msstats out.csv \\
                     -out_cxml out.consensusXML \\
                     -proteinFDR ${params.protein_level_fdr_cutoff} \\
-                    -debug 667
+                    -debug ${params.inf_quant_debug}
      """
 }
 
