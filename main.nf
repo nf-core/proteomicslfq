@@ -24,50 +24,88 @@ def helpMessage() {
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --database                    Path to input protein database as fasta
 
+    Decoy database:
+      --add_decoys                  Add decoys to the given fasta
+      --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
+      --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)             
 
     Database Search:
-      --search_engine               Which search engine: "comet" or "msgf"
+      --search_engine               Which search engine: "comet" (default) or "msgf"
       --enzyme                      Enzymatic cleavage ('unspecific cleavage', 'Trypsin', see OpenMS enzymes)
+      --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default: 
+                                         'fully' valid: 'semi', 'fully', 'C-term unspecific', 'N-term unspecific')
+      --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
       --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
       --allowed_missed_cleavages    Allowed missed cleavages 
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
+      --min_precursor_charge        Minimum precursor ion charge
+      --max_precursor_charge        Maximum precursor ion charge      
+      --min_peptide_length          Minimum peptide length to consider
+      --max_peptide_length          Maximum peptide length to consider
+      --instrument                  Type of instrument that generated the data
+      --protocol                    Used labeling or enrichment protocol (if any)
+      --fragment_method             Used fragmentation method
+      --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
+      --db_debug                    Debug level during database search
+
+      //TODO probably also still some options missing. Try to consolidate them whenever the two search engines share them
+
+    PSM Rescoring:
       --posterior_probabilities     How to calculate posterior probabilities for PSMs:
                                     "percolator" = Re-score based on PSM-feature-based SVM and transform distance
                                         to hyperplane for posteriors 
                                     "fit_distributions" = Fit positive and negative distributions to scores
                                         (similar to PeptideProphet)
+      --rescoring_debug             Debug level during PSM rescoring
+      --psm_pep_fdr_cutoff          FDR cutoff on PSM level (or potential peptide level; see Percolator options) before going into
+                                    feature finding, map alignment and inference. 
 
+      Percolator specific:
+      --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
+      --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
+      --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
+      --post-processing-tdc         Use target-decoy competition to assign q-values and PEPs.
+      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration) 
+      --generic-feature-set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
+                                    features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
+      --subset-max-train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
+                                    PSMs. Recommended when analyzing huge numbers (>1 million) of PSMs. When set to 0, all PSMs are used for training as normal.
+      --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude
 
-    Inference:
+      Distribution specific:
+      --outlier_handling            How to handle outliers during fitting:
+                                    - ignore_iqr_outliers (default): ignore outliers outside of 3*IQR from Q1/Q3 for fitting
+                                    - set_iqr_to_closest_valid: set IQR-based outliers to the last valid value for fitting
+                                    - ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)
+                                    - none: do nothing
+      --top_hits_only               Use only the top hits for fitting
+      
+      //TODO add more options for rescoring part
+
+    Inference and Quantification:
+      --inf_quant_debug             Debug level during inference and quantification. (WARNING: Higher than 666 may produce a lot
+                                    of additional output files)
+      Inference:
       --protein_inference           Infer proteins through:
                                     "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum)
                                     "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
-      --protein_level_fdr_cutoff    Identification protein-level FDR cutoff
-      --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
-      --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
-      --percolator_enzyme           Type of enzyme
-      --FDR_level                   Level of FDR calculation ('peptide-level-fdrs', 'psm-level-fdrs', 'protein-level-fdrs')
-      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration) 
-      --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude
-      --isotope_error_range         Range of allowed isotope peak errors
-      --fragment_method             Used fragmentation method
-      --instrument                  Type of instrument that generated the data
-      --protocol                    Used labeling or enrichment protocol (if any)
-      --tryptic                     Level of required cleavage specificity
-      --min_precursor_charge        Minimum precursor ion charge (only used for spectra without charge information
-      --max_precursor_charge        Maximum precursor ion charge (only used for spectra without charge information        
-      --min_peptide_length          Minimum peptide length to consider
-      --max_peptide_length          Maximum peptide length to consider
-      --matches_per_spec            Number of matches per spectrum to be reported
-      --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
+                                    ("percolator" not yet supported)
+      --protein_level_fdr_cutoff    Protein level FDR cutoff (this affects and chooses the peptides used for quantification)
 
-    Quantification:
+      Quantification:
       --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
-                                    increased memory consumption)
-      --targeted_only               Only ID based quantification
-      --mass_recalibration          Recalibrates masses to correct for instrument biases
+                                    increased memory consumption). (default: false) TODO must specify true or false
+      --targeted_only               Only ID based quantification. (default: true) TODO must specify true or false
+      --mass_recalibration          Recalibrates masses to correct for instrument biases. (default: false) TODO must specify true
+                                    or false
+
+      //TODO the following need to be passed still                              
+      --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
+                                    If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
+                                    peptide will be reported.
+                                    (default: off = 1.0)
       --protein_quantification      Quantify proteins based on:
                                     "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
                                     "strictly_unique_peptides" = use peptides mapping to a unique single protein only
@@ -75,7 +113,7 @@ def helpMessage() {
 
     General Options:
       --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)
-      --add_decoys                  Add decoys to the given fasta
+      
 
     Other nextflow options:
       --outdir                      The output directory where the results will be saved
@@ -168,8 +206,6 @@ branched_input.mzML
 * https://www.nextflow.io/docs/latest/process.html#multiple-input-files
 * e.g: file "?????.mzML" from mzmls_plfq.toSortedList() and ProteomicsLFQ -in *.mzML -ids *.id
 */
-// - Check how to avoid copying of the database for example (currently we get one copy for each SE run). Is it the
-//   "each file()" pattern I used?
 
 /*
  * STEP 0.1 - Raw file conversion
@@ -361,6 +397,8 @@ process extract_perc_features {
      """
 }
 
+
+
 //TODO parameterize and find a way to run across all runs merged
 process percolator {
  
@@ -373,18 +411,24 @@ process percolator {
     when:
      params.posterior_probabilities == "percolator"
 
-    if (params.klammer && params.description_correct_features == 0) {
-        log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
-        log.warn('Klammer has been turned off!')
-    }
-
+    // NICE-TO-HAVE: the decoy-pattern is automatically detected from PeptideIndexer.
+    // Parse its output and put the correct one here.
     script:
-     """
-     PercolatorAdapter  -in ${id_file} \\
-                        -out ${id_file.baseName}_perc.idXML \\
-                        -threads ${task.cpus} \\
-                        -post-processing-tdc -subset-max-train 100000 -decoy-pattern "rev"
-     """
+        if (params.klammer && params.description_correct_features == 0) {
+            log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
+            log.warn('Klammer will be implicitly off!')
+        }
+
+        def pptdc = params.post_processing_tdc ? "" : "-post-processing-tdc"
+
+        """
+        PercolatorAdapter  -in ${id_file} \\
+                            -out ${id_file.baseName}_perc.idXML \\
+                            -threads ${task.cpus} \\
+                            ${pptdc} \\
+                            -subset-max-train ${params.subset_max_train} \\
+                            -decoy-pattern ${params.decoy_affix}
+        """
 }
 
 process idfilter {
@@ -405,7 +449,7 @@ process idfilter {
      IDFilter -in ${id_file} \\
                         -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
-                        -score:pep ${params.psm_level_fdr_cutoff}
+                        -score:pep ${params.psm_pep_fdr_cutoff}
      """
 }
 
@@ -453,7 +497,9 @@ process fdr {
      FalseDiscoveryRate -in ${id_file} \\
                         -out ${id_file.baseName}_fdr.idXML \\
                         -threads ${task.cpus} \\
-                        -protein false -algorithm:add_decoy_peptides -algorithm:add_decoy_proteins
+                        -protein false \\
+                        -algorithm:add_decoy_peptides \\
+                        -algorithm:add_decoy_proteins
      """
 }
 
@@ -480,7 +526,6 @@ process idscoreswitcher1 {
      """
 }
 
-//TODO probably not needed when using Percolator. You can use the qval from there
 process idpep {
  
     input:
@@ -540,7 +585,7 @@ process idfilter2 {
      IDFilter -in ${id_file} \\
                         -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
-                        -score:pep ${params.psm_level_fdr_cutoff}
+                        -score:pep ${params.psm_pep_fdr_cutoff}
      """
 }
 
@@ -587,9 +632,12 @@ process proteomicslfq {
      file "out.mzTab" into out_mzTab
      file "out.consensusXML" into out_consensusXML
      file "out.csv" into out_msstats
-     file "debug_mergedIDs.idXML" into debug_id
-     file "debug_mergedIDs_inference.idXML" into debug_id_inf
-     //file "debug_mergedIDsGreedyResolved.idXML" into debug_id_resolve
+     file "debug_mergedIDs.idXML" optional true
+     file "debug_mergedIDs_inference.idXML" optional true
+     file "debug_mergedIDsGreedyResolved.idXML" optional true
+     file "debug_mergedIDsGreedyResolvedFDR.idXML" optional true
+     file "debug_mergedIDsGreedyResolvedFDRFiltered.idXML" optional true
+     file "debug_mergedIDsFDRFilteredStrictlyUniqueResolved.idXML" optional true
 
     script:
      """
@@ -597,15 +645,16 @@ process proteomicslfq {
                     -ids ${(id_files as List).join(' ')} \\
                     -design ${expdes} \\
                     -fasta ${fasta} \\
-                    -targeted_only "true" \\
-                    -mass_recalibration "false" \\
-                    -transfer_ids "false" \\
+                    -protein_inference ${params.protein_inference} \\
+                    -targeted_only ${params.targeted_only} \\
+                    -mass_recalibration ${params.mass_recalibration} \\
+                    -transfer_ids ${params.transfer_ids} \\
                     -out out.mzTab \\
                     -threads ${task.cpus} \\
                     -out_msstats out.csv \\
                     -out_cxml out.consensusXML \\
                     -proteinFDR ${params.protein_level_fdr_cutoff} \\
-                    -debug 667
+                    -debug ${params.inf_quant_debug}
      """
 }
 
