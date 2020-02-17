@@ -78,18 +78,21 @@ if (args[2] == "pairwise")
 print ("Contrasts to be tested:")
 print (contrast_mat)
 #TODO allow for user specified contrasts
-
 test.MSstats <- groupComparison(contrast.matrix=contrast_mat, data=processed.quant)
 
+#TODO allow manual input (e.g. proteins of interest)
 write.csv(test.MSstats$ComparisonResult, "msstats_results.csv")
 
 groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
                      width=12, height=12,dot.size = 2,ylimUp = 7)
-groupComparisonPlots(data=test.MSstats$ComparisonResult, type="Heatmap",
-                     width=12, height=12,dot.size = 2,ylimUp = 7)
 groupComparisonPlots(data=test.MSstats$ComparisonResult, type="VolcanoPlot",
                      width=12, height=12,dot.size = 2,ylimUp = 7)
 
+if (nrow(constrast_mat) > 1)
+{
+	groupComparisonPlots(data=test.MSstats$ComparisonResult, type="Heatmap",
+                     width=12, height=12,dot.size = 2,ylimUp = 7)
+}
 
 #for (comp in rownames(contrast_mat))
 #{
