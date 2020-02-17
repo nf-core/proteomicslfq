@@ -212,16 +212,21 @@ branched_input.mzML
  */
 process raw_file_conversion {
 
+    container 'docker://quay.io/biocontainers/thermorawfileparser:1.2.1--0'
+
     input:
      file rawfile from branched_input.raw
 
     output:
      file "*.mzML" into mzmls_converted
     
-    // TODO use actual ThermoRawfileConverter!!
+    
+    // TODO check if this sh script is available with bioconda
+    // else check if the exe is accessible/in PATH on bioconda and use sth like this
+    // mono ThermoRawfileParser.exe -i=${rawfile} -f=2 -o=./
     script:
      """
-     mv ${rawfile} ${rawfile.baseName}.mzML
+     ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./
      """
 }
 
@@ -620,11 +625,10 @@ process proteomicslfq {
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
     
     input:
-     file mzmls from mzmls_plfq.toSortedList({ a, b -> b.baseName <=> a.baseName }).view()
+     file mzmls from mzmls_plfq.toSortedList({ a, b -> b.baseName <=> a.baseName })
      file id_files from id_files_idx_feat_perc_fdr_filter_switched
          .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
          .toSortedList({ a, b -> b.baseName <=> a.baseName })
-         .view()
      file expdes from expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
@@ -659,6 +663,25 @@ process proteomicslfq {
 }
 
 
+// TODO the script supports a control condition as third argument
+// TODO the second argument can be "pairwise" or TODO later a user defined contrast string
+
+process msstats {
+    container 'docker://quay.io/biocontainers/bioconductor-msstats:3.18.0--r36_0'
+    publishDir "${params.outdir}/msstats", mode: 'copy'
+    
+    input:
+     file csv from out_msstats
+  
+    output:
+     file "*.pdf"
+     file "*.csv"
+
+    script:
+     """
+     msstats_plfq.R ${csv} || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
+     """
+}
 
 
 
