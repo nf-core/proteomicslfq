@@ -212,7 +212,7 @@ branched_input.mzML
  */
 process raw_file_conversion {
 
-    container 'docker://quay.io/biocontainers/thermorawfileparser:1.2.1--0'
+    container 'quay.io/biocontainers/thermorawfileparser:1.2.1--0'
 
     input:
      file rawfile from branched_input.raw
@@ -667,7 +667,7 @@ process proteomicslfq {
 // TODO the second argument can be "pairwise" or TODO later a user defined contrast string
 
 process msstats {
-    container 'docker://quay.io/biocontainers/bioconductor-msstats:3.18.0--r36_0'
+    container 'quay.io/biocontainers/bioconductor-msstats:3.18.0--r36_0'
     publishDir "${params.outdir}/msstats", mode: 'copy'
     
     input:
