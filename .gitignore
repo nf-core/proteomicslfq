@@ -3,5 +3,5 @@ work/
 data/
 results/
 .DS_Store
-test*
+tests/test_data
 *.pyc
