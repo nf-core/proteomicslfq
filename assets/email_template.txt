@@ -1,6 +1,15 @@
-========================================
  nf-core/proteomicslfq v${version}
 ========================================
+=======
+----------------------------------------------------
+                                        ,--./,-.
+        ___     __   __   __   ___     /,-._.--~\\
+  |\\ | |__  __ /  ` /  \\ |__) |__         }  {
+  | \\| |       \\__, \\__/ |  \\ |___     \\`-._,-`-,
+                                        `._,._,'
+  nf-core/proteomicslfq v${version}
+----------------------------------------------------
+
 Run Name: $runName
 
 <% if (success){
@@ -15,23 +24,6 @@ The full error message was:
 ${errorReport}
 """
 } %>
-
-
-<% if (!success){
-    out << """####################################################
-## nf-core/proteomicslfq execution completed unsuccessfully! ##
-####################################################
-The exit status of the task that caused the workflow execution to fail was: $exitStatus.
-The full error message was:
-
-${errorReport}
-"""
-} else {
-    out << "## nf-core/proteomicslfq execution completed successfully! ##"
-}
-%>
-
-
 
 
 The workflow was completed at $dateComplete (duration: $duration)
