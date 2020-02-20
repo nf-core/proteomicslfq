@@ -21,7 +21,8 @@ jobs:
           sudo mv nextflow /usr/local/bin/
       - name: Pull docker image
         run: |
-          docker pull nfcore/proteomicslfq:dev && docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
+          docker pull nfcore/proteomicslfq:dev
+          docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
       - name: Run pipeline with test data
         run: |
           # TODO nf-core: You can customise CI pipeline run tests as required
