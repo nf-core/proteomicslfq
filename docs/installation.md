@@ -63,6 +63,7 @@ If you would like to make changes to the pipeline, it's best to make a fork on G
 
 
 ## Pipeline configuration
+
 By default, the pipeline loads a basic server configuration [`conf/base.config`](../conf/base.config)
 This uses a number of sensible defaults for process requirements and is suitable for running
 on a simple (if powerful!) local server.
@@ -76,11 +77,13 @@ Be warned of two important points about this default configuration:
     * It's expected to use an additional config profile for docker, singularity or conda support. See below.
 
 ### Docker
+
 First, install docker on your system: [Docker Installation Instructions](https://docs.docker.com/engine/installation/)
 
 Then, running the pipeline with the option `-profile docker` tells Nextflow to enable Docker for this run. An image containing all of the software requirements will be automatically fetched and used from dockerhub (https://hub.docker.com/r/nfcore/proteomicslfq).
 
 ### Singularity
+
 If you're not able to use Docker then [Singularity](http://singularity.lbl.gov/) is a great alternative.
 The process is very similar: running the pipeline with the option `-profile singularity` tells Nextflow to enable singularity for this run. An image containing all of the software requirements will be automatically fetched and used from singularity hub.
 
@@ -99,6 +102,7 @@ nextflow run /path/to/nf-core-proteomicslfq -with-singularity nf-core-proteomics
 Remember to pull updated versions of the singularity image if you update the pipeline.
 
 ### Conda
+
 If you're not able to use Docker _or_ Singularity, you can instead use conda to manage the software requirements.
 This is slower and less reproducible than the above, but is still better than having to install all requirements yourself!
 The pipeline ships with a conda environment file and nextflow has built-in support for this.
