@@ -8,13 +8,34 @@
   * [Updating the pipeline](#updating-the-pipeline)
   * [Reproducibility](#reproducibility)
 * [Main arguments](#main-arguments)
+  * [`--spectra`](#--spectra)
+  * [`--database`](#--database)
   * [`-profile`](#-profile)
-  * [`--reads`](#--reads)
-  * [`--single_end`](#--single_end)
-* [Reference genomes](#reference-genomes)
-  * [`--genome` (using iGenomes)](#--genome-using-igenomes)
-  * [`--fasta`](#--fasta)
-  * [`--igenomes_ignore`](#--igenomes_ignore)
+* [Mass Spectrometry Search](#Mass-Spectrometry-Search)
+  * [`--precursor_mass_tolerance`](#--precursor_mass_tolerance)
+  * [`--enzyme`](#--enzyme)
+  * [`--fixed_mods`](#--fixed_mods)
+  * [`--variable_mods`](#--variable_mods)
+  * [`--allowed_missed cleavages`](#--allowed_missed_cleavages)
+  * [`--psm_level_fdr_cutoff`](#--psm_level_fdr_cutoff)
+* [Protein inference](#Protein-Inference)
+  * [`--protein_level_fdr_cutoff`](#--protein_level_fdr_cutoff)
+  * [`--train_FDR`](#--train_FDR)
+  * [`--test_FDR`](#--test_FDR)
+  * [`--FDR_level`](#--FDR_level)
+  * [`--klammer`](#--klammer)
+  * [`--description_correct_features`](#--description_correct_features)
+  * [`--isotope_error_range`](#--isotope_error_range)
+  * [`--fragment_method`](#--fragment_method)
+  * [`--instrument`](#--instrument)
+  * [`--protocol`](#--protocol)
+  * [`--tryptic`](#--tryptic)
+  * [`--min_precursor_charge`](#--min_precursor_charge)
+  * [`--max_precursor_charge`](#--max_precursor_charge)
+  * [`--min_peptide_length`](#--min_peptide_length)
+  * [`--max_peptide_length`](#--max_peptide_length)
+  * [`--matches_per_spec`](#--matches_per_spec)
+  * [`--max_mods`](#--max_mods)
 * [Job resources](#job-resources)
   * [Automatic resubmission](#automatic-resubmission)
   * [Custom resource requests](#custom-resource-requests)
@@ -26,7 +47,6 @@
   * [`--outdir`](#--outdir)
   * [`--email`](#--email)
   * [`--email_on_fail`](#--email_on_fail)
-  * [`--max_multiqc_email_size`](#--max_multiqc_email_size)
   * [`-name`](#-name)
   * [`-resume`](#-resume)
   * [`-c`](#-c)
@@ -37,7 +57,6 @@
   * [`--max_cpus`](#--max_cpus)
   * [`--plaintext_email`](#--plaintext_email)
   * [`--monochrome_logs`](#--monochrome_logs)
-  * [`--multiqc_config`](#--multiqc_config)
 
 ## Introduction
 
@@ -52,11 +71,10 @@ NXF_OPTS='-Xms1g -Xmx4g'
 <!-- TODO nf-core: Document required command line parameters to run the pipeline-->
 
 ## Running the pipeline
-
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/proteomicslfq --reads '*_R{1,2}.fastq.gz' -profile docker
+nextflow run nf-core/proteomicslfq --spectra '*.mzML' --database '*.fasta' -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -71,7 +89,6 @@ results         # Finished results (configurable, see below)
 ```
 
 ### Updating the pipeline
-
 When you run the above command, Nextflow automatically pulls the pipeline code from GitHub and stores it as a cached version. When running the pipeline after this, it will always use the cached version if available - even if the pipeline has been updated since. To make sure that you're running the latest version of the pipeline, make sure that you regularly update the cached version of the pipeline:
 
 ```bash
@@ -79,29 +96,45 @@ nextflow pull nf-core/proteomicslfq
 ```
 
 ### Reproducibility
-
 It's a good idea to specify a pipeline version when running the pipeline on your data. This ensures that a specific version of the pipeline code and software are used when you run your pipeline. If you keep using the same tag, you'll be running the same version of the pipeline, even if there have been changes to the code since.
 
 First, go to the [nf-core/proteomicslfq releases page](https://github.com/nf-core/proteomicslfq/releases) and find the latest version number - numeric only (eg. `1.3.1`). Then specify this when running the pipeline with `-r` (one hyphen) - eg. `-r 1.3.1`.
 
 This version number will be logged in reports when you run the pipeline, so that you'll know what you used when you look back in the future.
 
+
 ## Main arguments
 
-### `-profile`
+### `--spectra`
 
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments.
+Use this to specify the location of your input mzML files. For example:
 
-Several generic profiles are bundled with the pipeline which instruct the pipeline to use software packaged using different methods (Docker, Singularity, Conda) - see below.
+```bash
+--spectra 'path/to/data/*.mzML'
+```
 
 > We highly recommend the use of Docker or Singularity containers for full pipeline reproducibility, however when this is not possible, Conda is also supported.
 
 The pipeline also dynamically loads configurations from [https://github.com/nf-core/configs](https://github.com/nf-core/configs) when it runs, making multiple config profiles for various institutional clusters available at run time. For more information and to see if your system is available in these configs please see the [nf-core/configs documentation](https://github.com/nf-core/configs#documentation).
 
-Note that multiple profiles can be loaded, for example: `-profile test,docker` - the order of arguments is important!
-They are loaded in sequence, so later profiles can overwrite earlier profiles.
+Please note the following requirements:
 
-If `-profile` is not specified, the pipeline will run locally and expect all software to be installed and available on the `PATH`. This is _not_ recommended.
+
+1. The path must be enclosed in quotes
+2. The path must have at least one `*` wildcard character
+
+### `--database`
+
+If you prefer, you can specify the full path to your fasta input protein database when you run the pipeline:
+
+```bash
+--database '[path to Fasta protein database]'
+```
+
+### `-profile`
+Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
+
+If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
 
 * `docker`
   * A generic configuration profile to be used with [Docker](http://docker.com/)
@@ -115,96 +148,121 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
   * Pulls most software from [Bioconda](https://bioconda.github.io/)
 * `test`
   * A profile with a complete configuration for automated testing
-  * Includes links to test data so needs no other parameters
+  * Includes links to test data and therefore doesn't need additional parameters
 
-<!-- TODO nf-core: Document required command line parameters -->
+## Mass Spectrometry Search
 
-### `--reads`
+### `--precursor_mass_tolerance`
 
-Use this to specify the location of your input FastQ files. For example:
+Specify the precursor mass tolerance used for the comet database search. For High-Resolution instruments a precursor mass tolerance value of 5ppm is recommended. (eg. 5)
 
-```bash
---reads 'path/to/data/sample_*_{1,2}.fastq'
-```
+### `--enzyme`
 
-Please note the following requirements:
+Specify which enzymatic restriction should be applied ('unspecific cleavage', 'Trypsin', see OpenMS enzymes)
 
-1. The path must be enclosed in quotes
-2. The path must have at least one `*` wildcard character
-3. When using the pipeline with paired end data, the path must use `{1,2}` notation to specify read pairs.
+### `--fixed_mods`
 
-If left unspecified, a default pattern is used: `data/*{1,2}.fastq.gz`
+Specify which fixed modifications should be applied to the database search (eg. '' or 'Carbamidomethyl (C)', see OpenMS modifications)
 
-### `--single_end`
+### `--variable_mods`
 
-By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
+Specify which variable modifications should be applied to the database search (eg. 'Oxidation (M)', see OpenMS modifications)
 
-```bash
---single_end --reads '*.fastq'
-```
+Multiple fixed or variable modifications can be specified comma separated (e.g. 'Carbamidomethyl (C),Oxidation (M)')
 
-It is not possible to run a mixture of single-end and paired-end files in one run.
+### `--allowed_missed_cleavages`
 
-## Reference genomes
+Specify the number of allowed missed enzyme cleavages in a peptide. The parameter is not applied if the no-enzyme option is specified for comet.
 
-The pipeline config files come bundled with paths to the illumina iGenomes reference index files. If running with docker or AWS, the configuration is set up to use the [AWS-iGenomes](https://ewels.github.io/AWS-iGenomes/) resource.
+### `--psm_level_fdr_cutoff`
 
-### `--genome` (using iGenomes)
+Specify the PSM level cutoff for the identification FDR for IDFilter.
 
-There are 31 different species supported in the iGenomes references. To run the pipeline, you must specify which to use with the `--genome` flag.
+## Protein Inference
 
-You can find the keys to specify the genomes in the [iGenomes config file](../conf/igenomes.config). Common genomes that are supported are:
+### `--protein_level_fdr_cutoff`
 
-* Human
-  * `--genome GRCh37`
-* Mouse
-  * `--genome GRCm38`
-* _Drosophila_
-  * `--genome BDGP6`
-* _S. cerevisiae_
-  * `--genome 'R64-1-1'`
+Specify the protein level cutoff for the identification FDR of PLFQ
 
-> There are numerous others - check the config file for more.
+### `--train_FDR`
+
+Percolator: False discovery rate threshold to define positive examples in training. Set to testFDR if 0.
+
+### `--test_FDR`
+
+Percolator: False discovery rate threshold for evaluating best cross validation result and reported end result. 
+
+### `--FDR_level`
+
+Percolator: Level of FDR calculation ('peptide-level-fdrs', 'psm-level-fdrs', 'protein-level-fdrs').
+
+### `--klammer`
+
+Percolator: Retention time features are calculated as in Klammer et al. instead of with Elude. Only available if --description_correct_features is set.
+
+### `--description_correct_features`
+
+Percolator provides the possibility to use so called description of correct features, i.e. features for which desirable values are learnt from the previously identified target PSMs. The absolute value of the difference between desired value and observed value is the used as predictive features.
+
+1 iso-electric point
+
+2 mass calibration
+
+4 retention time
+
+8 delta_retention_time*delta_mass_calibration
+
+### `--isotope_error_range`
+
+Range of allowed isotope peak errors (MS-GF+ parameter '-ti'). Takes into account the error introduced by choosing a non-monoisotopic peak for fragmentation. Combined with 'precursor_mass_tolerance'/'precursor_error_units', this determines the actual precursor mass tolerance. E.g. for experimental mass 'exp' and calculated mass 'calc', '-precursor_mass_tolerance 20 -precursor_error_units ppm -isotope_error_range -1,2' tests '|exp - calc - n * 1.00335 Da| < 20 ppm' for n = -1, 0, 1, 2.
+
+### `--fragment_method`
+
+MSGFPlus: Fragmentation method ('from_spectrum' relies on spectrum meta data and uses CID as fallback option; MS-GF+ parameter '-m')
+
+### `--instrument`
+
+MSGFPlus: Instrument that generated the data ('low_res'/'high_res' refer to LCQ and LTQ instruments; MS-GF+ parameter '-inst')
+
+### `--protocol`
+
+MSGFPlus: Labeling or enrichment protocol used, if any (MS-GF+ parameter '-p')
+
+### `--tryptic`
+
+MSGFPlus: Level of cleavage specificity required (MS-GF+ parameter '-ntt')
+
+### `--min_precursor_charge`
+
+MSGFPlus: Minimum precursor ion charge (only used for spectra without charge information; MS-GF+ parameter '-minCharge')
+
+### `--max_precursor_charge`
+
+MSGFPlus: Maximum precursor ion charge (only used for spectra without charge information; MS-GF+ parameter '-maxCharge')
+
+### `--min_peptide_length`
+
+MSGFPlus: Minimum peptide length to consider (MS-GF+ parameter '-minLength')
+
+### `--max_peptide_length`
+
+MSGFPlus: Maximum peptide length to consider (MS-GF+ parameter '-maxLength')
+
+### `--matches_per_spec`
+
+MSGFPLus: Number of matches per spectrum to be reported (MS-GF+ parameter '-n')
+
+### `--max_mods`
+
+MSGFPlus: Maximum number of modifications per peptide. If this value is large, the search may take very long.
 
 Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
 
-The syntax for this reference configuration is as follows:
-
-<!-- TODO nf-core: Update reference genome example according to what is needed -->
-
-```nextflow
-params {
-  genomes {
-    'GRCh37' {
-      fasta   = '<path to the genome fasta file>' // Used if no star index given
-    }
-    // Any number of additional genomes, key is used with --genome
-  }
-}
-```
-
-<!-- TODO nf-core: Describe reference path flags -->
-
-### `--fasta`
-
-If you prefer, you can specify the full path to your reference genome when you run the pipeline:
-
-```bash
---fasta '[path to Fasta reference]'
-```
-
-### `--igenomes_ignore`
-
-Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`.
-
 ## Job resources
-
 ### Automatic resubmission
-
 Each step in the pipeline has a default set of requirements for number of CPUs, memory and time. For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If it still fails after three times then the pipeline is stopped.
 
 ### Custom resource requests
-
 Wherever process-specific requirements are set in the pipeline, the default value can be changed by creating a custom config file. See the files hosted at [`nf-core/configs`](https://github.com/nf-core/configs/tree/master/conf) for examples.
 
 If you are likely to be running `nf-core` pipelines regularly it may be a good idea to request that your custom config file is uploaded to the `nf-core/configs` git repository. Before you do this please can you test that the config file works with your pipeline of choice using the `-c` parameter (see definition below). You can then create a pull request to the `nf-core/configs` repository with the addition of your config file, associated documentation file (see examples in [`nf-core/configs/docs`](https://github.com/nf-core/configs/tree/master/docs)), and amending [`nfcore_custom.config`](https://github.com/nf-core/configs/blob/master/nfcore_custom.config) to include your custom profile.
@@ -242,12 +300,7 @@ The output directory where the results will be saved.
 Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.
 
 ### `--email_on_fail`
-
 This works exactly as with `--email`, except emails are only sent if the workflow is not successful.
-
-### `--max_multiqc_email_size`
-
-Threshold size for MultiQC report to be attached in notification email. If file generated by pipeline exceeds the threshold, it will not be attached (Default: 25MB).
 
 ### `-name`
 
@@ -258,7 +311,6 @@ This is used in the MultiQC report (if not default) and in the summary HTML / e-
 **NB:** Single hyphen (core Nextflow option)
 
 ### `-resume`
-
 Specify this when restarting a pipeline. Nextflow will used cached results from any pipeline steps where the inputs are the same, continuing from where it got to previously.
 
 You can also supply a run name to resume a specific run: `-resume [run-name]`. Use the `nextflow log` command to show previous run names.
@@ -266,7 +318,6 @@ You can also supply a run name to resume a specific run: `-resume [run-name]`. U
 **NB:** Single hyphen (core Nextflow option)
 
 ### `-c`
-
 Specify the path to a specific config file (this is a core NextFlow command).
 
 **NB:** Single hyphen (core Nextflow option)
@@ -283,7 +334,6 @@ Provide git commit id for custom Institutional configs hosted at `nf-core/config
 ```
 
 ### `--custom_config_base`
-
 If you're running offline, nextflow will not be able to fetch the institutional config files
 from the internet. If you don't need them, then this is not a problem. If you do need them,
 you should download the files from the repo and tell nextflow where to find them with the
@@ -304,17 +354,14 @@ nextflow run /path/to/pipeline/ --custom_config_base /path/to/my/configs/configs
 > files + singularity containers + institutional configs in one go for you, to make this process easier.
 
 ### `--max_memory`
-
 Use to set a top-limit for the default memory requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_memory '8.GB'`
 
 ### `--max_time`
-
 Use to set a top-limit for the default time requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_time '2.h'`
 
 ### `--max_cpus`
-
 Use to set a top-limit for the default CPU requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_cpus 1`
 

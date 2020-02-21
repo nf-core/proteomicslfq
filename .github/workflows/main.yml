@@ -1,0 +1,36 @@
+name: nf-core proteomicslfq CI
+#This workflow is triggered on pushes and PRs to the repository.
+on: [push, pull_request]  
+
+jobs:
+  github_actions_ci:
+    runs-on: ubuntu-latest
+    env:
+      NXF_ANSI_LOG: 0
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v1
+        name: Checkout sources
+      - name: Docker pull OpenMS image
+        run: docker pull openms/executables
+      - name: Extract branch name
+        shell: bash
+        run: echo "::set-env name=RUN_NAME::`echo ${GITHUB_REPOSITORY//\//_}`-`echo ${GITHUB_HEAD_REF//\//@} | rev | cut -f1 -d@ | rev`-${{ github.event_name }}-`echo ${GITHUB_SHA} | cut -c1-6`"
+        id: extract_branch
+      - name: Determine tower usage
+        shell: bash
+        run: echo "::set-env name=TOWER::`[ -z "$TOWER_ACCESS_TOKEN" ] && echo '' || echo '-with-tower'`" 
+        id: tower_usage
+      - name: Install Nextflow
+        run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+      - name:  BASIC Run the basic pipeline with the test
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "wHATEVER" -profile test,docker
+      - uses: actions/upload-artifact@v1
+        if: always()
+        name: Upload results
+        with:
+          name: results
+          path: results
