@@ -22,8 +22,8 @@ jobs:
       - name: Pull docker image
         # Needs to be changed to nfcore/proteomicslfq:dev or a bioconda/biocontainer
         run: |
-          docker pull openms/executables:release-2.5.0:dev
-          docker tag openms/executables:release-2.5.0:dev openms/executables:release-2.5.0:dev
+          docker pull openms/executables:release-2.5.0
+          docker tag openms/executables:release-2.5.0 openms/executables:release-2.5.0
       - name: Run pipeline with test data
         run: |
           # TODO nf-core: You can customise CI pipeline run tests as required
