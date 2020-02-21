@@ -192,7 +192,7 @@ Percolator: False discovery rate threshold to define positive examples in traini
 
 ### `--test_FDR`
 
-Percolator: False discovery rate threshold for evaluating best cross validation result and reported end result. 
+Percolator: False discovery rate threshold for evaluating best cross validation result and reported end result.
 
 ### `--FDR_level`
 
