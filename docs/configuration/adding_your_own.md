@@ -29,7 +29,6 @@ process {
 }
 ```
 
-
 ## Software Requirements
 
 To run the pipeline, several software packages are required. How you satisfy these requirements is essentially up to you and depends on your system. If possible, we _highly_ recommend using either Docker or Singularity.
@@ -50,7 +49,6 @@ process.container = "nfcore/proteomicslfq"
 ```
 
 Note that the dockerhub organisation name annoyingly can't have a hyphen, so is `nfcore` and not `nf-core`.
-
 
 ### Singularity image
 
@@ -79,7 +77,6 @@ Then transfer this file and point the config file to the image:
 singularity.enabled = true
 process.container = "/path/to/nf-core-proteomicslfq.simg"
 ```
-
 
 ### Conda
 
