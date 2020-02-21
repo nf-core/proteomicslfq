@@ -82,7 +82,7 @@ Be warned of two important points about this default configuration:
 
 First, install docker on your system: [Docker Installation Instructions](https://docs.docker.com/engine/installation/)
 
-Then, running the pipeline with the option `-profile docker` tells Nextflow to enable Docker for this run. An image containing all of the software requirements will be automatically fetched and used from dockerhub (https://hub.docker.com/r/nfcore/proteomicslfq).
+Then, running the pipeline with the option `-profile docker` tells Nextflow to enable Docker for this run. An image containing all of the software requirements will be automatically fetched and used from [Docker Hub](https://hub.docker.com/r/nfcore/proteomicslfq).
 
 ### Singularity
 
