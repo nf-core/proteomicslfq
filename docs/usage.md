@@ -105,7 +105,6 @@ First, go to the [nf-core/proteomicslfq releases page](https://github.com/nf-cor
 
 This version number will be logged in reports when you run the pipeline, so that you'll know what you used when you look back in the future.
 
-
 ## Main arguments
 
 ### `--spectra`
@@ -121,7 +120,6 @@ Use this to specify the location of your input mzML files. For example:
 The pipeline also dynamically loads configurations from [https://github.com/nf-core/configs](https://github.com/nf-core/configs) when it runs, making multiple config profiles for various institutional clusters available at run time. For more information and to see if your system is available in these configs please see the [nf-core/configs documentation](https://github.com/nf-core/configs#documentation).
 
 Please note the following requirements:
-
 
 1. The path must be enclosed in quotes
 2. The path must have at least one `*` wildcard character
@@ -214,7 +212,7 @@ Percolator provides the possibility to use so called description of correct feat
 
 4 retention time
 
-8 delta_retention_time*delta_mass_calibration
+8 delta_retention_time\*delta_mass_calibration
 
 ### `--isotope_error_range`
 
@@ -344,6 +342,7 @@ Provide git commit id for custom Institutional configs hosted at `nf-core/config
 ```
 
 ### `--custom_config_base`
+
 If you're running offline, nextflow will not be able to fetch the institutional config files
 from the internet. If you don't need them, then this is not a problem. If you do need them,
 you should download the files from the repo and tell nextflow where to find them with the
@@ -364,14 +363,17 @@ nextflow run /path/to/pipeline/ --custom_config_base /path/to/my/configs/configs
 > files + singularity containers + institutional configs in one go for you, to make this process easier.
 
 ### `--max_memory`
+
 Use to set a top-limit for the default memory requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_memory '8.GB'`
 
 ### `--max_time`
+
 Use to set a top-limit for the default time requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_time '2.h'`
 
 ### `--max_cpus`
+
 Use to set a top-limit for the default CPU requirement for each process.
 Should be a string in the format integer-unit. eg. `--max_cpus 1`
 
