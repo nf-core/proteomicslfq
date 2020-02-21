@@ -18,6 +18,7 @@ To start using the nf-core/proteomicslfq pipeline, follow the steps below:
 <!-- TOC END -->
 
 ## Install NextFlow
+
 Nextflow runs on most POSIX systems (Linux, Mac OSX etc). It can be installed by running the following commands:
 
 ```bash
@@ -38,9 +39,11 @@ See [nextflow.io](https://www.nextflow.io/) for further instructions on how to i
 ## Install the pipeline
 
 ### Automatic
+
 This pipeline itself needs no installation - NextFlow will automatically fetch it from GitHub if `nf-core/proteomicslfq` is specified as the pipeline name.
 
 ### Offline
+
 The above method requires an internet connection so that Nextflow can download the pipeline files. If you're running on a system that has no internet connection, you'll need to download and transfer the pipeline files manually:
 
 ```bash
@@ -60,7 +63,6 @@ export NXF_OFFLINE='TRUE'
 ### Development
 
 If you would like to make changes to the pipeline, it's best to make a fork on GitHub and then clone the files. Once cloned you can run the pipeline directly as above.
-
 
 ## Pipeline configuration
 
