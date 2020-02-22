@@ -7,14 +7,14 @@ channels:
   - defaults
 dependencies:
   # bioconda
-  - openms=2.5.0
+  - openms-thirdparty=2.5.0
   - bioconductor-msstats # will include R
-  - thermorawfileparser
-  - percolator
-  - msgf_plus # will include JRE
-  - comet-ms
   # conda-forge or defaults
   - python # for plotting Percolator results (TODO)
   - gnuplot # for plotting IDPEP results (TODO)
-
   #TODO check if thirdparties are in path and are found by the openms adapters
+  #TODO check if we need the rest here
+  - conda-forge::python=3.7.3
+  - conda-forge::markdown=3.1.1
+  - conda-forge::pymdown-extensions=6.0
+  - conda-forge::pygments=2.5.2
