@@ -22,8 +22,8 @@ jobs:
       - name: Pull docker image
         # Needs to be changed to nfcore/proteomicslfq:dev or a bioconda/biocontainer
         run: |
-          docker pull nfcore/proteomicslfq
-          docker tag nfcore/proteomicslfq nfcore/proteomicslfq:dev
+          docker pull nfcore/proteomicslfq:dev
+          docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
       - name: Run pipeline with test data
         run: |
           # TODO nf-core: You can customise CI pipeline run tests as required
