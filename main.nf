@@ -247,7 +247,7 @@ process mzml_indexing {
 
 //Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
 
-branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls; mzmls_plfq}
+branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
 
 
 if (params.expdesign)
@@ -260,9 +260,9 @@ if (params.expdesign)
 
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
-(searchengine_in_db, pepidx_in_db, plfq_in_db) = ( params.add_decoys
-                    ? [ Channel.empty(), Channel.empty(), Channel.empty() ]
-                    : [ Channel.fromPath(params.database),Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )   
+(searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
+                    ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
+                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )   
 
 //Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
@@ -271,7 +271,7 @@ process generate_decoy_database {
      file(mydatabase) from db_for_decoy_creation
 
     output:
-     file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy, pepidx_in_db_decoy, plfq_in_db_decoy
+     file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
      //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
 
     when:
@@ -310,57 +310,75 @@ process generate_decoy_database {
 if (params.search_engine == "msgf")
 {
     search_engine_score = "SpecEValue"
-
-    process search_engine_msgf {
-        echo true
-        input:
-         //tuple file(database), file(mzml_file) from searchengine_in_db.mix(searchengine_in_db_decoy).combine(mzmls)
-         
-         // This was another way of handling the combination
-         file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-         each file(mzml_file) from mzmls
-
-
-        output:
-         file "${mzml_file.baseName}.idXML" into id_files
-
-        script:
-         """
-          MSGFPlusAdapter -in ${mzml_file} \\
-                         -out ${mzml_file.baseName}.idXML \\
-                         -threads ${task.cpus} \\
-                         -database ${database}
-         """
-     }
-
 } else {
-
     search_engine_score = "expect"
-
-    process search_engine_comet {
-        echo true
-        input:
-         file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-         each file(mzml_file) from mzmls
-
-        output:
-         file "${mzml_file.baseName}.idXML" into id_files
-
-        script:
-         """
-         CometAdapter  -in ${mzml_file} \\
-                       -out ${mzml_file.baseName}.idXML \\
-                       -threads ${task.cpus} \\
-                       -database ${database}
-         """
-     }
 }
 
-process index_peptides {
-    echo true
+process search_engine_msgf {
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ------------- WARNING: THIS IS A HACK. IT JUST DOES NOT WORK IF THIS PROCESS IS RETRIED -----------------------------
+    // ---------------------------------------------------------------------------------------------------------------------
+    // I actually dont know, where else this would be needed.
+    errorStrategy 'terminate'
 
     input:
-     each file(id_file) from id_files
+     tuple file(database), file(mzml_file) from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf)
+     
+     // This was another way of handling the combination
+     //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+     //each file(mzml_file) from mzmls
+    when:
+      params.search_engine == "msgf"
+
+    output:
+     file "${mzml_file.baseName}.idXML" into id_files_msgf
+
+    script:
+     """
+     MSGFPlusAdapter -in ${mzml_file} \\
+                     -out ${mzml_file.baseName}.idXML \\
+                     -threads ${task.cpus} \\
+                     -database ${database}
+     """
+}
+
+process search_engine_comet {
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ------------- WARNING: THIS IS A HACK. IT JUST DOES NOT WORK IF THIS PROCESS IS RETRIED -----------------------------
+    // ---------------------------------------------------------------------------------------------------------------------
+    // I actually dont know, where else this would be needed.
+    errorStrategy 'terminate'
+    input:
+     tuple file(database), file(mzml_file) from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet)
+
+     //or
+     //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
+     //each file(mzml_file) from mzmls
+
+    when:
+      params.search_engine == "comet"
+
+    output:
+     file "${mzml_file.baseName}.idXML" into id_files_comet
+
+    script:
+     """
+     CometAdapter  -in ${mzml_file} \\
+                   -out ${mzml_file.baseName}.idXML \\
+                   -threads ${task.cpus} \\
+                   -database ${database}
+     """
+}
+
+
+process index_peptides {
+
+    input:
+     //tuple file(database), file(id_file) from id_files_msgf.mix(id_files_comet, Channel.empty()).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+     
+     each file(id_file) from id_files_msgf.mix(id_files_comet)
      file database from pepidx_in_db.mix(pepidx_in_db_decoy)
      
     output:
