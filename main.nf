@@ -314,11 +314,11 @@ if (params.search_engine == "msgf")
     process search_engine_msgf {
         echo true
         input:
-         tuple file(database), file(mzml_file) from searchengine_in_db.mix(searchengine_in_db_decoy).combine(mzmls)
+         //tuple file(database), file(mzml_file) from searchengine_in_db.mix(searchengine_in_db_decoy).combine(mzmls)
          
          // This was another way of handling the combination
-         //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
-         //each file(mzml_file) from mzmls
+         file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+         each file(mzml_file) from mzmls
 
 
         output:
@@ -326,7 +326,7 @@ if (params.search_engine == "msgf")
 
         script:
          """
-         MSGFPlusAdapter -in ${mzml_file} \\
+          MSGFPlusAdapter -in ${mzml_file} \\
                          -out ${mzml_file.baseName}.idXML \\
                          -threads ${task.cpus} \\
                          -database ${database}

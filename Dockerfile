@@ -9,5 +9,8 @@ RUN conda env create -f /environment.yml && conda clean -a
 # Add conda installation dir to PATH (instead of doing 'conda activate')
 ENV PATH /opt/conda/envs/nf-core-proteomicslfq-1.0dev/bin:$PATH
 
+# Add jar.............
+RUN cp $(find /opt/conda/envs/nf-core-proteomicslfq-*/share/msgf_plus-*/MSGFPlus.jar -maxdepth 0) $(find /opt/conda/envs/nf-core-proteomicslfq-*/bin/ -maxdepth 0)
+
 # Dump the details of the installed packages to a file for posterity
 RUN conda env export --name nf-core-proteomicslfq-1.0dev > nf-core-proteomicslfq-1.0dev.yml
