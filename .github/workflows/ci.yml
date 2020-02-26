@@ -31,7 +31,7 @@ jobs:
           ref=`jq --raw-output .ref "$GITHUB_EVENT_PATH"`
           ref=${ref#"refs/heads/"}
           ref=${ref#"refs/"}
-          ref=${ref//\//-}"
+          ref=${ref//\//-}
           echo "::set-env name=RUN_NAME::$ref"
         id: extract_branch 
       - name: Extract PR number
