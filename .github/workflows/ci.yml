@@ -1,7 +1,12 @@
 name: nf-core CI
 # This workflow is triggered on pushes and PRs to the repository.
 # It runs the pipeline with the minimal test dataset to check that it completes without any syntax errors
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
 
 jobs:
   test:
@@ -15,17 +20,44 @@ jobs:
         nxf_ver: ['19.10.0', '']
     steps:
       - uses: actions/checkout@v2
+      - name: Determine tower usage
+        shell: bash
+        run: echo "::set-env name=TOWER::`[ -z "$TOWER_ACCESS_TOKEN" ] && echo '' || echo '-with-tower'`" 
+        id: tower_usage
+      - name: Extract branch name
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          ref=`jq --raw-output .ref "$GITHUB_EVENT_PATH"`
+          ref=${ref#"/refs/heads/"}
+          ref=${ref#"/refs/"}
+          echo "::set-env name=RUN_NAME::$ref"
+        id: extract_branch 
+      - name: Extract PR number
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "::set-env name=RUN_NAME::PR`jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH"`"
+        id: extract_pr  
       - name: Install Nextflow
         run: |
           wget -qO- get.nextflow.io | bash
           sudo mv nextflow /usr/local/bin/
       - name: Pull docker image
-        # Needs to be changed to nfcore/proteomicslfq:dev or a bioconda/biocontainer
         run: |
           docker pull nfcore/proteomicslfq:dev
           docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
-      - name: Run pipeline with test data
+      - name:  Run pipeline with test data
         run: |
-          # TODO nf-core: You can customise CI pipeline run tests as required
-          # (eg. adding multiple test runs with different parameters)
-          nextflow run ${GITHUB_WORKSPACE} -profile test,docker
+          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile test,docker
+      - uses: actions/upload-artifact@v1
+        if: always()
+        name: Upload results
+        with:
+          name: results
+          path: results
+      - uses: actions/upload-artifact@v1
+        if: always()
+        name: Upload log
+        with:
+          name: nextflow.log
+          path: .nextflow.log

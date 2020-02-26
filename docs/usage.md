@@ -109,10 +109,16 @@ This version number will be logged in reports when you run the pipeline, so that
 
 ### `--spectra`
 
-Use this to specify the location of your input mzML files. For example:
+Use this to specify the location of your input mzML or Thermo RAW files:
 
 ```bash
 --spectra 'path/to/data/*.mzML'
+```
+
+or
+
+```bash
+--spectra 'path/to/data/*.raw'
 ```
 
 > We highly recommend the use of Docker or Singularity containers for full pipeline reproducibility, however when this is not possible, Conda is also supported.
@@ -122,11 +128,11 @@ The pipeline also dynamically loads configurations from [https://github.com/nf-c
 Please note the following requirements:
 
 1. The path must be enclosed in quotes
-2. The path must have at least one `*` wildcard character
+2. The path must have at least one `*` wildcard character TODO I dont think this is true, can also be a list! check
 
 ### `--database`
 
-If you prefer, you can specify the full path to your fasta input protein database when you run the pipeline:
+Needs to be given to specify the input protein database when you run the pipeline:
 
 ```bash
 --database '[path to Fasta protein database]'
