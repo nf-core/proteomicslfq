@@ -10,6 +10,7 @@ dependencies:
   - bioconda::openms-thirdparty=2.5.0
   - bioconda::bioconductor-msstats # will include R
   #TODO check if thirdparties are in path and are found by the openms adapters
+  - conda-forge::openjdk=8.0.192
   - conda-forge::python=3.7.3
   - conda-forge::markdown=3.1.1
   - conda-forge::pymdown-extensions=6.0
