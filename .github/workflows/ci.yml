@@ -48,7 +48,7 @@ jobs:
           docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
       - name:  Run pipeline with test data
         run: |
-          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "wHATEVER" -profile test,docker
+          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile test,docker
       - uses: actions/upload-artifact@v1
         if: always()
         name: Upload results
