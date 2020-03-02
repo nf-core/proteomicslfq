@@ -211,6 +211,8 @@ branched_input.mzML
  */
 process raw_file_conversion {
 
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
     input:
      file rawfile from branched_input.raw
 
@@ -232,6 +234,8 @@ process raw_file_conversion {
  */
 process mzml_indexing {
 
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
     input:
      file mzmlfile from branched_input_mzMLs.nonIndexedMzML
 
@@ -241,7 +245,7 @@ process mzml_indexing {
     script:
      """
      mkdir out
-     FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML
+     FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML > ${mzmlfile.baseName}_fileconverter.log
      """
 }
 
@@ -267,6 +271,8 @@ if (params.expdesign)
 //Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
 
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
     input:
      file(mydatabase) from db_for_decoy_creation
 
@@ -282,7 +288,8 @@ process generate_decoy_database {
      DecoyDatabase  -in ${mydatabase} \\
                  -out ${mydatabase.baseName}_decoy.fasta \\
                  -decoy_string DECOY_ \\
-                 -decoy_string_position prefix
+                 -decoy_string_position prefix \\
+                 > ${mydatabase.baseName}_decoy_database.log
      """
 }
 
@@ -316,6 +323,8 @@ if (params.search_engine == "msgf")
 
 process search_engine_msgf {
 
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
     // ---------------------------------------------------------------------------------------------------------------------
     // ------------- WARNING: THIS IS A HACK. IT JUST DOES NOT WORK IF THIS PROCESS IS RETRIED -----------------------------
     // ---------------------------------------------------------------------------------------------------------------------
@@ -339,11 +348,14 @@ process search_engine_msgf {
      MSGFPlusAdapter -in ${mzml_file} \\
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
-                     -database ${database}
+                     -database ${database} \\
+                     > ${mzml_file.baseName}_msgf.log
      """
 }
 
 process search_engine_comet {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     // ---------------------------------------------------------------------------------------------------------------------
     // ------------- WARNING: THIS IS A HACK. IT JUST DOES NOT WORK IF THIS PROCESS IS RETRIED -----------------------------
@@ -368,12 +380,15 @@ process search_engine_comet {
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
-                   -database ${database}
+                   -database ${database} \\
+                   > ${mzml_file.baseName}_comet.log
      """
 }
 
 
 process index_peptides {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
      //tuple file(database), file(id_file) from id_files_msgf.mix(id_files_comet, Channel.empty()).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
@@ -389,7 +404,8 @@ process index_peptides {
      PeptideIndexer -in ${id_file} \\
                     -out ${id_file.baseName}_idx.idXML \\
                     -threads ${task.cpus} \\
-                    -fasta ${database}
+                    -fasta ${database} \\
+                    > ${id_file.baseName}_index_peptides.log
      """
 }
 
@@ -399,6 +415,8 @@ process index_peptides {
 
 
 process extract_perc_features {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_ForPerc
@@ -413,7 +431,8 @@ process extract_perc_features {
      """
      PSMFeatureExtractor -in ${id_file} \\
                          -out ${id_file.baseName}_feat.idXML \\
-                         -threads ${task.cpus}
+                         -threads ${task.cpus} \\
+                         > ${id_file.baseName}_extract_perc_features.log
      """
 }
 
@@ -421,6 +440,8 @@ process extract_perc_features {
 
 //TODO parameterize and find a way to run across all runs merged
 process percolator {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_feat
@@ -447,13 +468,16 @@ process percolator {
                             -threads ${task.cpus} \\
                             ${pptdc} \\
                             -subset-max-train ${params.subset_max_train} \\
-                            -decoy-pattern ${params.decoy_affix}
+                            -decoy-pattern ${params.decoy_affix} \\
+                            > ${id_file.baseName}_percolator.log
+
         """
 }
 
 process idfilter {
- 
-    publishDir "${params.outdir}/ids", mode: 'copy'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
      file id_file from id_files_idx_feat_perc
@@ -469,11 +493,14 @@ process idfilter {
      IDFilter -in ${id_file} \\
                         -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
-                        -score:pep ${params.psm_pep_fdr_cutoff}
+                        -score:pep ${params.psm_pep_fdr_cutoff} \\
+                        > ${id_file.baseName}_idfilter.log
      """
 }
 
 process idscoreswitcher {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_feat_perc_filter
@@ -492,7 +519,8 @@ process idscoreswitcher {
                         -old_score q-value \\
                         -new_score MS:1001493 \\
                         -new_score_orientation lower_better \\
-                        -new_score_type "Posterior Error Probability"
+                        -new_score_type "Posterior Error Probability" \\
+                        > ${id_file.baseName}_scoreswitcher.log
      """
 }
 
@@ -502,6 +530,8 @@ process idscoreswitcher {
 // Branch b) Q-values and PEP from OpenMS
 
 process fdr {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_ForIDPEP
@@ -519,11 +549,14 @@ process fdr {
                         -threads ${task.cpus} \\
                         -protein false \\
                         -algorithm:add_decoy_peptides \\
-                        -algorithm:add_decoy_proteins
+                        -algorithm:add_decoy_proteins \\
+                        > ${id_file.baseName}_fdr.log
      """
 }
 
 process idscoreswitcher1 {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_ForIDPEP_fdr
@@ -542,11 +575,14 @@ process idscoreswitcher1 {
                         -old_score q-value \\
                         -new_score ${search_engine_score}_score \\
                         -new_score_orientation lower_better \\
-                        -new_score_type ${search_engine_score}
+                        -new_score_type ${search_engine_score} \\
+                        > ${id_file.baseName}_scoreswitcher1.log
      """
 }
 
 process idpep {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_ForIDPEP_fdr_switch
@@ -561,11 +597,14 @@ process idpep {
      """
      IDPosteriorErrorProbability    -in ${id_file} \\
                                     -out ${id_file.baseName}_idpep.idXML \\
-                                    -threads ${task.cpus}
+                                    -threads ${task.cpus} \\
+                                    > ${id_file.baseName}_idpep.log
      """
 }
 
 process idscoreswitcher2 {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep
@@ -583,13 +622,15 @@ process idscoreswitcher2 {
                         -threads ${task.cpus} \\
                         -old_score "Posterior Error Probability" \\
                         -new_score q-value \\
-                        -new_score_orientation lower_better
+                        -new_score_orientation lower_better \\
+                        > ${id_file.baseName}_scoreswitcher2.log
      """
 }
 
-process idfilter2 {
- 
-    publishDir "${params.outdir}/ids", mode: 'copy'
+process idfilter1 {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
      file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch
@@ -605,11 +646,14 @@ process idfilter2 {
      IDFilter -in ${id_file} \\
                         -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
-                        -score:pep ${params.psm_pep_fdr_cutoff}
+                        -score:pep ${params.psm_pep_fdr_cutoff} \\
+                        > ${id_file.baseName}_idfilter1.log
      """
 }
 
 process idscoreswitcher3 {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
      file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
@@ -627,7 +671,8 @@ process idscoreswitcher3 {
                         -threads ${task.cpus} \\
                         -old_score q-value \\
                         -new_score "Posterior Error Probability" \\
-                        -new_score_orientation lower_better
+                        -new_score_orientation lower_better \\
+                        > ${id_file.baseName}_scoreswitcher3.log
      """
 }
 
@@ -636,7 +681,8 @@ process idscoreswitcher3 {
 // Main Branch
 
 process proteomicslfq {
- 
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log' 
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
     
     input:
@@ -673,7 +719,8 @@ process proteomicslfq {
                     -out_msstats out.csv \\
                     -out_cxml out.consensusXML \\
                     -proteinFDR ${params.protein_level_fdr_cutoff} \\
-                    -debug ${params.inf_quant_debug}
+                    -debug ${params.inf_quant_debug} \\
+                    > proteomicslfq.log
      """
 }
 
@@ -682,6 +729,8 @@ process proteomicslfq {
 // TODO the second argument can be "pairwise" or TODO later a user defined contrast string
 
 process msstats {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/msstats", mode: 'copy'
     
     input:
@@ -693,7 +742,7 @@ process msstats {
 
     script:
      """
-     msstats_plfq.R ${csv} || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
+     msstats_plfq.R ${csv} > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
      """
 }
 
