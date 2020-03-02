@@ -225,7 +225,7 @@ process raw_file_conversion {
     // mono ThermoRawfileParser.exe -i=${rawfile} -f=2 -o=./
     script:
      """
-     ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./
+     ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
      """
 }
 
@@ -241,11 +241,12 @@ process mzml_indexing {
 
     output:
      file "out/*.mzML" into mzmls_indexed
+     file "*.log"
     
     script:
      """
      mkdir out
-     FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML > ${mzmlfile.baseName}_fileconverter.log
+     FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML > ${mzmlfile.baseName}_mzmlindexing.log
      """
 }
 
@@ -278,7 +279,7 @@ process generate_decoy_database {
 
     output:
      file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
-     //TODO need to add these channel with .mix(searchengine_in_db_decoy) for example to all subsequent processes that need this...
+     file "*.log"
 
     when:
      params.add_decoys
@@ -342,6 +343,7 @@ process search_engine_msgf {
 
     output:
      file "${mzml_file.baseName}.idXML" into id_files_msgf
+     file "*.log"
 
     script:
      """
@@ -374,6 +376,7 @@ process search_engine_comet {
 
     output:
      file "${mzml_file.baseName}.idXML" into id_files_comet
+     file "*.log"
 
     script:
      """
@@ -398,6 +401,7 @@ process index_peptides {
      
     output:
      file "${id_file.baseName}_idx.idXML" into id_files_idx_ForPerc, id_files_idx_ForIDPEP
+     file "*.log"
 
     script:
      """
@@ -423,6 +427,7 @@ process extract_perc_features {
 
     output:
      file "${id_file.baseName}_feat.idXML" into id_files_idx_feat
+     file "*.log"
 
     when:
      params.posterior_probabilities == "percolator"
@@ -448,6 +453,7 @@ process percolator {
 
     output:
      file "${id_file.baseName}_perc.idXML" into id_files_idx_feat_perc
+     file "*.log"
 
     when:
      params.posterior_probabilities == "percolator"
@@ -484,6 +490,7 @@ process idfilter {
 
     output:
      file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_filter
+     file "*.log"
 
     when:
      params.posterior_probabilities == "percolator"
@@ -507,6 +514,7 @@ process idscoreswitcher {
 
     output:
      file "${id_file.baseName}_switched.idXML" into id_files_idx_feat_perc_fdr_filter_switched
+     file "*.log"
 
     when:
      params.posterior_probabilities == "percolator"
@@ -538,6 +546,7 @@ process fdr {
 
     output:
      file "${id_file.baseName}_fdr.idXML" into id_files_idx_ForIDPEP_fdr
+     file "*.log"
 
     when:
      params.posterior_probabilities != "percolator"
@@ -563,6 +572,7 @@ process idscoreswitcher1 {
 
     output:
      file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch
+     file "*.log"
 
     when:
      params.posterior_probabilities != "percolator"
@@ -589,6 +599,7 @@ process idpep {
 
     output:
      file "${id_file.baseName}_idpep.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep
+     file "*.log"
 
     when:
      params.posterior_probabilities != "percolator"
@@ -611,6 +622,7 @@ process idscoreswitcher2 {
 
     output:
      file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+     file "*.log"
 
     when:
      params.posterior_probabilities != "percolator"
@@ -637,6 +649,7 @@ process idfilter1 {
 
     output:
      file "${id_file.baseName}_filter.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+     file "*.log"
 
     when:
      params.posterior_probabilities != "percolator"
@@ -660,6 +673,7 @@ process idscoreswitcher3 {
 
     output:
      file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch
+     file "*.log"
 
     when:
      params.posterior_probabilities != "percolator"
@@ -703,6 +717,7 @@ process proteomicslfq {
      file "debug_mergedIDsGreedyResolvedFDR.idXML" optional true
      file "debug_mergedIDsGreedyResolvedFDRFiltered.idXML" optional true
      file "debug_mergedIDsFDRFilteredStrictlyUniqueResolved.idXML" optional true
+     file "*.log"
 
     script:
      """
@@ -739,6 +754,7 @@ process msstats {
     output:
      file "*.pdf"
      file "*.csv"
+     file "*.log"
 
     script:
      """
