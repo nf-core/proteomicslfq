@@ -351,6 +351,7 @@ process search_engine_msgf {
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
                      -database ${database} \\
+                     -matches_per_spec ${num_hits} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -384,6 +385,7 @@ process search_engine_comet {
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
                    -database ${database} \\
+                   -num_hits ${num_hits} \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
