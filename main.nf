@@ -846,6 +846,7 @@ process get_software_versions {
     IDPosteriorErrorProbability 2>&1 | grep Version: > v_idposteriorerrorprobability.txt
     IDFilter 2>&1 | grep Version: > v_idfilter.txt
     ProteomicsLFQ 2>&1 | grep Version: > v_proteomicslfq.txt
+    ${workflow.manifest.version} &> v_msstats_plfq.txt 
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
