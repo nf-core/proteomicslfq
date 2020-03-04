@@ -826,11 +826,27 @@ process get_software_versions {
     file 'software_versions_mqc.yaml' into software_versions_yaml
 
     script:
-    // TODO nf-core: Get all tools to print their version number here
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    echo "foo" > software_versions_mqc.yaml
+    ThermoRawFileParser.sh --version 2>&1 v_thermorawfileparser.txt
+    FileConverter 2>&1 | grep Version: > v_fileconverter.txt
+    DecoyDatabase 2>&1 | grep Version: > v_decoydatabase.txt
+    MSGFPlusAdapter 2>&1 | grep Version: > v_msgfplusadapter.txt
+    msgf_plus 2>&1 | grep Release > v_msgfplus.txt
+    CometAdapter 2>&1 | grep Version: > v_cometadapter.txt
+    comet 2>&1 | grep version > v_comet.txt
+    PeptideIndexer 2>&1 | grep Version: > v_peptideindexer.txt
+    PSMFeatureExtractor 2>&1 | grep Version: > v_psmfeatureextractor.txt
+    PercolatorAdapter 2>&1 | grep Version: > v_percolatoradapter.txt
+    percolator -h 2>&1 | grep version > v_percolator.txt
+    IDFilter 2>&1 | grep Version: > v_idfilter.txt
+    IDScoreSwitcher 2>&1 | grep Version: > v_idscoreswitcher.txt
+    FalseDiscoveryRate 2>&1 | grep Version: > v_falsediscoveryrate.txt
+    IDPosteriorErrorProbability 2>&1 | grep Version: > v_idposteriorerrorprobability.txt
+    IDFilter 2>&1 | grep Version: > v_idfilter.txt
+    ProteomicsLFQ 2>&1 | grep Version: > v_proteomicslfq.txt
+    scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
 
