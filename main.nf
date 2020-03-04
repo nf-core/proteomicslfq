@@ -829,7 +829,7 @@ process get_software_versions {
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    ThermoRawFileParser.sh --version 2>&1 v_thermorawfileparser.txt
+    ThermoRawFileParser.sh --version > v_thermorawfileparser.txt
     FileConverter 2>&1 | grep Version: > v_fileconverter.txt
     DecoyDatabase 2>&1 | grep Version: > v_decoydatabase.txt
     MSGFPlusAdapter 2>&1 | grep Version: > v_msgfplusadapter.txt
