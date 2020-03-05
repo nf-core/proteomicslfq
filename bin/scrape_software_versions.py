@@ -44,7 +44,6 @@ results['IDFilter'] = '<span style="color:#999999;\">N/A</span>'
 results['IDScoreSwitcher'] = '<span style="color:#999999;\">N/A</span>'
 results['FalseDiscoveryRate'] = '<span style="color:#999999;\">N/A</span>'
 results['IDPosteriorErrorProbability'] = '<span style="color:#999999;\">N/A</span>'
-results['IDFilter'] = '<span style="color:#999999;\">N/A</span>'
 results['ProteomicsLFQ'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
