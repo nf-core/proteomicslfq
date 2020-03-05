@@ -273,7 +273,7 @@ Comet: Decoy search mode. (Comet parameter '-decoy_search')
 
 1 -> Concatenated decoy search. Target and decoy entries will be scored against each other and a single result is returned for each spectrum query.
 
-2 -> Separate decoy search. Target and decoy entries will be scored separately and separate target and decoy search results will be reported. 
+2 -> Separate decoy search. Target and decoy entries will be scored separately and separate target and decoy search results will be reported.
 
 ### `--mass_type_parent`
 
@@ -281,7 +281,7 @@ Comet: Controls the mass type, average or monoisotopic, applied to peptide mass 
 
 0 -> average masses
 
-1 -> monoisotopic masses                                                                                                      
+1 -> monoisotopic masses
 
 ### `--mass_type_fragment`
 
@@ -289,7 +289,7 @@ Comet: Controls the mass type, average or monoisotopic, applied to fragment ion 
 
 0 -> average masses
 
-1 -> monoisotopic masses 
+1 -> monoisotopic masses
 
 Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
 
