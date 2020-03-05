@@ -821,16 +821,38 @@ Channel.from(summary.collect{ [it.key, it.value] })
  * Parse software version numbers
  */
 process get_software_versions {
+    publishDir "${params.outdir}/pipeline_info", mode: 'copy',
+        saveAs: { filename ->
+                      if (filename.indexOf(".csv") > 0) filename
+                      else null
+                }
 
     output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
+    file 'software_versions_mqc.yaml' into ch_software_versions_yaml
+    file "software_versions.csv"
 
     script:
-    // TODO nf-core: Get all tools to print their version number here
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    echo "foo" > software_versions_mqc.yaml
+    ThermoRawFileParser.sh --version &> v_thermorawfileparser.txt
+    echo \$(FileConverter 2>&1) > v_fileconverter.txt || true
+    echo \$(DecoyDatabase 2>&1) > v_decoydatabase.txt || true
+    echo \$(MSGFPlusAdapter 2>&1) > v_msgfplusadapter.txt || true
+    echo \$(msgf_plus 2>&1) > v_msgfplus.txt || true
+    echo \$(CometAdapter 2>&1) > v_cometadapter.txt || true
+    echo \$(comet 2>&1) > v_comet.txt || true
+    echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
+    echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
+    echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
+    percolator -h &> v_percolator.txt 
+    echo \$(IDFilter 2>&1) > v_idfilter.txt || true
+    echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
+    echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
+    echo \$(IDPosteriorErrorProbability 2>&1) > v_idposteriorerrorprobability.txt || true
+    echo \$(ProteomicsLFQ 2>&1) > v_proteomicslfq.txt || true
+    echo $workflow.manifest.version &> v_msstats_plfq.txt 
+    scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
 
