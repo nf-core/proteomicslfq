@@ -821,32 +821,37 @@ Channel.from(summary.collect{ [it.key, it.value] })
  * Parse software version numbers
  */
 process get_software_versions {
+    publishDir "${params.outdir}/pipeline_info", mode: 'copy',
+        saveAs: { filename ->
+                      if (filename.indexOf(".csv") > 0) filename
+                      else null
+                }
 
     output:
-    file 'software_versions_mqc.yaml' into software_versions_yaml
+    file 'software_versions_mqc.yaml' into ch_software_versions_yaml
+    file "software_versions.csv"
 
     script:
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    ThermoRawFileParser.sh --version > v_thermorawfileparser.txt
-    FileConverter 2>&1 | grep Version: > v_fileconverter.txt
-    DecoyDatabase 2>&1 | grep Version: > v_decoydatabase.txt
-    MSGFPlusAdapter 2>&1 | grep Version: > v_msgfplusadapter.txt
-    msgf_plus 2>&1 | grep Release > v_msgfplus.txt
-    CometAdapter 2>&1 | grep Version: > v_cometadapter.txt
-    comet 2>&1 | grep version > v_comet.txt
-    PeptideIndexer 2>&1 | grep Version: > v_peptideindexer.txt
-    PSMFeatureExtractor 2>&1 | grep Version: > v_psmfeatureextractor.txt
-    PercolatorAdapter 2>&1 | grep Version: > v_percolatoradapter.txt
-    percolator -h 2>&1 | grep version > v_percolator.txt
-    IDFilter 2>&1 | grep Version: > v_idfilter.txt
-    IDScoreSwitcher 2>&1 | grep Version: > v_idscoreswitcher.txt
-    FalseDiscoveryRate 2>&1 | grep Version: > v_falsediscoveryrate.txt
-    IDPosteriorErrorProbability 2>&1 | grep Version: > v_idposteriorerrorprobability.txt
-    IDFilter 2>&1 | grep Version: > v_idfilter.txt
-    ProteomicsLFQ 2>&1 | grep Version: > v_proteomicslfq.txt
-    ${workflow.manifest.version} &> v_msstats_plfq.txt 
+    ThermoRawFileParser.sh --version &> v_thermorawfileparser.txt
+    echo \$(FileConverter 2>&1) > v_fileconverter.txt || true
+    echo \$(DecoyDatabase 2>&1) > v_decoydatabase.txt || true
+    echo \$(MSGFPlusAdapter 2>&1) > v_msgfplusadapter.txt || true
+    echo \$(msgf_plus 2>&1) > v_msgfplus.txt || true
+    echo \$(CometAdapter 2>&1) > v_cometadapter.txt || true
+    echo \$(comet 2>&1) > v_comet.txt || true
+    echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
+    echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
+    echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
+    percolator -h &> v_percolator.txt 
+    echo \$(IDFilter 2>&1) > v_idfilter.txt || true
+    echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
+    echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
+    echo \$(IDPosteriorErrorProbability 2>&1) > v_idposteriorerrorprobability.txt || true
+    echo \$(ProteomicsLFQ 2>&1) > v_proteomicslfq.txt || true
+    echo $workflow.manifest.version &> v_msstats_plfq.txt 
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
