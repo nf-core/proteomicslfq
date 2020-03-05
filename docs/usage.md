@@ -18,6 +18,9 @@
   * [`--variable_mods`](#--variable_mods)
   * [`--allowed_missed cleavages`](#--allowed_missed_cleavages)
   * [`--psm_level_fdr_cutoff`](#--psm_level_fdr_cutoff)
+  * [`--`decoy_search](#--decoy_search)
+  * [`--mass_type_parent`](#--mass_type_parent)
+  * [`--mass_type_fragment`](#--mass_type_fragment)
 * [Protein inference](#Protein-Inference)
   * [`--protein_level_fdr_cutoff`](#--protein_level_fdr_cutoff)
   * [`--train_FDR`](#--train_FDR)
@@ -67,8 +70,6 @@ It is recommended to limit the Nextflow Java virtual machines memory. We recomme
 ```bash
 NXF_OPTS='-Xms1g -Xmx4g'
 ```
-
-<!-- TODO nf-core: Document required command line parameters to run the pipeline-->
 
 ## Running the pipeline
 
@@ -128,7 +129,7 @@ The pipeline also dynamically loads configurations from [https://github.com/nf-c
 Please note the following requirements:
 
 1. The path must be enclosed in quotes
-2. The path must have at least one `*` wildcard character TODO I dont think this is true, can also be a list! check
+2. The path must have at least one `*` wildcard character
 
 ### `--database`
 
@@ -162,7 +163,7 @@ If `-profile` is not specified at all the pipeline will be run locally and expec
 
 ### `--precursor_mass_tolerance`
 
-Specify the precursor mass tolerance used for the comet database search. For High-Resolution instruments a precursor mass tolerance value of 5ppm is recommended. (eg. 5)
+Comet: Precursor mass tolerance used for database search. For High-Resolution instruments a precursor mass tolerance value of 5ppm is recommended. (eg. 5) (Comet parameter '-peptide_mass_tolerance')
 
 ### `--enzyme`
 
@@ -212,13 +213,13 @@ Percolator: Retention time features are calculated as in Klammer et al. instead 
 
 Percolator provides the possibility to use so called description of correct features, i.e. features for which desirable values are learnt from the previously identified target PSMs. The absolute value of the difference between desired value and observed value is the used as predictive features.
 
-1 iso-electric point
+1 -> iso-electric point
 
-2 mass calibration
+2 -> mass calibration
 
-4 retention time
+4 -> retention time
 
-8 delta_retention_time\*delta_mass_calibration
+8 -> delta_retention_time\*delta_mass_calibration
 
 ### `--isotope_error_range`
 
@@ -264,6 +265,32 @@ MSGFPLus: Number of matches per spectrum to be reported (MS-GF+ parameter '-n')
 
 MSGFPlus: Maximum number of modifications per peptide. If this value is large, the search may take very long.
 
+### `--decoy_search`
+
+Comet: Decoy search mode. (Comet parameter '-decoy_search')
+
+0 -> No decoy search.
+
+1 -> Concatenated decoy search. Target and decoy entries will be scored against each other and a single result is returned for each spectrum query.
+
+2 -> Separate decoy search. Target and decoy entries will be scored separately and separate target and decoy search results will be reported. 
+
+### `--mass_type_parent`
+
+Comet: Controls the mass type, average or monoisotopic, applied to peptide mass calculations. (Comet parameter: '-mass_type_parent')
+
+0 -> average masses
+
+1 -> monoisotopic masses                                                                                                      
+
+### `--mass_type_fragment`
+
+Comet: Controls the mass type, average or monoisotopic, applied to fragment ion calculations. (Comet parameter: '--mass_type_fragment')
+
+0 -> average masses
+
+1 -> monoisotopic masses 
+
 Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
 
 ## Job resources
@@ -299,8 +326,6 @@ The [AWS CLI](https://www.nextflow.io/docs/latest/awscloud.html#aws-cli-installa
 Please make sure to also set the `-w/--work-dir` and `--outdir` parameters to a S3 storage bucket of your choice - you'll get an error message notifying you if you didn't.
 
 ## Other command line parameters
-
-<!-- TODO nf-core: Describe any other command line flags here -->
 
 ### `--outdir`
 
@@ -390,7 +415,3 @@ Set to receive plain-text e-mails instead of HTML formatted.
 ### `--monochrome_logs`
 
 Set to disable colourful command line output and live life in monochrome.
-
-### `--multiqc_config`
-
-Specify a path to a custom MultiQC configuration file.

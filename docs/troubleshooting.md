@@ -7,21 +7,19 @@
 If only no file, only one input file , or only read one and not read two is picked up then something is wrong with your input file declaration
 
 1. The path must be enclosed in quotes (`'` or `"`)
-2. The path must have at least one `*` wildcard character. This is even if you are only running one paired end sample.
-3. When using the pipeline with paired end data, the path must use `{1,2}` or `{R1,R2}` notation to specify read pairs.
-4. If you are running Single end data make sure to specify `--singleEnd`
+2. The path must have at least one `*` wildcard character.
 
 If the pipeline can't find your files then you will get the following error
 
 ```bash
-ERROR ~ Cannot find any reads matching: *{1,2}.fastq.gz
+ERROR ~ Cannot find any spectra matching: *.mzml
 ```
 
-Note that if your sample name is "messy" then you have to be very particular with your glob specification. A file name like `L1-1-D-2h_S1_L002_R1_001.fastq.gz` can be difficult enough for a human to read. Specifying `*{1,2}*.gz` wont work give you what you want Whilst `*{R1,R2}*.gz` will.
+Note that if your sample name is "messy" then you have to be very particular with your glob specification. A file name like `L1-1-D-2h_S1_L002_X1_001.mzml` can be difficult enough for a human to read. Specifying `*{1,2}*.mzml` wont work give you what you want Whilst `*{X1,X2}*.mzml` will.
 
 ## Data organization
 
-The pipeline can't take a list of multiple input files - it takes a glob expression. If your input files are scattered in different paths then we recommend that you generate a directory with symlinked files. If running in paired end mode please make sure that your files are sensibly named so that they can be properly paired. See the previous point.
+The pipeline can't take a list of multiple input files - it takes a glob expression. If your input files are scattered in different paths then we recommend that you generate a directory with symlinked files.
 
 ## Extra resources and getting help
 

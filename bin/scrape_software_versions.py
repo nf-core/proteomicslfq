@@ -12,7 +12,7 @@ regexes = {
     'FileConverter': ['v_fileconverter.txt', openms_version_regex],
     'DecoyDatabase': ['v_decoydatabase.txt', openms_version_regex],
     'MSGFPlusAdapter': ['v_msgfplusadapter.txt', openms_version_regex],
-    'MSGFPlus': ['v_msgfplus.txt', r"\(([^)]+)\)"],
+    'MSGFPlus': ['v_msgfplus.txt', r"\(([^)]+)\)"], # TODO this results in MSGFPlus	vv2017.07.21 -> let's find a smarter regex to scrap the 'v'
     'CometAdapter': ['v_cometadapter.txt', openms_version_regex],
     'Comet': ['v_comet.txt', r"\"(.*)\""],
     'PeptideIndexer': ['v_peptideindexer.txt', openms_version_regex],
