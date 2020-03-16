@@ -12,7 +12,7 @@ regexes = {
     'FileConverter': ['v_fileconverter.txt', openms_version_regex],
     'DecoyDatabase': ['v_decoydatabase.txt', openms_version_regex],
     'MSGFPlusAdapter': ['v_msgfplusadapter.txt', openms_version_regex],
-    'MSGFPlus': ['v_msgfplus.txt', r"\(([^)]+)\)"],
+    'MSGFPlus': ['v_msgfplus.txt', r"\(([^v)]+)\)"],
     'CometAdapter': ['v_cometadapter.txt', openms_version_regex],
     'Comet': ['v_comet.txt', r"\"(.*)\""],
     'PeptideIndexer': ['v_peptideindexer.txt', openms_version_regex],

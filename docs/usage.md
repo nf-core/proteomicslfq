@@ -68,8 +68,6 @@ It is recommended to limit the Nextflow Java virtual machines memory. We recomme
 NXF_OPTS='-Xms1g -Xmx4g'
 ```
 
-<!-- TODO nf-core: Document required command line parameters to run the pipeline-->
-
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
@@ -128,7 +126,7 @@ The pipeline also dynamically loads configurations from [https://github.com/nf-c
 Please note the following requirements:
 
 1. The path must be enclosed in quotes
-2. The path must have at least one `*` wildcard character TODO I dont think this is true, can also be a list! check
+2. The path must have at least one `*` wildcard character
 
 ### `--database`
 
@@ -162,7 +160,7 @@ If `-profile` is not specified at all the pipeline will be run locally and expec
 
 ### `--precursor_mass_tolerance`
 
-Specify the precursor mass tolerance used for the comet database search. For High-Resolution instruments a precursor mass tolerance value of 5ppm is recommended. (eg. 5)
+Comet: Precursor mass tolerance used for database search. For High-Resolution instruments a precursor mass tolerance value of 5ppm is recommended. (eg. 5) (Comet parameter '-peptide_mass_tolerance')
 
 ### `--enzyme`
 
@@ -212,13 +210,13 @@ Percolator: Retention time features are calculated as in Klammer et al. instead 
 
 Percolator provides the possibility to use so called description of correct features, i.e. features for which desirable values are learnt from the previously identified target PSMs. The absolute value of the difference between desired value and observed value is the used as predictive features.
 
-1 iso-electric point
+1 -> iso-electric point
 
-2 mass calibration
+2 -> mass calibration
 
-4 retention time
+4 -> retention time
 
-8 delta_retention_time\*delta_mass_calibration
+8 -> delta_retention_time\*delta_mass_calibration
 
 ### `--isotope_error_range`
 
@@ -299,8 +297,6 @@ The [AWS CLI](https://www.nextflow.io/docs/latest/awscloud.html#aws-cli-installa
 Please make sure to also set the `-w/--work-dir` and `--outdir` parameters to a S3 storage bucket of your choice - you'll get an error message notifying you if you didn't.
 
 ## Other command line parameters
-
-<!-- TODO nf-core: Describe any other command line flags here -->
 
 ### `--outdir`
 
@@ -390,7 +386,3 @@ Set to receive plain-text e-mails instead of HTML formatted.
 ### `--monochrome_logs`
 
 Set to disable colourful command line output and live life in monochrome.
-
-### `--multiqc_config`
-
-Specify a path to a custom MultiQC configuration file.
