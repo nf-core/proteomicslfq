@@ -9,8 +9,8 @@ dependencies:
   # bioconda
   - bioconda::openms-thirdparty=2.5.0
   - bioconda::bioconductor-msstats=3.18.0 # will include R
-  #TODO check if thirdparties are in path and are found by the openms adapters
-  - conda-forge::openjdk=8.0.192
+  - conda-forge::r-ptxqc # for QC reports
+  - conda-forge::openjdk=8.0.192 # pin java to 8 for MSGF (otherwise it somehow chooses 11)
   - conda-forge::python=3.8.1
   - conda-forge::markdown=3.2.1
   - conda-forge::pymdown-extensions=6.0
