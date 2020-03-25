@@ -6,6 +6,9 @@ LABEL authors="Julianus Pfeuffer, Lukas Heumos, Leon Bichmann, Timo Sachsenberg"
 COPY environment.yml /
 RUN conda env create -f /environment.yml && conda clean -a
 
+# Add conda installation dir to PATH (instead of doing 'conda activate')
+ENV PATH /opt/conda/envs/nf-core-proteomicslfq-1.0dev/bin:$PATH
+
 # OpenMS Adapters need the raw jars of Java based bioconda tools in the PATH. Not the wrappers that conda creates.
 RUN cp $(find /opt/conda/envs/nf-core-proteomicslfq-*/share/msgf_plus-*/MSGFPlus.jar -maxdepth 0) $(find /opt/conda/envs/nf-core-proteomicslfq-*/bin/ -maxdepth 0)
 
