@@ -765,7 +765,7 @@ process msstats {
 }
 
 //TODO allow user config yml (as second arg to the script
-)
+
 process ptxlfq {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
@@ -780,7 +780,7 @@ process ptxlfq {
 
     script:
      """
-     ptxqc.R ${mzTab} > ptxqc.log"
+     ptxqc.R ${mzTab} > ptxqc.log
      """
 }
 
