@@ -766,17 +766,20 @@ process msstats {
 
 //TODO allow user config yml (as second arg to the script
 
-process ptxlfq {
+process ptxqc {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
-    publishDir "${params.outdir}/ptxlfq", mode: 'copy'
+    publishDir "${params.outdir}/ptxqc", mode: 'copy'
     
     input:
      file mzTab from out_mzTab
   
     output:
      file "*.html"
-     file "*.yml"
+     file "*.yaml"
+     file "*.Rmd"
+     file "*.pdf"
+     file "*.txt"
 
     script:
      """

@@ -9,7 +9,8 @@ dependencies:
   # bioconda
   - bioconda::openms-thirdparty=2.5.0
   - bioconda::bioconductor-msstats=3.18.0 # will include R
-  - conda-forge::r-ptxqc # for QC reports
+  - conda-forge::r-ptxqc=1.0.2 # for QC reports
+  - conda-forge::fonts-conda-ecosystem=1 # for the fonts in QC reports
   - conda-forge::openjdk=8.0.192 # pin java to 8 for MSGF (otherwise it somehow chooses 11)
   - conda-forge::python=3.8.1
   - conda-forge::markdown=3.2.1
