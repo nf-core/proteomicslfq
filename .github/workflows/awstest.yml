@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - master
-      - dev #TODO remove after testing
+      - feature/awstests #TODO remove after testing
   release:
     types: [published]
 
