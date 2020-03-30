@@ -30,7 +30,7 @@ def helpMessage() {
 
     Database Search:
       --search_engine               Which search engine: "comet" (default) or "msgf"
-      --enzyme                      Enzymatic cleavage ('unspecific cleavage', 'Trypsin', see OpenMS enzymes)
+      --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
       --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default: 
                                          'fully' valid: 'semi', 'fully', 'C-term unspecific', 'N-term unspecific')
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
@@ -109,6 +109,16 @@ def helpMessage() {
                                     "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
                                     "strictly_unique_peptides" = use peptides mapping to a unique single protein only
                                     "shared_peptides" = use shared peptides only for its best group (by inference score)
+
+    Statistical post-processing:
+      --skip_post_msstats           Skip MSstats for statistical post-processing?
+      --ref_condition               Instead of all pairwise contrasts, uses the given condition number (corresponding to your experimental design) as a reference and
+                                    creates pairwise contrasts against it (TODO fully implement)
+      --contrasts                   Specify a set of contrasts in a semicolon seperated list of R-compatible contrasts with the
+                                    condition numbers as variables (e.g. "1-2;1-3;2-3"). Overwrites "--reference" (TODO fully implement)
+
+    Quality control:
+      --ptxqc_report_layout         Specify a yaml file for the report layout (see PTXQC documentation) (TODO fully implement)
 
     General Options:
       --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)
@@ -750,6 +760,9 @@ process msstats {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/msstats", mode: 'copy'
     
+    when:
+     !params.skip_post_msstats
+
     input:
      file csv from out_msstats
   
