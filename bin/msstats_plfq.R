@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
+args[1] = "/Users/pfeuffer/Downloads/out.csv"
 
 if (length(args)==0) {
   stop("At least one argument must be supplied (input file).n", call.=FALSE)
@@ -29,19 +30,44 @@ quant <- OpenMStoMSstatsFormat(data,
 processed.quant <- dataProcess(quant, censoredInt = 'NA')
 
 lvls <- levels(as.factor(data$Condition))
-
-if (args[2] == "pairwise")
+if (length(lvls) == 1)
 {
-  if (args[3] == "")
+  print("Only one condition found. No contrasts to be tested. If this is not the case, please check your experimental design.")
+} else {
+  if (args[2] == "pairwise")
   {
-    l <- length(lvls)
-    contrast_mat <- matrix(nrow = l * (l-1) / 2, ncol = l)
-    rownames(contrast_mat) <- rep(NA, l * (l-1) / 2)
-    colnames(contrast_mat) <- lvls
-    c <- 1
-    for (i in 1:(l-1))
+    if (args[3] == "")
     {
-      for (j in (i+1):l)
+      l <- length(lvls)
+      contrast_mat <- matrix(nrow = l * (l-1) / 2, ncol = l)
+      rownames(contrast_mat) <- rep(NA, l * (l-1) / 2)
+      colnames(contrast_mat) <- lvls
+      c <- 1
+      for (i in 1:(l-1))
+      {
+        for (j in (i+1):l)
+        {
+          comparison <- rep(0,l)
+          comparison[i] <- -1
+          comparison[j] <- 1
+          contrast_mat[c,] <- comparison
+          rownames(contrast_mat)[c] <- paste0(lvls[i],"-",lvls[j])
+          c <- c+1
+        }
+      }
+    } else {
+      control <- which(as.character(lvls) == args[3])
+      if (length(control) == 0)
+      {
+        stop("Control condition not part of found levels.n", call.=FALSE)
+      }
+      
+      l <- length(lvls)
+      contrast_mat <- matrix(nrow = l-1, ncol = l)
+      rownames(contrast_mat) <- rep(NA, l-1)
+      colnames(contrast_mat) <- lvls
+      c <- 1
+      for (j in setdiff(1:l,control))
       {
         comparison <- rep(0,l)
         comparison[i] <- -1
@@ -51,54 +77,33 @@ if (args[2] == "pairwise")
         c <- c+1
       }
     }
-  } else {
-    control <- which(as.character(lvls) == args[3])
-    if (length(control) == 0)
-    {
-      stop("Control condition not part of found levels.n", call.=FALSE)
-    }
-    
-    l <- length(lvls)
-    contrast_mat <- matrix(nrow = l-1, ncol = l)
-    rownames(contrast_mat) <- rep(NA, l-1)
-    colnames(contrast_mat) <- lvls
-    c <- 1
-    for (j in setdiff(1:l,control))
-    {
-      comparison <- rep(0,l)
-      comparison[i] <- -1
-      comparison[j] <- 1
-      contrast_mat[c,] <- comparison
-      rownames(contrast_mat)[c] <- paste0(lvls[i],"-",lvls[j])
-      c <- c+1
-    }
   }
+  
+  print ("Contrasts to be tested:")
+  print (contrast_mat)
+  #TODO allow for user specified contrasts
+  test.MSstats <- groupComparison(contrast.matrix=contrast_mat, data=processed.quant)
+  
+  #TODO allow manual input (e.g. proteins of interest)
+  write.csv(test.MSstats$ComparisonResult, "msstats_results.csv")
+  
+  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
+                       width=12, height=12,dot.size = 2,ylimUp = 7)
+  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="VolcanoPlot",
+                       width=12, height=12,dot.size = 2,ylimUp = 7)
+  
+  if (nrow(constrast_mat) > 1)
+  {
+    groupComparisonPlots(data=test.MSstats$ComparisonResult, type="Heatmap",
+                         width=12, height=12,dot.size = 2,ylimUp = 7)
+  }
+  
+  #for (comp in rownames(contrast_mat))
+  #{
+  #  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
+  #                       width=12, height=12,dot.size = 2,ylimUp = 7, sig=1)#,
+  #                       which.Comparison = comp,
+  #                       address=F)
+  #  # try to plot all comparisons
+  #}
 }
-
-print ("Contrasts to be tested:")
-print (contrast_mat)
-#TODO allow for user specified contrasts
-test.MSstats <- groupComparison(contrast.matrix=contrast_mat, data=processed.quant)
-
-#TODO allow manual input (e.g. proteins of interest)
-write.csv(test.MSstats$ComparisonResult, "msstats_results.csv")
-
-groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
-                     width=12, height=12,dot.size = 2,ylimUp = 7)
-groupComparisonPlots(data=test.MSstats$ComparisonResult, type="VolcanoPlot",
-                     width=12, height=12,dot.size = 2,ylimUp = 7)
-
-if (nrow(constrast_mat) > 1)
-{
-	groupComparisonPlots(data=test.MSstats$ComparisonResult, type="Heatmap",
-                     width=12, height=12,dot.size = 2,ylimUp = 7)
-}
-
-#for (comp in rownames(contrast_mat))
-#{
-#  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
-#                       width=12, height=12,dot.size = 2,ylimUp = 7, sig=1)#,
-#                       which.Comparison = comp,
-#                       address=F)
-#  # try to plot all comparisons
-#}
