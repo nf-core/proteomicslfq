@@ -13,7 +13,7 @@ jobs:
     env:
       NXF_VER: ${{ matrix.nxf_ver }}
       NXF_ANSI_LOG: false
-      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      TOWER_ACCESS_TOKEN: ${{ secrets.NONAWS_TOWER_ACCESS_TOKEN }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
