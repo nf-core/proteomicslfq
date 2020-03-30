@@ -23,6 +23,9 @@ def helpMessage() {
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --database                    Path to input protein database as fasta
 
+    General Options:
+      --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)  
+
     Decoy database:
       --add_decoys                  Add decoys to the given fasta
       --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
@@ -119,10 +122,6 @@ def helpMessage() {
 
     Quality control:
       --ptxqc_report_layout         Specify a yaml file for the report layout (see PTXQC documentation) (TODO fully implement)
-
-    General Options:
-      --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)
-      
 
     Other nextflow options:
       --outdir                      The output directory where the results will be saved
