@@ -1,6 +1,5 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
-args[1] = "/Users/pfeuffer/Downloads/out.csv"
 
 if (length(args)==0) {
   stop("At least one argument must be supplied (input file).n", call.=FALSE)
