@@ -166,10 +166,16 @@ params.outdir = params.outdir ?: { log.warn "No output directory provided. Will 
  */
 
 ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
-ch_database = Channel.fromPath(params.database).set{ db_for_decoy_creation }
+ch_db_for_decoy_creation = Channel.fromPath(params.database)
 // ch_expdesign = Channel.fromPath(params.design, checkIfExists: true)
 
-//use a branch operator for this sort of thing and access the files accordingly!
+if (params.expdesign)
+{
+    Channel
+        .fromPath(params.expdesign)
+        .ifEmpty { exit 1, "params.expdesign was empty - no input files supplied" }
+        .set { ch_expdesign }
+}
 
 ch_spectra
 .branch {
@@ -264,15 +270,6 @@ process mzml_indexing {
 branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
 
 
-if (params.expdesign)
-{
-    Channel
-        .fromPath(params.expdesign)
-        .ifEmpty { exit 1, "params.expdesign was empty - no input files supplied" }
-        .set { expdesign }
-}
-
-
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
                     ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
@@ -284,10 +281,10 @@ process generate_decoy_database {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file(mydatabase) from db_for_decoy_creation
+     file(mydatabase) from ch_db_for_decoy_creation
 
     output:
-     file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
+     file "${mydatabase.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
      file "*.log"
 
     when:
