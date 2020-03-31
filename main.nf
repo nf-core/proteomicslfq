@@ -158,7 +158,6 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 // Validate inputs
 params.spectra = params.spectra ?: { log.error "No spectra data provided. Make sure you have used the '--spectra' option."; exit 1 }()
 params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
-// params.expdesign = params.expdesign ?: { log.error "No read data privided. Make sure you have used the '--design' option."; exit 1 }()
 params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
 /*
@@ -167,7 +166,6 @@ params.outdir = params.outdir ?: { log.warn "No output directory provided. Will 
 
 ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
-// ch_expdesign = Channel.fromPath(params.design, checkIfExists: true)
 
 if (params.expdesign)
 {
@@ -712,7 +710,7 @@ process proteomicslfq {
      file id_files from id_files_idx_feat_perc_fdr_filter_switched
          .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
          .toSortedList({ a, b -> b.baseName <=> a.baseName })
-     file expdes from expdesign
+     file expdes from ch_expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
