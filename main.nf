@@ -23,6 +23,9 @@ def helpMessage() {
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --database                    Path to input protein database as fasta
 
+    General Options:
+      --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)  
+
     Decoy database:
       --add_decoys                  Add decoys to the given fasta
       --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
@@ -30,7 +33,7 @@ def helpMessage() {
 
     Database Search:
       --search_engine               Which search engine: "comet" (default) or "msgf"
-      --enzyme                      Enzymatic cleavage ('unspecific cleavage', 'Trypsin', see OpenMS enzymes)
+      --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
       --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default: 
                                          'fully' valid: 'semi', 'fully', 'C-term unspecific', 'N-term unspecific')
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
@@ -110,9 +113,15 @@ def helpMessage() {
                                     "strictly_unique_peptides" = use peptides mapping to a unique single protein only
                                     "shared_peptides" = use shared peptides only for its best group (by inference score)
 
-    General Options:
-      --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)
-      
+    Statistical post-processing:
+      --skip_post_msstats           Skip MSstats for statistical post-processing?
+      --ref_condition               Instead of all pairwise contrasts, uses the given condition number (corresponding to your experimental design) as a reference and
+                                    creates pairwise contrasts against it (TODO fully implement)
+      --contrasts                   Specify a set of contrasts in a semicolon seperated list of R-compatible contrasts with the
+                                    condition numbers as variables (e.g. "1-2;1-3;2-3"). Overwrites "--reference" (TODO fully implement)
+
+    Quality control:
+      --ptxqc_report_layout         Specify a yaml file for the report layout (see PTXQC documentation) (TODO fully implement)
 
     Other nextflow options:
       --outdir                      The output directory where the results will be saved
@@ -149,7 +158,6 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 // Validate inputs
 params.spectra = params.spectra ?: { log.error "No spectra data provided. Make sure you have used the '--spectra' option."; exit 1 }()
 params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
-// params.expdesign = params.expdesign ?: { log.error "No read data privided. Make sure you have used the '--design' option."; exit 1 }()
 params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
 /*
@@ -157,10 +165,15 @@ params.outdir = params.outdir ?: { log.warn "No output directory provided. Will 
  */
 
 ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
-ch_database = Channel.fromPath(params.database).set{ db_for_decoy_creation }
-// ch_expdesign = Channel.fromPath(params.design, checkIfExists: true)
+ch_db_for_decoy_creation = Channel.fromPath(params.database)
 
-//use a branch operator for this sort of thing and access the files accordingly!
+if (params.expdesign)
+{
+    Channel
+        .fromPath(params.expdesign)
+        .ifEmpty { exit 1, "params.expdesign was empty - no input files supplied" }
+        .set { ch_expdesign }
+}
 
 ch_spectra
 .branch {
@@ -255,15 +268,6 @@ process mzml_indexing {
 branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
 
 
-if (params.expdesign)
-{
-    Channel
-        .fromPath(params.expdesign)
-        .ifEmpty { exit 1, "params.expdesign was empty - no input files supplied" }
-        .set { expdesign }
-}
-
-
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
                     ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
@@ -275,10 +279,10 @@ process generate_decoy_database {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file(mydatabase) from db_for_decoy_creation
+     file(mydatabase) from ch_db_for_decoy_creation
 
     output:
-     file "${database.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
+     file "${mydatabase.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
      file "*.log"
 
     when:
@@ -706,7 +710,7 @@ process proteomicslfq {
      file id_files from id_files_idx_feat_perc_fdr_filter_switched
          .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
          .toSortedList({ a, b -> b.baseName <=> a.baseName })
-     file expdes from expdesign
+     file expdes from ch_expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
@@ -750,6 +754,9 @@ process msstats {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/msstats", mode: 'copy'
     
+    when:
+     !params.skip_post_msstats
+
     input:
      file csv from out_msstats
   

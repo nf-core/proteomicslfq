@@ -10,32 +10,65 @@
 * [Main arguments](#main-arguments)
   * [`--spectra`](#--spectra)
   * [`--database`](#--database)
+  * [`--exp_design`](#--exp_design)
   * [`-profile`](#-profile)
-* [Mass Spectrometry Search](#Mass-Spectrometry-Search)
-  * [`--precursor_mass_tolerance`](#--precursor_mass_tolerance)
+* [Decoy database generation](#decoy-database-generation)
+  * [`--add_decoys`](#--add_decoys)
+  * [`--decoy_affix`](#-decoy_affix)
+  * [`--affix_type`](#-profile)
+* [Database search](#database-search)
+  * [`--search_engine`](#--search_engine)
   * [`--enzyme`](#--enzyme)
+  * [`--num_enzyme_termini`](#--num_enzyme_termini)
   * [`--fixed_mods`](#--fixed_mods)
   * [`--variable_mods`](#--variable_mods)
-  * [`--allowed_missed cleavages`](#--allowed_missed_cleavages)
+  * [`--precursor_mass_tolerance`](#--precursor_mass_tolerance)
+  * [`--allowed_missed_cleavages`](#--allowed_missed_cleavages)
+  * [`--num_hits`](#--num_hits)
   * [`--psm_level_fdr_cutoff`](#--psm_level_fdr_cutoff)
-* [Protein inference](#Protein-Inference)
-  * [`--protein_level_fdr_cutoff`](#--protein_level_fdr_cutoff)
-  * [`--train_FDR`](#--train_FDR)
-  * [`--test_FDR`](#--test_FDR)
-  * [`--FDR_level`](#--FDR_level)
-  * [`--klammer`](#--klammer)
-  * [`--description_correct_features`](#--description_correct_features)
-  * [`--isotope_error_range`](#--isotope_error_range)
-  * [`--fragment_method`](#--fragment_method)
-  * [`--instrument`](#--instrument)
-  * [`--protocol`](#--protocol)
-  * [`--tryptic`](#--tryptic)
   * [`--min_precursor_charge`](#--min_precursor_charge)
   * [`--max_precursor_charge`](#--max_precursor_charge)
   * [`--min_peptide_length`](#--min_peptide_length)
   * [`--max_peptide_length`](#--max_peptide_length)
-  * [`--matches_per_spec`](#--matches_per_spec)
+  * [`--instrument`](#--instrument)
+  * [`--protocol`](#--protocol)
+  * [`--fragment_method`](#--fragment_method)
+  * [`--isotope_error_range`](#--isotope_error_range)
   * [`--max_mods`](#--max_mods)
+  * [`--db_debug`](#--db_debug)
+* [PSM rescoring](#psm-rescoring)
+  * [`--posterior_probabilities`](#--posterior_probabilities)
+  * [`--rescoring_debug`](#--rescoring_debug)
+  * [`--psm_pep_fdr_cutoff`](#--psm_pep_fdr_cutoff)
+  * [Percolator specific](#percolator-specific)
+    * [`--train_FDR`](#--train_FDR)
+    * [`--test_FDR`](#--test_FDR)
+    * [`--percolator_fdr_level`](#--percolator_fdr_level)
+    * [`--post-processing-tdc`](#--post-processing-tdc)
+    * [`--description_correct_features`](#--description_correct_features)
+    * [`--generic-feature-set`](#--feature)
+    * [`--subset-max-train`](#--subset-max-train)
+    * [`--klammer`](#--klammer)
+  * [Distribution specific](#distribution-specific)
+    * [`--outlier_handling`](#--outlier_handling)
+    * [`--top_hits_only`](#--top_hits_only)
+* [Inference and Quantification](#inference-and-quantification)
+  * [`--inf_quant_debug`](#--inf_quant_debug)
+  * [Inference](#inference)
+    * [`--protein_inference`](#--protein_inference)
+    * [`--protein_level_fdr_cutoff`](#--protein_level_fdr_cutoff)
+  * [Quantification](#quantification)
+    * [`--transfer_ids`](#--transfer_ids)
+    * [`--targeted_only`](#--targeted_only)
+    * [`--mass_recalibration`](#--mass_recalibration)
+    * [`--psm_pep_fdr_for_quant`](#--psm_pep_fdr_for_quant)
+    * [`--protein_quantification`](#--protein_quantification)
+* [Statistical post-processing](#statistical-post-processing)
+  * [`--skip_post_msstats`](#--skip_post_msstats)
+  * [`--ref_condition`](#--ref_condition)
+  * [`--contrasts`](#--contrasts)
+* [Quality control](#quality-control)
+  * [`--ptxqc_report_layout`](#--ptxqc_report_layout)
 * [Job resources](#job-resources)
   * [Automatic resubmission](#automatic-resubmission)
   * [Custom resource requests](#custom-resource-requests)
@@ -136,6 +169,14 @@ Needs to be given to specify the input protein database when you run the pipelin
 --database '[path to Fasta protein database]'
 ```
 
+### `--exp_design`
+
+Path or URL to an experimental design file (if not given, it assumes unfractionated, unrelated samples). See an example here (TODO).
+
+```bash
+--exp_design '[path to experimental design file in OpenMS-style tab separated format]'
+```
+
 ### `-profile`
 
 Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
@@ -156,11 +197,11 @@ If `-profile` is not specified at all the pipeline will be run locally and expec
   * A profile with a complete configuration for automated testing
   * Includes links to test data and therefore doesn't need additional parameters
 
-## Mass Spectrometry Search
+## Database search
 
 ### `--precursor_mass_tolerance`
 
-Comet: Precursor mass tolerance used for database search. For High-Resolution instruments a precursor mass tolerance value of 5ppm is recommended. (eg. 5) (Comet parameter '-peptide_mass_tolerance')
+Precursor mass tolerance used for database search in ppm. TODO parameterize the unit. For High-Resolution instruments a precursor mass tolerance value of 5ppm is recommended. (i.e. 5)
 
 ### `--enzyme`
 
