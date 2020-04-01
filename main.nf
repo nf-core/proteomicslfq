@@ -19,13 +19,16 @@ def helpMessage() {
 
     nextflow run nf-core/proteomicslfq --spectra '*.mzML' --database '*.fasta' -profile docker
 
-    Mandatory arguments:
+    Main arguments:
+      Either:
+      --sdrf                        Path to PRIDE Sample to data relation format file
+      Or:
       --spectra                     Path to input spectra as mzML or Thermo Raw
+      --expdesign                   Path to optional experimental design file (if not given, it assumes unfractionated, unrelated samples)
+
+      And:
       --database                    Path to input protein database as fasta
-
-    General Options:
-      --expdesign                   Path to experimental design file (if not given, it assumes unfractionated, unrelated samples)  
-
+        
     Decoy database:
       --add_decoys                  Add decoys to the given fasta
       --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
@@ -155,30 +158,100 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 // Stage config files
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
+
 // Validate inputs
-params.spectra = params.spectra ?: { log.error "No spectra data provided. Make sure you have used the '--spectra' option."; exit 1 }()
+if (!(params.spectra || params.sdrf) || (params.spectra && params.sdrf))
+{
+  log.error "EITHER spectra data OR SDRF needs to be provided. Make sure you have used either of those options."; exit 1
+}
+
 params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
 params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
 /*
- * Create a channel for input read files
+ * Create a channel for input files
  */
 
-ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
+ //Filename        FixedModifications      VariableModifications   Label   PrecursorMassTolerance  PrecursorMassToleranceUnit      FragmentMassTolerance   DissociationMethod      Enzyme
+
+
+if (!params.sdrf)
+{
+  ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
+  ch_spectra
+  .multiMap{ it -> id = UUID.randomUUID().toString()
+                    comet_settings: msgf_settings: tuple(id,
+                                    params.fixed_mods,
+                                    params.variable_mods,
+                                    params.precursor_mass_tolerance,
+                                    params.precursor_error_units,
+                                    params.fragment_mass_tolerance,
+                                    params.dissociation_method,
+                                    params.enzyme)
+                    idx_settings: tuple(id,
+                                    params.enzyme)
+                    mzmls: tuple(id,it)}
+  .set{ch_sdrf_config}
+}
+else
+{
+  ch_sdrf = Channel.fromPath(params.sdrf, checkIfExists: true)
+  /*
+   * STEP 0 - SDRF parsing
+   */
+  process sdrf_parsing {
+
+      publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+      input:
+       file sdrf from ch_sdrf
+
+      output:
+       file "experimental_design.tsv" into ch_expdesign
+       file "openms.tsv" into ch_sdrf_config_file
+      
+      when:
+        params.sdrf
+      
+      script:
+       """
+       python parse_sdrf.py ${sdrf} > sdrf_parsing.log
+       """
+  }
+
+  //TODO use header and ref by col name
+  ch_sdrf_config_file
+  .splitCsv(skip: 1)
+  .multiMap{ row -> id = UUID.randomUUID().toString()
+                    comet_settings: msgf_settings: tuple(id,
+                                    row[1],
+                                    row[2],
+                                    row[3],
+                                    row[4],
+                                    row[5],
+                                    row[6],
+                                    row[7])
+                    idx_settings: tuple(id,
+                                    row[7])
+                    mzmls: tuple(id,row[0])}
+  .set{ch_sdrf_config}
+}
+
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
 
+// overwrite experimental design if given additionally to SDRF
+//TODO think about that
 if (params.expdesign)
 {
     Channel
         .fromPath(params.expdesign)
-        .ifEmpty { exit 1, "params.expdesign was empty - no input files supplied" }
         .set { ch_expdesign }
 }
 
-ch_spectra
+ch_sdrf_config.mzmls
 .branch {
-        raw: hasExtension(it, 'raw')
-        mzML: hasExtension(it, 'mzML')
+        raw: hasExtension(it[1], 'raw')
+        mzML: hasExtension(it[1], 'mzML')
 }
 .set {branched_input}
 
@@ -186,14 +259,14 @@ ch_spectra
 //TODO we could also check for outdated mzML versions and try to update them
 branched_input.mzML
 .branch {
-    nonIndexedMzML: file(it).withReader {
+    nonIndexedMzML: file(it[1]).withReader {
                         f = it;
                         1.upto(5) {
                             if (f.readLine().contains("indexedmzML")) return false;
                         }
                         return true;
                     }
-    inputIndexedMzML: file(it).withReader {
+    inputIndexedMzML: file(it[1]).withReader {
                         f = it;
                         1.upto(5) {
                             if (f.readLine().contains("indexedmzML")) return true;
@@ -227,10 +300,10 @@ process raw_file_conversion {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file rawfile from branched_input.raw
+     set mzml_id, file(rawfile) from branched_input.raw
 
     output:
-     file "*.mzML" into mzmls_converted
+     set mzml_id, file("*.mzML") into mzmls_converted
     
     
     // TODO check if this sh script is available with bioconda
@@ -250,10 +323,10 @@ process mzml_indexing {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file mzmlfile from branched_input_mzMLs.nonIndexedMzML
+     set mzml_id, file(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
 
     output:
-     file "out/*.mzML" into mzmls_indexed
+     set mzml_id, file("out/*.mzML") into mzmls_indexed
      file "*.log"
     
     script:
@@ -326,6 +399,9 @@ if (params.search_engine == "msgf")
     search_engine_score = "expect"
 }
 
+
+ //Filename        FixedModifications      VariableModifications   Label   PrecursorMassTolerance  PrecursorMassToleranceUnit      FragmentMassTolerance   DissociationMethod      Enzyme
+
 process search_engine_msgf {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
@@ -337,7 +413,7 @@ process search_engine_msgf {
     errorStrategy 'terminate'
 
     input:
-     tuple file(database), file(mzml_file) from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf)
+     tuple file(database), mzml_id, file(mzml_file), fixed, variable, lab, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings)).view()
      
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
@@ -346,7 +422,7 @@ process search_engine_msgf {
       params.search_engine == "msgf"
 
     output:
-     file "${mzml_file.baseName}.idXML" into id_files_msgf
+     set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_msgf
      file "*.log"
 
     script:
@@ -356,6 +432,8 @@ process search_engine_msgf {
                      -threads ${task.cpus} \\
                      -database ${database} \\
                      -matches_per_spec ${params.num_hits} \\
+                     -fixed_modifications ${fixed} \\
+                     -variable_modifications ${variable} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -370,7 +448,7 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), file(mzml_file) from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet)
+     tuple file(database), mzml_id, file(mzml_file),  from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
@@ -380,7 +458,7 @@ process search_engine_comet {
       params.search_engine == "comet"
 
     output:
-     file "${mzml_file.baseName}.idXML" into id_files_comet
+     set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_comet
      file "*.log"
 
     script:
@@ -390,6 +468,8 @@ process search_engine_comet {
                    -threads ${task.cpus} \\
                    -database ${database} \\
                    -num_hits ${params.num_hits} \\
+                   -fixed_modifications ${fixed} \\
+                   -variable_modifications ${variable} \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
@@ -400,13 +480,13 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     //tuple file(database), file(id_file) from id_files_msgf.mix(id_files_comet, Channel.empty()).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+     tuple file(database), mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
      
-     each file(id_file) from id_files_msgf.mix(id_files_comet)
-     file database from pepidx_in_db.mix(pepidx_in_db_decoy)
+     //each mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet)
+     //file database from pepidx_in_db.mix(pepidx_in_db_decoy)
      
     output:
-     file "${id_file.baseName}_idx.idXML" into id_files_idx_ForPerc, id_files_idx_ForIDPEP
+     set mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP
      file "*.log"
 
     script:
