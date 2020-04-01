@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         # Nextflow versions: check pipeline minimum and current latest
-        nxf_ver: ['20.01', '']
+        nxf_ver: ['']
     steps:
       - uses: actions/checkout@v2
       - name: Determine tower usage
