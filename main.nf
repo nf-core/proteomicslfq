@@ -497,7 +497,7 @@ process index_peptides {
                     -out ${id_file.baseName}_idx.idXML \\
                     -threads ${task.cpus} \\
                     -fasta ${database} \\
-                    -enzyme "${enzyme}" \\
+                    -enzyme:name "${enzyme}" \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
