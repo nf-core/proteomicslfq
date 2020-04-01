@@ -482,7 +482,7 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.index_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+     tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.idx_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
      
      //each mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet)
      //file database from pepidx_in_db.mix(pepidx_in_db_decoy)
