@@ -183,6 +183,7 @@ if (!params.sdrf)
                     comet_settings: msgf_settings: tuple(id,
                                     params.fixed_mods,
                                     params.variable_mods,
+                                    "", //labelling modifications currently not supported
                                     params.precursor_mass_tolerance,
                                     params.precursor_error_units,
                                     params.fragment_mass_tolerance,
@@ -230,9 +231,10 @@ else
                                     row[4],
                                     row[5],
                                     row[6],
-                                    row[7])
+                                    row[7],
+                                    row[8])
                     idx_settings: tuple(id,
-                                    row[7])
+                                    row[8])
                     mzmls: tuple(id,row[0])}
   .set{ch_sdrf_config}
 }
@@ -413,7 +415,7 @@ process search_engine_msgf {
     errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, file(mzml_file), fixed, variable, lab, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings)).view()
+     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings)).view()
      
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
@@ -432,8 +434,8 @@ process search_engine_msgf {
                      -threads ${task.cpus} \\
                      -database ${database} \\
                      -matches_per_spec ${params.num_hits} \\
-                     -fixed_modifications ${fixed} \\
-                     -variable_modifications ${variable} \\
+                     -fixed_modifications "${fixed}" \\
+                     -variable_modifications "${variable}" \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -448,7 +450,7 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), mzml_id, file(mzml_file), fixed, variable, lab, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
+     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
@@ -468,8 +470,8 @@ process search_engine_comet {
                    -threads ${task.cpus} \\
                    -database ${database} \\
                    -num_hits ${params.num_hits} \\
-                   -fixed_modifications ${fixed} \\
-                   -variable_modifications ${variable} \\
+                   -fixed_modifications "${fixed}" \\
+                   -variable_modifications "${variable}" \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
@@ -480,7 +482,7 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple file(database), mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+     tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.index_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
      
      //each mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet)
      //file database from pepidx_in_db.mix(pepidx_in_db_decoy)
@@ -495,6 +497,7 @@ process index_peptides {
                     -out ${id_file.baseName}_idx.idXML \\
                     -threads ${task.cpus} \\
                     -fasta ${database} \\
+                    -enzyme "${enzyme}" \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
