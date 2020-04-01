@@ -790,7 +790,7 @@ process proteomicslfq {
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
     
     input:
-     file mzmls from mzmls_plfq.map{it->it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
+     file mzmls from mzmls_plfq.map{it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
      file id_files from id_files_idx_feat_perc_fdr_filter_switched
          .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
          .toSortedList({ a, b -> b.baseName <=> a.baseName })
