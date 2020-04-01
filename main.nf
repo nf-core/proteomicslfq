@@ -448,7 +448,7 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), mzml_id, file(mzml_file),  from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
+     tuple file(database), mzml_id, file(mzml_file), fixed, variable, lab, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
