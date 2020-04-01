@@ -512,10 +512,10 @@ process extract_perc_features {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
-     file id_file from id_files_idx_ForPerc
+     set mzml_id, file(id_file) from id_files_idx_ForPerc
 
     output:
-     file "${id_file.baseName}_feat.idXML" into id_files_idx_feat
+     set mzml_id, file("${id_file.baseName}_feat.idXML") into id_files_idx_feat
      file "*.log"
 
     when:
@@ -531,14 +531,14 @@ process extract_perc_features {
 }
 
 
-
+//Note: from here, we do not need any settings anymore. so we can skip adding the mzml_id to the channels
 //TODO parameterize and find a way to run across all runs merged
 process percolator {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
-     file id_file from id_files_idx_feat
+     set mzml_id, file(id_file) from id_files_idx_feat
 
     output:
      file "${id_file.baseName}_perc.idXML" into id_files_idx_feat_perc
@@ -626,12 +626,13 @@ process idscoreswitcher {
 // ---------------------------------------------------------------------
 // Branch b) Q-values and PEP from OpenMS
 
+// Note: for IDPEP we never need any file specific settings so we can stop adding the mzml_idto the channels
 process fdr {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
  
     input:
-     file id_file from id_files_idx_ForIDPEP
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP
 
     output:
      file "${id_file.baseName}_fdr.idXML" into id_files_idx_ForIDPEP_fdr
