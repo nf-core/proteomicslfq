@@ -216,7 +216,7 @@ else
       
       script:
        """
-       python parse_sdrf.py ${sdrf} > sdrf_parsing.log
+       parse_sdrf.py ${sdrf} > sdrf_parsing.log
        """
   }
 
