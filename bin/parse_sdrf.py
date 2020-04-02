@@ -12,8 +12,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
-  """This is the main tool that give access to all commands and options provided by the mslookup and dleamse algorithms"""
-
+  """Tool to convert sdrf files into OpenMS config files"""
 
 def openms_ify_mods(sdrf_mods):
   oms_mods = list()
@@ -178,13 +177,14 @@ def openms_convert(sdrf_file: str = None):
 
   # output of search settings
   f = open("openms.tsv", "w+")
-  open_ms_search_settings_header = ["Filename", "FixedModifications", "VariableModifications", "Label",
+  open_ms_search_settings_header = ["URI", "Filename", "FixedModifications", "VariableModifications", "Label",
                                     "PrecursorMassTolerance", "PrecursorMassToleranceUnit", "FragmentMassTolerance",
                                     "FragmentMassToleranceUnit", "DissociationMethod", "Enzyme"]
   f.write("\t".join(open_ms_search_settings_header) + "\n")
   for index, row in sdrf.iterrows():  # does only work for label-free not for multiplexed. TODO
+    URI = row["comment[file uri]"]
     raw = row["comment[data file]"]
-    f.write(raw + "\t" + file2mods[raw][0] + "\t" + file2mods[raw][1] + "\t" + file2label[raw] + "\t" + file2pctol[
+    f.write(URI + "\t" + raw + "\t" + file2mods[raw][0] + "\t" + file2mods[raw][1] + "\t" + file2label[raw] + "\t" + file2pctol[
       raw] + "\t" + file2pctolunit[raw] + "\t" + file2fragtol[raw] + "\t" + file2fragtolunit[raw] + "\t" + file2diss[
               raw] + "\t" + file2enzyme[raw] + "\n")
   f.close()

@@ -42,7 +42,10 @@ def helpMessage() {
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
-      --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
+      --precursor_mass_tolerance    Mass tolerance of precursor mass
+      --precursor_mass_tolerance_unit Da or ppm
+      --fragment_mass_tolerance     Mass tolerance for fragment masses
+      --fragment_mass_tolerance_unit Da or ppm
       --allowed_missed_cleavages    Allowed missed cleavages 
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
       --min_precursor_charge        Minimum precursor ion charge
@@ -185,9 +188,10 @@ if (!params.sdrf)
                                     params.variable_mods,
                                     "", //labelling modifications currently not supported
                                     params.precursor_mass_tolerance,
-                                    params.precursor_error_units,
+                                    params.precursor_mass_tolerance_unit,
                                     params.fragment_mass_tolerance,
-                                    params.dissociation_method,
+                                    params.fragment_mass_tolerance_unit,
+                                    params.fragment_method,
                                     params.enzyme)
                     idx_settings: tuple(id,
                                     params.enzyme)
@@ -216,25 +220,26 @@ else
       
       script:
        """
-       parse_sdrf.py ${sdrf} > sdrf_parsing.log
+       parse_sdrf.py convert-openms -s ${sdrf} > sdrf_parsing.log
        """
   }
 
   //TODO use header and ref by col name
   ch_sdrf_config_file
-  .splitCsv(skip: 1)
+  .splitCsv(skip: 1, sep: '\t').view()
   .multiMap{ row -> id = UUID.randomUUID().toString()
                     comet_settings: msgf_settings: tuple(id,
-                                    row[1],
                                     row[2],
                                     row[3],
                                     row[4],
                                     row[5],
                                     row[6],
                                     row[7],
-                                    row[8])
+                                    row[8],
+                                    row[9],
+                                    row[10])
                     idx_settings: tuple(id,
-                                    row[8])
+                                    row[10])
                     mzmls: tuple(id,row[0])}
   .set{ch_sdrf_config}
 }
@@ -250,7 +255,7 @@ if (params.expdesign)
         .set { ch_expdesign }
 }
 
-ch_sdrf_config.mzmls
+ch_sdrf_config.mzmls.view()
 .branch {
         raw: hasExtension(it[1], 'raw')
         mzML: hasExtension(it[1], 'mzML')
@@ -302,7 +307,7 @@ process raw_file_conversion {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(rawfile) from branched_input.raw
+     tuple mzml_id, path(rawfile) from branched_input.raw.view()
 
     output:
      set mzml_id, file("*.mzML") into mzmls_converted
@@ -325,7 +330,7 @@ process mzml_indexing {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
+     set mzml_id, path(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
 
     output:
      set mzml_id, file("out/*.mzML") into mzmls_indexed
@@ -415,7 +420,7 @@ process search_engine_msgf {
     errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings)).view()
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings)).view()
      
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
@@ -434,8 +439,8 @@ process search_engine_msgf {
                      -threads ${task.cpus} \\
                      -database ${database} \\
                      -matches_per_spec ${params.num_hits} \\
-                     -fixed_modifications "${fixed}" \\
-                     -variable_modifications "${variable}" \\
+                     -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                     -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -450,7 +455,7 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
@@ -470,8 +475,8 @@ process search_engine_comet {
                    -threads ${task.cpus} \\
                    -database ${database} \\
                    -num_hits ${params.num_hits} \\
-                   -fixed_modifications "${fixed}" \\
-                   -variable_modifications "${variable}" \\
+                   -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                   -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
