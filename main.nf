@@ -42,6 +42,7 @@ def helpMessage() {
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
+      --phospho_rescoring           Phosphosite rescoring using the luciphor algorithm
       --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
       --allowed_missed_cleavages    Allowed missed cleavages 
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
@@ -434,8 +435,9 @@ process search_engine_msgf {
                      -threads ${task.cpus} \\
                      -database ${database} \\
                      -matches_per_spec ${params.num_hits} \\
-                     -fixed_modifications "${fixed}" \\
-                     -variable_modifications "${variable}" \\
+                     -variable_modifications ${params.variable_mods.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                     -fixed_modifications ${params.fixed_mods.tokenize(',').collect { "'${it}'"}.join(" ")} \\
+                     -enzyme ${params.enzyme} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -470,8 +472,9 @@ process search_engine_comet {
                    -threads ${task.cpus} \\
                    -database ${database} \\
                    -num_hits ${params.num_hits} \\
-                   -fixed_modifications "${fixed}" \\
-                   -variable_modifications "${variable}" \\
+                   -variable_modifications ${params.variable_mods.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                   -fixed_modifications ${params.fixed_mods.tokenize(',').collect { "'${it}'"}.join(" ")} \\
+                   -enzyme ${params.enzyme} \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
@@ -497,7 +500,7 @@ process index_peptides {
                     -out ${id_file.baseName}_idx.idXML \\
                     -threads ${task.cpus} \\
                     -fasta ${database} \\
-                    -enzyme:name "${enzyme}" \\
+                    -enzyme:name ${enzyme} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
@@ -620,8 +623,6 @@ process idscoreswitcher {
                         > ${id_file.baseName}_scoreswitcher.log
      """
 }
-
-
 
 // ---------------------------------------------------------------------
 // Branch b) Q-values and PEP from OpenMS
@@ -780,6 +781,30 @@ process idscoreswitcher3 {
      """
 }
 
+process luciphor {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     file id_file from id_files_idx_feat_perc_fdr_filter_switched.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
+     file mzml_file_l from mzml_files_luciphor
+
+    output:
+     file "${id_file.baseName}_switched.idXML" into id_files_idx_feat_fdr_filter_switched_luciphor
+     file "*.log"
+
+    when:
+     params.phospho_rescoring
+
+    script:
+     """
+     LuciphorAdapter    -id ${id_file} \\
+                        -in ${mzml_file_l} \\
+                        -out ${id_file.baseName}_switched.idXML \\
+                        -threads ${task.cpus} \\
+                        > ${id_file.baseName}_scoreswitcher.log
+     """
+}
 
 // ---------------------------------------------------------------------
 // Main Branch
@@ -791,8 +816,7 @@ process proteomicslfq {
     
     input:
      file mzmls from mzmls_plfq.map{it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
-     file id_files from id_files_idx_feat_perc_fdr_filter_switched
-         .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
+     file id_files_idx_feat_fdr_filter_switched_luciphor 
          .toSortedList({ a, b -> b.baseName <=> a.baseName })
      file expdes from ch_expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
