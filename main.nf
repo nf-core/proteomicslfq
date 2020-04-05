@@ -38,23 +38,23 @@ def helpMessage() {
       --search_engine               Which search engine: "comet" (default) or "msgf"
       --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
       --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default: 
-                                         'fully' valid: 'semi', 'fully', 'C-term unspecific', 'N-term unspecific')
+                                         'fully' valid: 'semi', 'fully')
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
       --precursor_mass_tolerance    Mass tolerance of precursor mass
       --precursor_mass_tolerance_unit Da or ppm
-      --fragment_mass_tolerance     Mass tolerance for fragment masses
-      --fragment_mass_tolerance_unit Da or ppm
-      --allowed_missed_cleavages    Allowed missed cleavages 
+      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
+      --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
+      --allowed_missed_cleavages    Allowed missed cleavages
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
       --min_precursor_charge        Minimum precursor ion charge
       --max_precursor_charge        Maximum precursor ion charge      
       --min_peptide_length          Minimum peptide length to consider
       --max_peptide_length          Maximum peptide length to consider
-      --instrument                  Type of instrument that generated the data
+      --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
       --protocol                    Used labeling or enrichment protocol (if any)
-      --fragment_method             Used fragmentation method
+      --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let                                     them determine from the spectrum metadata)
       --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
       --db_debug                    Debug level during database search
 
@@ -220,13 +220,15 @@ else
       
       script:
        """
-       parse_sdrf.py convert-openms -s ${sdrf} > sdrf_parsing.log
+       ## -t2 since the one-table format parser is broken in OpenMS2.5
+       ## -l for legacy behavior to always add sample columns
+       parse_sdrf.py convert-openms -t2 -l -s ${sdrf} > sdrf_parsing.log
        """
   }
 
   //TODO use header and ref by col name
   ch_sdrf_config_file
-  .splitCsv(skip: 1, sep: '\t').view()
+  .splitCsv(skip: 1, sep: '\t')
   .multiMap{ row -> id = UUID.randomUUID().toString()
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
@@ -255,7 +257,7 @@ if (params.expdesign)
         .set { ch_expdesign }
 }
 
-ch_sdrf_config.mzmls.view()
+ch_sdrf_config.mzmls
 .branch {
         raw: hasExtension(it[1], 'raw')
         mzML: hasExtension(it[1], 'mzML')
@@ -312,10 +314,6 @@ process raw_file_conversion {
     output:
      set mzml_id, file("*.mzML") into mzmls_converted
     
-    
-    // TODO check if this sh script is available with bioconda
-    // else check if the exe is accessible/in PATH on bioconda and use sth like this
-    // mono ThermoRawfileParser.exe -i=${rawfile} -f=2 -o=./
     script:
      """
      ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
@@ -397,12 +395,23 @@ process generate_decoy_database {
 //     """
 //}
 
+if (params.enzyme == "unspecific cleavage")
+{
+  params.num_enzyme_termini == "none"
+}
+
+pepidx_num_enzyme_termini = params.num_enzyme_termini
+if (params.num_enzyme_termini == "fully")
+{
+  pepidx_num_enzyme_termini = "full"
+}
+
 /// Search engine
 // TODO parameterize more
 if (params.search_engine == "msgf")
 {
     search_engine_score = "SpecEValue"
-} else {
+} else { //comet
     search_engine_score = "expect"
 }
 
@@ -438,9 +447,18 @@ process search_engine_msgf {
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
                      -database ${database} \\
+                     -instrument ${params.instrument} \\
                      -matches_per_spec ${params.num_hits} \\
+                     -min_precursor_charge ${params.min_precursor_charge} \\
+                     -max_precursor_charge ${params.max_precursor_charge} \\
+                     -min_peptide_length ${params.min_peptide_length} \\
+                     -max_peptide_length ${params.max_peptide_length} \\
+                     -tryptic ${params.num_enzyme_termini} \\
+                     -precursor_mass_tolerance ${prec_tol} \\
+                     -precursor_error_units ${prec_tol_unit} \\
                      -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                      -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                     -max_mods ${params.max_mods} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -468,15 +486,24 @@ process search_engine_comet {
      set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_comet
      file "*.log"
 
+    //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
     script:
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
                    -database ${database} \\
+                   -instrument ${params.instrument} \\
+                   -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
+                   -num_enzyme_termini ${params.num_enzyme_termini} \\
+                   -precursor_charge ${params.min_precursor_charge}:${params.max_precursor_charge} \\
                    -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                    -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                   -max_variable_mods_in_peptide ${params.max_mods} \\
+                   -precursor_mass_tolerance ${prec_tol} \\
+                   -precursor_error_units ${prec_tol_unit} \\
+                   -fragment_bin_tolerance ${frag_tol} \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
@@ -503,6 +530,7 @@ process index_peptides {
                     -threads ${task.cpus} \\
                     -fasta ${database} \\
                     -enzyme:name "${enzyme}" \\
+                    -enzyme:specificity ${pepidx_num_enzyme_termini}
                     > ${id_file.baseName}_index_peptides.log
      """
 }
