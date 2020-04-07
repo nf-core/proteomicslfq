@@ -453,6 +453,7 @@ process search_engine_msgf {
                      -max_precursor_charge ${params.max_precursor_charge} \\
                      -min_peptide_length ${params.min_peptide_length} \\
                      -max_peptide_length ${params.max_peptide_length} \\
+                     -enzyme ${enzyme} \\
                      -tryptic ${params.num_enzyme_termini} \\
                      -precursor_mass_tolerance ${prec_tol} \\
                      -precursor_error_units ${prec_tol_unit} \\
@@ -497,6 +498,7 @@ process search_engine_comet {
                    -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
+                   -enzyme ${enzyme} \\
                    -precursor_charge ${params.min_precursor_charge}:${params.max_precursor_charge} \\
                    -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                    -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
