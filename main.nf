@@ -443,19 +443,19 @@ process search_engine_msgf {
       else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
-    
+
      """
      MSGFPlusAdapter -in ${mzml_file} \\
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
-                     -database ${database} \\
+                     -database "${database}" \\
                      -instrument ${params.instrument} \\
                      -matches_per_spec ${params.num_hits} \\
                      -min_precursor_charge ${params.min_precursor_charge} \\
                      -max_precursor_charge ${params.max_precursor_charge} \\
                      -min_peptide_length ${params.min_peptide_length} \\
                      -max_peptide_length ${params.max_peptide_length} \\
-                     -enzyme ${enzyme} \\
+                     -enzyme "${enzyme}" \\
                      -tryptic ${params.num_enzyme_termini} \\
                      -precursor_mass_tolerance ${prec_tol} \\
                      -precursor_error_units ${prec_tol_unit} \\
@@ -495,12 +495,12 @@ process search_engine_comet {
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
-                   -database ${database} \\
+                   -database "${database}" \\
                    -instrument ${params.instrument} \\
                    -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
-                   -enzyme ${enzyme} \\
+                   -enzyme "${enzyme}" \\
                    -precursor_charge ${params.min_precursor_charge}:${params.max_precursor_charge} \\
                    -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                    -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
