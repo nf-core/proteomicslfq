@@ -22,6 +22,7 @@ def helpMessage() {
     Main arguments:
       Either:
       --sdrf                        Path to PRIDE Sample to data relation format file
+      --root_folder                 (Optional) If given, looks for the filenames in the SDRF in this folder, locally
       Or:
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --expdesign                   Path to optional experimental design file (if not given, it assumes unfractionated, unrelated samples)
@@ -226,7 +227,7 @@ else
        """
   }
 
-  //TODO use header and ref by col name
+  //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
   .multiMap{ row -> id = UUID.randomUUID().toString()
@@ -242,7 +243,7 @@ else
                                     row[10])
                     idx_settings: tuple(id,
                                     row[10])
-                    mzmls: tuple(id,row[0])}
+                    mzmls: tuple(id, params.root_folder.empty() ? row[0] : params.root_folder + "/" + row[11])}
   .set{ch_sdrf_config}
 }
 
