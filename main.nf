@@ -243,7 +243,7 @@ else
                                     row[10])
                     idx_settings: tuple(id,
                                     row[10])
-                    mzmls: tuple(id, params.root_folder.empty() ? row[0] : params.root_folder + "/" + row[11])}
+                    mzmls: tuple(id, params.root_folder.length() == 0 ? row[0] : (params.root_folder + "/" + row[1]))}
   .set{ch_sdrf_config}
 }
 
@@ -310,7 +310,7 @@ process raw_file_conversion {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, path(rawfile) from branched_input.raw.view()
+     tuple mzml_id, path(rawfile) from branched_input.raw
 
     output:
      set mzml_id, file("*.mzML") into mzmls_converted
@@ -430,7 +430,7 @@ process search_engine_msgf {
     errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings)).view()
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings))
      
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
@@ -474,7 +474,7 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings))
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
