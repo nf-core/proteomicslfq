@@ -29,16 +29,16 @@ def helpMessage() {
 
       And:
       --database                    Path to input protein database as fasta
-        
+
     Decoy database:
       --add_decoys                  Add decoys to the given fasta
       --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
-      --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)             
+      --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)
 
     Database Search:
       --search_engine               Which search engine: "comet" (default) or "msgf"
       --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
-      --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default: 
+      --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default:
                                          'fully' valid: 'semi', 'fully')
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
@@ -50,7 +50,7 @@ def helpMessage() {
       --allowed_missed_cleavages    Allowed missed cleavages
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
       --min_precursor_charge        Minimum precursor ion charge
-      --max_precursor_charge        Maximum precursor ion charge      
+      --max_precursor_charge        Maximum precursor ion charge
       --min_peptide_length          Minimum peptide length to consider
       --max_peptide_length          Maximum peptide length to consider
       --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
@@ -64,19 +64,19 @@ def helpMessage() {
     PSM Rescoring:
       --posterior_probabilities     How to calculate posterior probabilities for PSMs:
                                     "percolator" = Re-score based on PSM-feature-based SVM and transform distance
-                                        to hyperplane for posteriors 
+                                        to hyperplane for posteriors
                                     "fit_distributions" = Fit positive and negative distributions to scores
                                         (similar to PeptideProphet)
       --rescoring_debug             Debug level during PSM rescoring
       --psm_pep_fdr_cutoff          FDR cutoff on PSM level (or potential peptide level; see Percolator options) before going into
-                                    feature finding, map alignment and inference. 
+                                    feature finding, map alignment and inference.
 
       Percolator specific:
       --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
       --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
       --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
       --post-processing-tdc         Use target-decoy competition to assign q-values and PEPs.
-      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration) 
+      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
       --generic-feature-set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
                                     features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
       --subset-max-train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
@@ -90,7 +90,7 @@ def helpMessage() {
                                     - ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)
                                     - none: do nothing
       --top_hits_only               Use only the top hits for fitting
-      
+
       //TODO add more options for rescoring part
 
     Inference and Quantification:
@@ -110,7 +110,7 @@ def helpMessage() {
       --mass_recalibration          Recalibrates masses to correct for instrument biases. (default: false) TODO must specify true
                                     or false
 
-      //TODO the following need to be passed still                              
+      //TODO the following need to be passed still
       --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
                                     If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
                                     peptide will be reported.
@@ -215,10 +215,10 @@ else
       output:
        file "experimental_design.tsv" into ch_expdesign
        file "openms.tsv" into ch_sdrf_config_file
-      
+
       when:
         params.sdrf
-      
+
       script:
        """
        ## -t2 since the one-table format parser is broken in OpenMS2.5
@@ -290,7 +290,7 @@ branched_input.mzML
 
 
 //This piece only runs on data that is a.) raw and b.) needs conversion
-//mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-) 
+//mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-)
 
 
 //GENERAL TODOS
@@ -314,7 +314,7 @@ process raw_file_conversion {
 
     output:
      set mzml_id, file("*.mzML") into mzmls_converted
-    
+
     script:
      """
      ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
@@ -334,7 +334,7 @@ process mzml_indexing {
     output:
      set mzml_id, file("out/*.mzML") into mzmls_indexed
      file "*.log"
-    
+
     script:
      """
      mkdir out
@@ -350,7 +350,7 @@ branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).in
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
                     ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
-                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )   
+                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )
 
 //Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
@@ -387,7 +387,7 @@ process generate_decoy_database {
 //    output:
 //        file "expdesign.tsv" into expdesign
 //    when:
-//        !params.expdesign 
+//        !params.expdesign
 
 //    script:
 //     strng = new File(mymzmls[0].toString()).getParentFile()
@@ -427,7 +427,7 @@ process search_engine_msgf {
 
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings))
-     
+
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      //each file(mzml_file) from mzmls
@@ -520,10 +520,10 @@ process index_peptides {
 
     input:
      tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.idx_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
-     
+
      //each mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet)
      //file database from pepidx_in_db.mix(pepidx_in_db_decoy)
-     
+
     output:
      set mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP
      file "*.log"
@@ -545,10 +545,10 @@ process index_peptides {
 // Branch a) Q-values and PEP from Percolator
 
 
-process extract_perc_features {
+process extract_percolator_features {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      set mzml_id, file(id_file) from id_files_idx_ForPerc
 
@@ -564,7 +564,7 @@ process extract_perc_features {
      PSMFeatureExtractor -in ${id_file} \\
                          -out ${id_file.baseName}_feat.idXML \\
                          -threads ${task.cpus} \\
-                         > ${id_file.baseName}_extract_perc_features.log
+                         > ${id_file.baseName}_extract_percolator_features.log
      """
 }
 
@@ -574,7 +574,7 @@ process extract_perc_features {
 process percolator {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      set mzml_id, file(id_file) from id_files_idx_feat
 
@@ -635,7 +635,7 @@ process idfilter {
 process idscoreswitcher {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      file id_file from id_files_idx_feat_perc_filter
 
@@ -665,10 +665,10 @@ process idscoreswitcher {
 // Branch b) Q-values and PEP from OpenMS
 
 // Note: for IDPEP we never need any file specific settings so we can stop adding the mzml_idto the channels
-process fdr {
+process fdr_idpep {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      set mzml_id, file(id_file) from id_files_idx_ForIDPEP
 
@@ -691,10 +691,10 @@ process fdr {
      """
 }
 
-process idscoreswitcher1 {
+process idscoreswitcher_idpep_pre {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      file id_file from id_files_idx_ForIDPEP_fdr
 
@@ -721,7 +721,7 @@ process idscoreswitcher1 {
 process idpep {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      file id_file from id_files_idx_ForIDPEP_fdr_switch
 
@@ -741,10 +741,10 @@ process idpep {
      """
 }
 
-process idscoreswitcher2 {
+process idscoreswitcher_idpep_post {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep
 
@@ -767,7 +767,7 @@ process idscoreswitcher2 {
      """
 }
 
-process idfilter1 {
+process idfilter_idpep {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
@@ -781,7 +781,7 @@ process idfilter1 {
 
     when:
      params.posterior_probabilities != "percolator"
-      
+
     script:
      """
      IDFilter -in ${id_file} \\
@@ -792,10 +792,10 @@ process idfilter1 {
      """
 }
 
-process idscoreswitcher3 {
+process idscoreswitcher_idpep_postfilter {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
 
@@ -824,9 +824,9 @@ process idscoreswitcher3 {
 
 process proteomicslfq {
 
-    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log' 
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
-    
+
     input:
      file mzmls from mzmls_plfq.map{it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
      file id_files from id_files_idx_feat_perc_fdr_filter_switched
@@ -875,13 +875,13 @@ process msstats {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/msstats", mode: 'copy'
-    
+
     when:
      !params.skip_post_msstats
 
     input:
      file csv from out_msstats
-  
+
     output:
      file "*.pdf"
      file "*.csv"
@@ -899,10 +899,10 @@ process ptxqc {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ptxqc", mode: 'copy'
-    
+
     input:
      file mzTab from out_mzTab
-  
+
     output:
      file "*.html"
      file "*.yaml"
@@ -997,13 +997,13 @@ process get_software_versions {
     echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
     echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
     echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
-    percolator -h &> v_percolator.txt 
+    percolator -h &> v_percolator.txt
     echo \$(IDFilter 2>&1) > v_idfilter.txt || true
     echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
     echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
     echo \$(IDPosteriorErrorProbability 2>&1) > v_idposteriorerrorprobability.txt || true
     echo \$(ProteomicsLFQ 2>&1) > v_proteomicslfq.txt || true
-    echo $workflow.manifest.version &> v_msstats_plfq.txt 
+    echo $workflow.manifest.version &> v_msstats_plfq.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
