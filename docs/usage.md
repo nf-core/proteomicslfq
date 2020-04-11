@@ -8,9 +8,14 @@
   * [Updating the pipeline](#updating-the-pipeline)
   * [Reproducibility](#reproducibility)
 * [Main arguments](#main-arguments)
+  Either:
+  * [`--sdrf`](#--sdrf)
+  * [`--root_folder`](#--root_folder)
+  Or:
   * [`--spectra`](#--spectra)
-  * [`--database`](#--database)
   * [`--exp_design`](#--exp_design)
+  And:
+  * [`--database`](#--database)
   * [`-profile`](#-profile)
 * [Decoy database generation](#decoy-database-generation)
   * [`--add_decoys`](#--add_decoys)
