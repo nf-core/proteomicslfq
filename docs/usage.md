@@ -8,12 +8,15 @@
   * [Updating the pipeline](#updating-the-pipeline)
   * [Reproducibility](#reproducibility)
 * [Main arguments](#main-arguments)
+
   Either:
   * [`--sdrf`](#--sdrf)
   * [`--root_folder`](#--root_folder)
+
   Or:
   * [`--spectra`](#--spectra)
   * [`--exp_design`](#--exp_design)
+  
   And:
   * [`--database`](#--database)
   * [`-profile`](#-profile)
