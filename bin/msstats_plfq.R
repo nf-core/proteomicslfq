@@ -88,7 +88,9 @@ if (length(lvls) == 1)
   
   groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
                        width=12, height=12,dot.size = 2,ylimUp = 7)
-  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="VolcanoPlot",
+  
+  test.MSstats$Volcano = test.MSstats$ComparisonResult[!is.na(test.MSstats$ComparisonResult$pvalue),]
+  groupComparisonPlots(data=test.MSstats$Volcano, type="VolcanoPlot",
                        width=12, height=12,dot.size = 2,ylimUp = 7)
   
   if (nrow(constrast_mat) > 1)
