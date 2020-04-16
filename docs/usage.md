@@ -260,15 +260,18 @@ Precursor mass tolerance unit used for database search. Possible values are "ppm
 
 ### `--enzyme`
 
-Specify which enzymatic restriction should be applied, e.g. 'unspecific cleavage', 'Trypsin' (default), see OpenMS [enzymes](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/CHEMISTRY/Enzymes.xml). Note: MSGF does not support extended cutting rules,
-as used by default with "Trypsin". I.e. if you specify "Trypsin" with MSGF, it will be automatically converted to "Trypsin/P" = 
-"Trypsin without proline rule".
+Specify which enzymatic restriction should be applied, e.g. 'unspecific cleavage', 'Trypsin' (default), see OpenMS 
+[enzymes](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/CHEMISTRY/Enzymes.xml). Note: MSGF does not support extended
+cutting rules, as used by default with "Trypsin". I.e. if you specify "Trypsin" with MSGF, it will be automatically converted to
+"Trypsin/P" = "Trypsin without proline rule".
 
 ### `--num_enzyme_termini`
+
 Specify the number of termini matching the enzyme cutting rules for a peptide to be considered. Valid values are
 "fully" (default), "semi", or "none".
 
 ### `--num_hits`
+
 Specify the maximum number of top peptide candidates per spectrum to be reported by the search engine. Default: 1
 
 ### `--fixed_mods`
@@ -305,13 +308,9 @@ Currently unsupported. Defaults to "ALL" for Comet and "from_spectrum" for MSGF.
 
 Range of allowed isotope peak errors (MS-GF+ parameter '-ti'). Takes into account the error introduced by choosing a non-monoisotopic peak for fragmentation. Combined with 'precursor_mass_tolerance'/'precursor_error_units', this determines the actual precursor mass tolerance. E.g. for experimental mass 'exp' and calculated mass 'calc', '-precursor_mass_tolerance 20 -precursor_error_units ppm -isotope_error_range -1,2' tests '|exp - calc - n * 1.00335 Da| < 20 ppm' for n = -1, 0, 1, 2.
 
-### `--fragment_method`
-
-MSGFPlus: Fragmentation method ('from_spectrum' relies on spectrum meta data and uses CID as fallback option; MS-GF+ parameter '-m')
-
 ### `--min_precursor_charge`
 
-Minimum precursor ion charge 
+Minimum precursor ion charge
 
 ### `--max_precursor_charge`
 
@@ -334,15 +333,16 @@ Maximum number of modifications per peptide. If this value is large, the search 
 Set debug level for the search engines (regulates if intermediate output is kept and if you are going to see the output
 of the underlying search engine)
 
-## PSM Rescoring:
+## PSM Rescoring
 
 ### `--posterior_probabilities`
 
 How to calculate posterior probabilities for PSMs:
-  - "percolator" = Re-score based on PSM-feature-based SVM and transform distance
-      to hyperplane for posteriors
-  - "fit_distributions" = Fit positive and negative distributions to scores
-      (similar to PeptideProphet)
+
+* "percolator" = Re-score based on PSM-feature-based SVM and transform distance
+    to hyperplane for posteriors
+* "fit_distributions" = Fit positive and negative distributions to scores
+    (similar to PeptideProphet)
 
 ### `--rescoring_debug`
 
@@ -353,7 +353,7 @@ Debug level during PSM rescoring for additional text output and keeping temporar
 FDR cutoff on PSM level (or potential peptide level; see Percolator options)
 before going into feature finding, map alignment and inference.
 
-### Percolator specific:
+### Percolator specific
 
 ### `--train_FDR`
 
@@ -398,40 +398,42 @@ Default: 300,000
 
 Retention time features are calculated as in Klammer et al. instead of with Elude. Default: false
 
-### Distribution-fitting (IDPEP) specific:
+### Distribution-fitting (IDPEP) specific
 
 ### `--outlier_handling`
 
 How to handle outliers during fitting:
-  - ignore_iqr_outliers (default): ignore outliers outside of 3\*IQR from Q1/Q3 for fitting
-  - set_iqr_to_closest_valid: set IQR-based outliers to the last valid value for fitting
-  - ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)
-  - none: do nothing
+
+* ignore_iqr_outliers (default): ignore outliers outside of 3\*IQR from Q1/Q3 for fitting
+* set_iqr_to_closest_valid: set IQR-based outliers to the last valid value for fitting
+* ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)
+* none: do nothing
 
 ### `--top_hits_only`
 
 Use only the top peptide hits per spectrum for fitting. Default: true
 
-## Inference and Quantification:
+## Inference and Quantification
 
 ### `--inf_quant_debug`
 
 Debug level during inference and quantification. (WARNING: Higher than 666 may produce a lot of additional output files)
 
-### Inference:
+### Inference
 
 ### `--protein_inference`
 
 Infer proteins through:
-  - "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum) (default)
-  - "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
-  - ("percolator" not yet supported)
+
+* "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum) (default)
+* "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
+* ("percolator" not yet supported)
 
 ### `--protein_level_fdr_cutoff`
 
 Protein level FDR cutoff (Note: this affects and chooses the peptides used for quantification). Default: 0.05
 
-### Quantification:
+### Quantification
 
 ### `--transfer_ids`
 
@@ -454,11 +456,11 @@ peptide will be reported. (default: off = 1.0)
 ### `--protein_quantification`
 
 Quantify proteins based on:
-  - "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
-  - "strictly_unique_peptides" = use peptides mapping to a unique single protein only
-  - "shared_peptides" = use shared peptides, too, but only greedily for its best group (by inference score)
+* "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
+* "strictly_unique_peptides" = use peptides mapping to a unique single protein only
+* "shared_peptides" = use shared peptides, too, but only greedily for its best group (by inference score)
 
-## Statistical post-processing:
+## Statistical post-processing
 
 ### `--skip_post_msstats`
 
@@ -473,7 +475,7 @@ Instead of all pairwise contrasts (default), uses the given condition name/numbe
 Specify a set of contrasts in a semicolon seperated list of R-compatible contrasts with the
 condition names/numbers as variables (e.g. "1-2;1-3;2-3"). Overwrites "--reference" (TODO not yet fully implemented)
 
-## Quality control:
+## Quality control
 
 ### `--skip_qc`
 
@@ -483,9 +485,7 @@ Skip generation of quality control report by PTXQC? default: "true" since it is 
 
 Specify a yaml file for the report layout (see PTXQC documentation) (TODO not yet fully implemented)
 
-
 Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
-
 
 ## Job resources
 
