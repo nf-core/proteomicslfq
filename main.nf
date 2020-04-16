@@ -48,7 +48,6 @@ def helpMessage() {
       --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
       --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
       --allowed_missed_cleavages    Allowed missed cleavages
-      --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
       --min_precursor_charge        Minimum precursor ion charge
       --max_precursor_charge        Maximum precursor ion charge
       --min_peptide_length          Minimum peptide length to consider
@@ -451,6 +450,7 @@ process search_engine_msgf {
                      -threads ${task.cpus} \\
                      -database "${database}" \\
                      -instrument ${params.instrument} \\
+                     -protocol "${params.protocol}" \\
                      -matches_per_spec ${params.num_hits} \\
                      -min_precursor_charge ${params.min_precursor_charge} \\
                      -max_precursor_charge ${params.max_precursor_charge} \\
