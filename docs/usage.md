@@ -151,9 +151,9 @@ This version number will be logged in reports when you run the pipeline, so that
 
 The input to the pipeline can be specified in two mutually exclusive ways:
 
-============================
+-----
 
-*a)* Either by using a path or URI to a PRIDE Sample to data relation format file (SDRF), e.g. as part of a submitted and
+_a)_ Either by using a path or URI to a PRIDE Sample to data relation format file (SDRF), e.g. as part of a submitted and
 annotated PRIDE experiment (see here for examples). For this case, use:
 
 ### `--sdrf`
@@ -177,9 +177,9 @@ This optional parameter can be used to specify a root folder in which the spectr
 It is usually used if you have a local version of the experiment already. Note that this option does not support recursive
 searching yet.
 
-============================
+-----
 
-*b)* By specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style
+_b)_ By specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style
 experimental design file.
 
 ### `--spectra`
@@ -201,7 +201,7 @@ Please note the following requirements:
 1. The path must be enclosed in quotes
 2. The path must have at least one `*` wildcard character
 
-============================
+-----
 
 ### `--exp_design`
 
