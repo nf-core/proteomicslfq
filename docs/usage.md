@@ -250,7 +250,7 @@ The pipeline also dynamically loads configurations from [https://github.com/nf-c
 
 Precursor mass tolerance used for database search. For High-Resolution instruments a precursor mass tolerance value of 5 ppm is recommended (i.e. 5). See also [`--precursor_mass_tolerance_unit`](#--precursor_mass_tolerance_unit).
 
-### `--precursor_mass_tolerance`
+### `--precursor_mass_tolerance_unit`
 
 Precursor mass tolerance unit used for database search. Possible values are "ppm" (default) and "Da".
 
