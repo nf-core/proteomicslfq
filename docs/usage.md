@@ -153,7 +153,7 @@ The input to the pipeline can be specified in two mutually exclusive ways:
 
 -----
 
-_a)_ Either by using a path or URI to a PRIDE Sample to data relation format file (SDRF), e.g. as part of a submitted and
+__a)__ Either by using a path or URI to a PRIDE Sample to data relation format file (SDRF), e.g. as part of a submitted and
 annotated PRIDE experiment (see here for examples). For this case, use:
 
 ### `--sdrf`
@@ -179,7 +179,7 @@ searching yet.
 
 -----
 
-_b)_ By specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style
+__b)__ By specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style
 experimental design file.
 
 ### `--spectra`
