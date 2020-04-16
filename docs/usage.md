@@ -228,17 +228,21 @@ If `-profile` is not specified at all the pipeline will be run locally and expec
 
 * `docker`
   * A generic configuration profile to be used with [Docker](http://docker.com/)
-  * Pulls software from dockerhub: [`nfcore/proteomicslfq`](http://hub.docker.com/r/nfcore/proteomicslfq/)
+  * Pulls software from Docker Hub: [`nfcore/proteomicslfq`](http://hub.docker.com/r/nfcore/proteomicslfq/)
 * `singularity`
   * A generic configuration profile to be used with [Singularity](http://singularity.lbl.gov/)
-  * Pulls software from DockerHub: [`nfcore/proteomicslfq`](http://hub.docker.com/r/nfcore/proteomicslfq/)
+  * Pulls software from Docker Hub: [`nfcore/proteomicslfq`](http://hub.docker.com/r/nfcore/proteomicslfq/)
 * `conda`
   * Please only use Conda as a last resort i.e. when it's not possible to run the pipeline with Docker or Singularity.
   * A generic configuration profile to be used with [Conda](https://conda.io/docs/)
-  * Pulls most software from [Bioconda](https://bioconda.github.io/)
+  * Pulls most software from the [Bioconda](https://bioconda.github.io/) and [conda-forge](https://conda-forge.org/) channels.
 * `test`
   * A profile with a complete configuration for automated testing
   * Includes links to test data and therefore doesn't need additional parameters
+* `test_full`
+  * A profile with a complete configuration for automated testing on AWS
+  * Includes links to test data and therefore doesn't need additional parameters
+  * Downloads roughly 9GB of raw data from PRIDE and analyzes
 
 > We highly recommend the use of Docker or Singularity containers for full pipeline reproducibility, however when this is not possible, Conda is also supported.
 
