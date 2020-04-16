@@ -463,7 +463,7 @@ process search_engine_msgf {
                      -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                      -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                      -max_mods ${params.max_mods} \\
-                     -db_debug ${params.db_debug} \\
+                     -debug ${params.db_debug} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -510,7 +510,7 @@ process search_engine_comet {
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
                    -fragment_bin_tolerance ${frag_tol} \\
-                   -db_debug ${params.db_debug} \\
+                   -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
