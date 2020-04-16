@@ -248,12 +248,12 @@ If `-profile` is not specified at all the pipeline will be run locally and expec
 
 The pipeline also dynamically loads configurations from [https://github.com/nf-core/configs](https://github.com/nf-core/configs) when it runs, making multiple config profiles for various institutional clusters available at run time. For more information and to see if your system is available in these configs please see the [nf-core/configs documentation](https://github.com/nf-core/configs#documentation).
 
-
 ## Decoy database generation
 
 ### `--add_decoys`
 
-If decoys were not yet included in the input database, they can be appended by OpenMS DecoyGenerator (TODO allow specifying type).
+If decoys were not yet included in the input database, they have to be appended by OpenMS DecoyGenerator by adding this flag
+(TODO allow specifying type).
 Default: pseudo-reverse peptides
 
 ### `--decoy_affix`
@@ -262,7 +262,7 @@ Specify the string that was or will be added to the protein accession to label i
 
 ### `--affix_type`
 
-Is the decoy label a prefix or suffix. Prefix is highly recommended as some tools (e.g. Percolator might not work well with suffixes)
+Is the decoy label a prefix or suffix. Prefix is highly recommended as some tools (e.g. Percolator) might not work well with suffixes
 
 ## Database search
 
