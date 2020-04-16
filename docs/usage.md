@@ -151,53 +151,57 @@ This version number will be logged in reports when you run the pipeline, so that
 
 The input to the pipeline can be specified in two mutually exclusive ways:
 
-  1. By using a path or URI to a PRIDE Sample to data relation format file (SDRF), e.g. as part of a submitted and
-  annotated PRIDE experiment (see here for examples). For this case, use:
+============================
 
-  ### `--sdrf`
+*a)* Either by using a path or URI to a PRIDE Sample to data relation format file (SDRF), e.g. as part of a submitted and
+annotated PRIDE experiment (see here for examples). For this case, use:
 
-  For the URI or path to the SDRF file. Input files will be downloaded and cached from the URIs specified in the SDRF file.
-  An OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the
-  following parameters will currently be overwritten by the ones specified in the SDRF:
-   - `fixed_mods`,
-   - `variable_mods`,
-   - `precursor_mass_tolerance`,
-   - `precursor_mass_tolerance_unit`,
-   - `fragment_mass_tolerance`,
-   - `fragment_mass_tolerance_unit`,
-   - `fragment_method`,
-   - `enzyme`
+### `--sdrf`
 
+For the URI or path to the SDRF file. Input files will be downloaded and cached from the URIs specified in the SDRF file.
+An OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the
+following parameters will currently be overwritten by the ones specified in the SDRF:
 
-  ### `--root_folder`
+* `fixed_mods`,
+* `variable_mods`,
+* `precursor_mass_tolerance`,
+* `precursor_mass_tolerance_unit`,
+* `fragment_mass_tolerance`,
+* `fragment_mass_tolerance_unit`,
+* `fragment_method`,
+* `enzyme`
 
-  This optional parameter can be used to specify a root folder in which the spectrum files specified in the SDRF are searched.
-  It is usually used if you have a local version of the experiment already. Note that this option does not support recursive
-  searching yet.
+### `--root_folder`
 
-  2. By specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style
-  experimental design file.
+This optional parameter can be used to specify a root folder in which the spectrum files specified in the SDRF are searched.
+It is usually used if you have a local version of the experiment already. Note that this option does not support recursive
+searching yet.
 
-  ### `--spectra`
+============================
 
-  Use this to specify the location of your input mzML or Thermo RAW files:
+*b)* By specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style
+experimental design file.
 
-  ```bash
-  --spectra 'path/to/data/*.mzML'
-  ```
+### `--spectra`
 
-  or
+Use this to specify the location of your input mzML or Thermo RAW files:
 
-  ```bash
-  --spectra 'path/to/data/*.raw'
-  ```
+```bash
+--spectra 'path/to/data/*.mzML'
+```
 
-  Please note the following requirements:
+or
 
-  1. The path must be enclosed in quotes
-  2. The path must have at least one `*` wildcard character
+```bash
+--spectra 'path/to/data/*.raw'
+```
 
+Please note the following requirements:
 
+1. The path must be enclosed in quotes
+2. The path must have at least one `*` wildcard character
+
+============================
 
 ### `--exp_design`
 
