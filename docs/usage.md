@@ -260,7 +260,7 @@ Precursor mass tolerance unit used for database search. Possible values are "ppm
 
 ### `--enzyme`
 
-Specify which enzymatic restriction should be applied, e.g. 'unspecific cleavage', 'Trypsin' (default), see OpenMS 
+Specify which enzymatic restriction should be applied, e.g. 'unspecific cleavage', 'Trypsin' (default), see OpenMS
 [enzymes](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/CHEMISTRY/Enzymes.xml). Note: MSGF does not support extended
 cutting rules, as used by default with "Trypsin". I.e. if you specify "Trypsin" with MSGF, it will be automatically converted to
 "Trypsin/P" = "Trypsin without proline rule".
@@ -437,7 +437,7 @@ Protein level FDR cutoff (Note: this affects and chooses the peptides used for q
 
 ### `--transfer_ids`
 
-Transfer IDs over aligned samples to increase # of quantifiable features (WARNING: increased memory consumption). (default: "false") 
+Transfer IDs over aligned samples to increase # of quantifiable features (WARNING: increased memory consumption). (default: "false")
 
 ### `--targeted_only`
 
@@ -456,6 +456,7 @@ peptide will be reported. (default: off = 1.0)
 ### `--protein_quantification`
 
 Quantify proteins based on:
+
 * "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
 * "strictly_unique_peptides" = use peptides mapping to a unique single protein only
 * "shared_peptides" = use shared peptides, too, but only greedily for its best group (by inference score)
