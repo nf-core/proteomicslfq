@@ -42,7 +42,7 @@ def helpMessage() {
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
-      --phospho_rescoring           Phosphosite rescoring using the luciphor algorithm
+      --mod_localization            Specify the var. modifications whose localizations should be rescored with the luciphor algorithm
       --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
       --allowed_missed_cleavages    Allowed missed cleavages 
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
@@ -786,22 +786,33 @@ process luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
+     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.luciphor_settings))
      file id_file from id_files_idx_feat_perc_fdr_filter_switched.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
      file mzml_file_l from mzml_files_luciphor
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_feat_fdr_filter_switched_luciphor
+     file "${id_file.baseName}_luciphor.idXML" into id_files_idx_feat_fdr_filter_switched_luciphor
      file "*.log"
 
     when:
-     params.phospho_rescoring
+     params.enable_mod_localization
 
     script:
      """
      LuciphorAdapter    -id ${id_file} \\
                         -in ${mzml_file_l} \\
-                        -out ${id_file.baseName}_switched.idXML \\
+                        -out ${id_file.baseName}_luciphor.idXML \\
                         -threads ${task.cpus} \\
+                        -num_threads ${task.cpus} \\
+                        -target_modifications ${params.mod_localization.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                        -fragment_method ${params.fragment_method} \\
+                        -fragment_mass_tolerance ${} \\
+                        -fragment_error_units ${} \\
+                        -neutral_losses "${params.luciphor_neutral_losses}" \\
+                        -decoy_mass "${params.luciphor_decoy_mass}" \\
+                        -decoy_neutral_losses "${params.luciphor_decoy_neutral_losses}" \\
+                        -max_charge_state ${params.max_precursor_charge} \\
+                        -max_peptide_length ${params.max_peptide_length} \\
                         > ${id_file.baseName}_scoreswitcher.log
      """
 }
