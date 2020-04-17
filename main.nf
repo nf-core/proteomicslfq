@@ -43,17 +43,13 @@ def helpMessage() {
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
-<<<<<<< HEAD
+      --enable_mod_localization     Enable localization scoring with Luciphor
       --mod_localization            Specify the var. modifications whose localizations should be rescored with the luciphor algorithm
-      --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
-      --allowed_missed_cleavages    Allowed missed cleavages 
-=======
       --precursor_mass_tolerance    Mass tolerance of precursor mass
       --precursor_mass_tolerance_unit Da or ppm
       --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
       --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
       --allowed_missed_cleavages    Allowed missed cleavages
->>>>>>> dev
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
       --min_precursor_charge        Minimum precursor ion charge
       --max_precursor_charge        Maximum precursor ion charge
@@ -202,6 +198,9 @@ if (!params.sdrf)
                                     params.enzyme)
                     idx_settings: tuple(id,
                                     params.enzyme)
+                    luciphor_settings: 
+                                  tuple(id,
+                                    params.fragment_method)
                     mzmls: tuple(id,it)}
   .set{ch_sdrf_config}
 }
@@ -249,6 +248,9 @@ else
                                     row[10])
                     idx_settings: tuple(id,
                                     row[10])
+                    luciphor_settings: 
+                                  tuple(id,
+                                    row[9])
                     mzmls: tuple(id, params.root_folder.length() == 0 ? row[0] : (params.root_folder + "/" + row[1]))}
   .set{ch_sdrf_config}
 }
@@ -830,7 +832,7 @@ process luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(mzml_file), file(id_file), diss_meth from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
+     tuple mzml_id, file(mzml_file), file(id_file), frag_meth from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
 
     output:
      set mzml_id, file("${id_file.baseName}_luciphor.idXML") into id_files_luciphor
@@ -849,9 +851,7 @@ process luciphor {
                         -threads ${task.cpus} \\
                         -num_threads ${task.cpus} \\
                         -target_modifications ${params.mod_localization.tokenize(',').collect { "'${it}'" }.join(" ") } \\
-                        -fragment_method ${params.fragment_method} \\
-                        -fragment_mass_tolerance ${} \\
-                        -fragment_error_units ${} \\
+                        -fragment_method ${frag_method} \\
                         -neutral_losses "${params.luciphor_neutral_losses}" \\
                         -decoy_mass "${params.luciphor_decoy_mass}" \\
                         -decoy_neutral_losses "${params.luciphor_decoy_neutral_losses}" \\
@@ -859,6 +859,8 @@ process luciphor {
                         -max_peptide_length ${params.max_peptide_length} \\
                         > ${id_file.baseName}_scoreswitcher.log
      """
+                     //        -fragment_mass_tolerance ${} \\
+                     //   -fragment_error_units ${} \\
 }
 
 // ---------------------------------------------------------------------
@@ -868,16 +870,14 @@ process luciphor {
 // ID files can come directly from the Percolator branch, IDPEP branch or
 // after optional processing with Luciphor
 mzmls_plfq
-  .join(id_files_idx_feat_fdr_filter_switched_luciphor
+  .join(id_files_luciphor
         .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq)
         .mix(id_files_idx_feat_perc_fdr_filter_switched_plfq))
-  .multiMap
-  {
-    it ->
+  .multiMap{ it ->
       mzmls: it[1]
       ids: it[2]
   }
-  .set(ch_plfq)
+  .set{ch_plfq}
 
 process proteomicslfq {
 
@@ -887,7 +887,7 @@ process proteomicslfq {
     ///.toSortedList({ a, b -> b.baseName <=> a.baseName })
     input:
      file(mzmls) from ch_plfq.mzmls.collect().view()
-     file(mzmls) from ch_plfq.ids.collect().view()
+     file(id_files) from ch_plfq.ids.collect().view()
      file expdes from ch_expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
