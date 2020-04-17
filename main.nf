@@ -22,37 +22,46 @@ def helpMessage() {
     Main arguments:
       Either:
       --sdrf                        Path to PRIDE Sample to data relation format file
+      --root_folder                 (Optional) If given, looks for the filenames in the SDRF in this folder, locally
       Or:
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --expdesign                   Path to optional experimental design file (if not given, it assumes unfractionated, unrelated samples)
 
       And:
       --database                    Path to input protein database as fasta
-        
+
     Decoy database:
       --add_decoys                  Add decoys to the given fasta
       --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
-      --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)             
+      --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)
 
     Database Search:
       --search_engine               Which search engine: "comet" (default) or "msgf"
       --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
-      --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default: 
-                                         'fully' valid: 'semi', 'fully', 'C-term unspecific', 'N-term unspecific')
+      --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default:
+                                         'fully' valid: 'semi', 'fully')
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
+<<<<<<< HEAD
       --mod_localization            Specify the var. modifications whose localizations should be rescored with the luciphor algorithm
       --precursor_mass_tolerance    Mass tolerance of precursor mass (ppm)
       --allowed_missed_cleavages    Allowed missed cleavages 
+=======
+      --precursor_mass_tolerance    Mass tolerance of precursor mass
+      --precursor_mass_tolerance_unit Da or ppm
+      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
+      --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
+      --allowed_missed_cleavages    Allowed missed cleavages
+>>>>>>> dev
       --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
       --min_precursor_charge        Minimum precursor ion charge
-      --max_precursor_charge        Maximum precursor ion charge      
+      --max_precursor_charge        Maximum precursor ion charge
       --min_peptide_length          Minimum peptide length to consider
       --max_peptide_length          Maximum peptide length to consider
-      --instrument                  Type of instrument that generated the data
+      --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
       --protocol                    Used labeling or enrichment protocol (if any)
-      --fragment_method             Used fragmentation method
+      --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let                                     them determine from the spectrum metadata)
       --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
       --db_debug                    Debug level during database search
 
@@ -61,19 +70,19 @@ def helpMessage() {
     PSM Rescoring:
       --posterior_probabilities     How to calculate posterior probabilities for PSMs:
                                     "percolator" = Re-score based on PSM-feature-based SVM and transform distance
-                                        to hyperplane for posteriors 
+                                        to hyperplane for posteriors
                                     "fit_distributions" = Fit positive and negative distributions to scores
                                         (similar to PeptideProphet)
       --rescoring_debug             Debug level during PSM rescoring
       --psm_pep_fdr_cutoff          FDR cutoff on PSM level (or potential peptide level; see Percolator options) before going into
-                                    feature finding, map alignment and inference. 
+                                    feature finding, map alignment and inference.
 
       Percolator specific:
       --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
       --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
       --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
       --post-processing-tdc         Use target-decoy competition to assign q-values and PEPs.
-      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration) 
+      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
       --generic-feature-set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
                                     features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
       --subset-max-train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
@@ -87,7 +96,7 @@ def helpMessage() {
                                     - ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)
                                     - none: do nothing
       --top_hits_only               Use only the top hits for fitting
-      
+
       //TODO add more options for rescoring part
 
     Inference and Quantification:
@@ -107,7 +116,7 @@ def helpMessage() {
       --mass_recalibration          Recalibrates masses to correct for instrument biases. (default: false) TODO must specify true
                                     or false
 
-      //TODO the following need to be passed still                              
+      //TODO the following need to be passed still
       --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
                                     If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
                                     peptide will be reported.
@@ -186,9 +195,10 @@ if (!params.sdrf)
                                     params.variable_mods,
                                     "", //labelling modifications currently not supported
                                     params.precursor_mass_tolerance,
-                                    params.precursor_error_units,
+                                    params.precursor_mass_tolerance_unit,
                                     params.fragment_mass_tolerance,
-                                    params.dissociation_method,
+                                    params.fragment_mass_tolerance_unit,
+                                    params.fragment_method,
                                     params.enzyme)
                     idx_settings: tuple(id,
                                     params.enzyme)
@@ -211,32 +221,35 @@ else
       output:
        file "experimental_design.tsv" into ch_expdesign
        file "openms.tsv" into ch_sdrf_config_file
-      
+
       when:
         params.sdrf
-      
+
       script:
        """
-       parse_sdrf.py ${sdrf} > sdrf_parsing.log
+       ## -t2 since the one-table format parser is broken in OpenMS2.5
+       ## -l for legacy behavior to always add sample columns
+       parse_sdrf.py convert-openms -t2 -l -s ${sdrf} > sdrf_parsing.log
        """
   }
 
-  //TODO use header and ref by col name
+  //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
-  .splitCsv(skip: 1)
+  .splitCsv(skip: 1, sep: '\t')
   .multiMap{ row -> id = UUID.randomUUID().toString()
                     comet_settings: msgf_settings: tuple(id,
-                                    row[1],
                                     row[2],
                                     row[3],
                                     row[4],
                                     row[5],
                                     row[6],
                                     row[7],
-                                    row[8])
+                                    row[8],
+                                    row[9],
+                                    row[10])
                     idx_settings: tuple(id,
-                                    row[8])
-                    mzmls: tuple(id,row[0])}
+                                    row[10])
+                    mzmls: tuple(id, params.root_folder.length() == 0 ? row[0] : (params.root_folder + "/" + row[1]))}
   .set{ch_sdrf_config}
 }
 
@@ -283,7 +296,7 @@ branched_input.mzML
 
 
 //This piece only runs on data that is a.) raw and b.) needs conversion
-//mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-) 
+//mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-)
 
 
 //GENERAL TODOS
@@ -303,15 +316,11 @@ process raw_file_conversion {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(rawfile) from branched_input.raw
+     tuple mzml_id, path(rawfile) from branched_input.raw
 
     output:
      set mzml_id, file("*.mzML") into mzmls_converted
-    
-    
-    // TODO check if this sh script is available with bioconda
-    // else check if the exe is accessible/in PATH on bioconda and use sth like this
-    // mono ThermoRawfileParser.exe -i=${rawfile} -f=2 -o=./
+
     script:
      """
      ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
@@ -326,12 +335,12 @@ process mzml_indexing {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
+     set mzml_id, path(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
 
     output:
      set mzml_id, file("out/*.mzML") into mzmls_indexed
      file "*.log"
-    
+
     script:
      """
      mkdir out
@@ -341,13 +350,13 @@ process mzml_indexing {
 
 //Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
 
-branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
+branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_luciphor; mzmls_plfq}
 
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
                     ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
-                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )   
+                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )
 
 //Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
@@ -384,7 +393,7 @@ process generate_decoy_database {
 //    output:
 //        file "expdesign.tsv" into expdesign
 //    when:
-//        !params.expdesign 
+//        !params.expdesign
 
 //    script:
 //     strng = new File(mymzmls[0].toString()).getParentFile()
@@ -393,17 +402,24 @@ process generate_decoy_database {
 //     """
 //}
 
+if (params.enzyme == "unspecific cleavage")
+{
+  params.num_enzyme_termini == "none"
+}
+
+pepidx_num_enzyme_termini = params.num_enzyme_termini
+if (params.num_enzyme_termini == "fully")
+{
+  pepidx_num_enzyme_termini = "full"
+}
+
 /// Search engine
-// TODO parameterize more
 if (params.search_engine == "msgf")
 {
     search_engine_score = "SpecEValue"
-} else {
+} else { //comet
     search_engine_score = "expect"
 }
-
-
- //Filename        FixedModifications      VariableModifications   Label   PrecursorMassTolerance  PrecursorMassToleranceUnit      FragmentMassTolerance   DissociationMethod      Enzyme
 
 process search_engine_msgf {
 
@@ -416,8 +432,8 @@ process search_engine_msgf {
     errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings)).view()
-     
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings))
+
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      //each file(mzml_file) from mzmls
@@ -429,15 +445,30 @@ process search_engine_msgf {
      file "*.log"
 
     script:
+      if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+      else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+      else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+      else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+      else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+
      """
      MSGFPlusAdapter -in ${mzml_file} \\
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
-                     -database ${database} \\
+                     -database "${database}" \\
+                     -instrument ${params.instrument} \\
                      -matches_per_spec ${params.num_hits} \\
-                     -variable_modifications ${params.variable_mods.tokenize(',').collect { "'${it}'" }.join(" ") } \\
-                     -fixed_modifications ${params.fixed_mods.tokenize(',').collect { "'${it}'"}.join(" ")} \\
-                     -enzyme ${params.enzyme} \\
+                     -min_precursor_charge ${params.min_precursor_charge} \\
+                     -max_precursor_charge ${params.max_precursor_charge} \\
+                     -min_peptide_length ${params.min_peptide_length} \\
+                     -max_peptide_length ${params.max_peptide_length} \\
+                     -enzyme "${enzyme}" \\
+                     -tryptic ${params.num_enzyme_termini} \\
+                     -precursor_mass_tolerance ${prec_tol} \\
+                     -precursor_error_units ${prec_tol_unit} \\
+                     -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                     -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                     -max_mods ${params.max_mods} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -452,7 +483,7 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings)).view()
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings))
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
@@ -465,16 +496,25 @@ process search_engine_comet {
      set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_comet
      file "*.log"
 
+    //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
     script:
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
-                   -database ${database} \\
+                   -database "${database}" \\
+                   -instrument ${params.instrument} \\
+                   -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
-                   -variable_modifications ${params.variable_mods.tokenize(',').collect { "'${it}'" }.join(" ") } \\
-                   -fixed_modifications ${params.fixed_mods.tokenize(',').collect { "'${it}'"}.join(" ")} \\
-                   -enzyme ${params.enzyme} \\
+                   -num_enzyme_termini ${params.num_enzyme_termini} \\
+                   -enzyme "${enzyme}" \\
+                   -precursor_charge ${params.min_precursor_charge}:${params.max_precursor_charge} \\
+                   -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                   -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                   -max_variable_mods_in_peptide ${params.max_mods} \\
+                   -precursor_mass_tolerance ${prec_tol} \\
+                   -precursor_error_units ${prec_tol_unit} \\
+                   -fragment_bin_tolerance ${frag_tol} \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
@@ -486,10 +526,10 @@ process index_peptides {
 
     input:
      tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.idx_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
-     
+
      //each mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet)
      //file database from pepidx_in_db.mix(pepidx_in_db_decoy)
-     
+
     output:
      set mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP
      file "*.log"
@@ -500,7 +540,8 @@ process index_peptides {
                     -out ${id_file.baseName}_idx.idXML \\
                     -threads ${task.cpus} \\
                     -fasta ${database} \\
-                    -enzyme:name ${enzyme} \\
+                    -enzyme:name "${enzyme}" \\
+                    -enzyme:specificity ${pepidx_num_enzyme_termini}
                     > ${id_file.baseName}_index_peptides.log
      """
 }
@@ -510,10 +551,10 @@ process index_peptides {
 // Branch a) Q-values and PEP from Percolator
 
 
-process extract_perc_features {
+process extract_percolator_features {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      set mzml_id, file(id_file) from id_files_idx_ForPerc
 
@@ -529,7 +570,7 @@ process extract_perc_features {
      PSMFeatureExtractor -in ${id_file} \\
                          -out ${id_file.baseName}_feat.idXML \\
                          -threads ${task.cpus} \\
-                         > ${id_file.baseName}_extract_perc_features.log
+                         > ${id_file.baseName}_extract_percolator_features.log
      """
 }
 
@@ -539,12 +580,12 @@ process extract_perc_features {
 process percolator {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      set mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     file "${id_file.baseName}_perc.idXML" into id_files_idx_feat_perc
+     set mzml_id, file("${id_file.baseName}_perc.idXML") into id_files_idx_feat_perc
      file "*.log"
 
     when:
@@ -561,7 +602,10 @@ process percolator {
         def pptdc = params.post_processing_tdc ? "" : "-post-processing-tdc"
 
         """
-        PercolatorAdapter  -in ${id_file} \\
+        ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
+        ## to honor threads on clusters
+        OMP_NUMBER_THREADS=${task.cpus} PercolatorAdapter \\
+                            -in ${id_file} \\
                             -out ${id_file.baseName}_perc.idXML \\
                             -threads ${task.cpus} \\
                             ${pptdc} \\
@@ -578,10 +622,10 @@ process idfilter {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     file id_file from id_files_idx_feat_perc
+     set mzml_id, file(id_file) from id_files_idx_feat_perc
 
     output:
-     file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_filter
+     set mzml_id, file("${id_file.baseName}_filter.idXML") into id_files_idx_feat_perc_filter
      file "*.log"
 
     when:
@@ -600,12 +644,12 @@ process idfilter {
 process idscoreswitcher {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
-     file id_file from id_files_idx_feat_perc_filter
+     set mzml_id, file(id_file) from id_files_idx_feat_perc_filter
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_feat_perc_fdr_filter_switched
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_feat_perc_fdr_filter_switched_luciphor, id_files_idx_feat_perc_fdr_filter_switched_plfq
      file "*.log"
 
     when:
@@ -628,15 +672,15 @@ process idscoreswitcher {
 // Branch b) Q-values and PEP from OpenMS
 
 // Note: for IDPEP we never need any file specific settings so we can stop adding the mzml_idto the channels
-process fdr {
+process fdr_idpep {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
      set mzml_id, file(id_file) from id_files_idx_ForIDPEP
 
     output:
-     file "${id_file.baseName}_fdr.idXML" into id_files_idx_ForIDPEP_fdr
+     set mzml_id, file("${id_file.baseName}_fdr.idXML") into id_files_idx_ForIDPEP_fdr
      file "*.log"
 
     when:
@@ -654,15 +698,15 @@ process fdr {
      """
 }
 
-process idscoreswitcher1 {
+process idscoreswitcher_idpep_pre {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch
      file "*.log"
 
     when:
@@ -684,12 +728,12 @@ process idscoreswitcher1 {
 process idpep {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch
 
     output:
-     file "${id_file.baseName}_idpep.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep
+     set mzml_id, file("${id_file.baseName}_idpep.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep
      file "*.log"
 
     when:
@@ -704,15 +748,15 @@ process idpep {
      """
 }
 
-process idscoreswitcher2 {
+process idscoreswitcher_idpep_post {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch
      file "*.log"
 
     when:
@@ -730,40 +774,40 @@ process idscoreswitcher2 {
      """
 }
 
-process idfilter1 {
+process idfilter_idpep {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep_switch
 
     output:
-     file "${id_file.baseName}_filter.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+     set mzml_id, file("${id_file.baseName}_filter.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
      file "*.log"
 
     when:
      params.posterior_probabilities != "percolator"
-      
+
     script:
      """
      IDFilter -in ${id_file} \\
-                        -out ${id_file.baseName}_filter.idXML \\
-                        -threads ${task.cpus} \\
-                        -score:pep ${params.psm_pep_fdr_cutoff} \\
-                        > ${id_file.baseName}_idfilter1.log
+              -out ${id_file.baseName}_filter.idXML \\
+              -threads ${task.cpus} \\
+              -score:pep ${params.psm_pep_fdr_cutoff} \\
+              > ${id_file.baseName}_idfilter1.log
      """
 }
 
-process idscoreswitcher3 {
+process idscoreswitcher_idpep_postfilter {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
- 
+
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq, id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor
      file "*.log"
 
     when:
@@ -786,21 +830,21 @@ process luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple file(database), mzml_id, file(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.luciphor_settings))
-     file id_file from id_files_idx_feat_perc_fdr_filter_switched.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
-     file mzml_file_l from mzml_files_luciphor
+     tuple mzml_id, file(mzml_file), file(id_file), diss_meth from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
 
     output:
-     file "${id_file.baseName}_luciphor.idXML" into id_files_idx_feat_fdr_filter_switched_luciphor
+     set mzml_id, file("${id_file.baseName}_luciphor.idXML") into id_files_luciphor
      file "*.log"
 
     when:
      params.enable_mod_localization
 
     script:
+     id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq = Channel.empty()
+     id_files_idx_feat_perc_fdr_filter_switched_plfq = Channel.empty()
      """
      LuciphorAdapter    -id ${id_file} \\
-                        -in ${mzml_file_l} \\
+                        -in ${mzml_file} \\
                         -out ${id_file.baseName}_luciphor.idXML \\
                         -threads ${task.cpus} \\
                         -num_threads ${task.cpus} \\
@@ -820,15 +864,30 @@ process luciphor {
 // ---------------------------------------------------------------------
 // Main Branch
 
+// Join mzmls and ids by UID specified per mzml file in the beginning.
+// ID files can come directly from the Percolator branch, IDPEP branch or
+// after optional processing with Luciphor
+mzmls_plfq
+  .join(id_files_idx_feat_fdr_filter_switched_luciphor
+        .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq)
+        .mix(id_files_idx_feat_perc_fdr_filter_switched_plfq))
+  .multiMap
+  {
+    it ->
+      mzmls: it[1]
+      ids: it[2]
+  }
+  .set(ch_plfq)
+
 process proteomicslfq {
 
-    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log' 
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
-    
+
+    ///.toSortedList({ a, b -> b.baseName <=> a.baseName })
     input:
-     file mzmls from mzmls_plfq.map{it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
-     file id_files_idx_feat_fdr_filter_switched_luciphor 
-         .toSortedList({ a, b -> b.baseName <=> a.baseName })
+     file(mzmls) from ch_plfq.mzmls.collect().view()
+     file(mzmls) from ch_plfq.ids.collect().view()
      file expdes from ch_expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
@@ -872,13 +931,13 @@ process msstats {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/msstats", mode: 'copy'
-    
+
     when:
      !params.skip_post_msstats
 
     input:
      file csv from out_msstats
-  
+
     output:
      file "*.pdf"
      file "*.csv"
@@ -896,10 +955,10 @@ process ptxqc {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ptxqc", mode: 'copy'
-    
+
     input:
      file mzTab from out_mzTab
-  
+
     output:
      file "*.html"
      file "*.yaml"
@@ -912,7 +971,7 @@ process ptxqc {
      ptxqc.R ${mzTab} > ptxqc.log
      """
 }
-
+  
 
 
 //--------------------------------------------------------------- //
@@ -994,13 +1053,13 @@ process get_software_versions {
     echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
     echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
     echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
-    percolator -h &> v_percolator.txt 
+    percolator -h &> v_percolator.txt
     echo \$(IDFilter 2>&1) > v_idfilter.txt || true
     echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
     echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
     echo \$(IDPosteriorErrorProbability 2>&1) > v_idposteriorerrorprobability.txt || true
     echo \$(ProteomicsLFQ 2>&1) > v_proteomicslfq.txt || true
-    echo $workflow.manifest.version &> v_msstats_plfq.txt 
+    echo $workflow.manifest.version &> v_msstats_plfq.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
