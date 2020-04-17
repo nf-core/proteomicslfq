@@ -370,8 +370,8 @@ process generate_decoy_database {
      """
      DecoyDatabase  -in ${mydatabase} \\
                  -out ${mydatabase.baseName}_decoy.fasta \\
-                 -decoy_string DECOY_ \\
-                 -decoy_string_position prefix \\
+                 -decoy_string ${params.decoy_affix} \\
+                 -decoy_string_position ${params.affix_type} \\
                  > ${mydatabase.baseName}_decoy_database.log
      """
 }
@@ -901,6 +901,9 @@ process ptxqc {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ptxqc", mode: 'copy'
+
+    when:
+     params.enable_qc
 
     input:
      file mzTab from out_mzTab
