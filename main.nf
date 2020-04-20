@@ -48,7 +48,6 @@ def helpMessage() {
       --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
       --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
       --allowed_missed_cleavages    Allowed missed cleavages
-      --psm_level_fdr_cutoff        Identification PSM-level FDR cutoff
       --min_precursor_charge        Minimum precursor ion charge
       --max_precursor_charge        Maximum precursor ion charge
       --min_peptide_length          Minimum peptide length to consider
@@ -75,7 +74,6 @@ def helpMessage() {
       --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
       --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
       --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
-      --post-processing-tdc         Use target-decoy competition to assign q-values and PEPs.
       --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
       --generic-feature-set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
                                     features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
@@ -371,8 +369,8 @@ process generate_decoy_database {
      """
      DecoyDatabase  -in ${mydatabase} \\
                  -out ${mydatabase.baseName}_decoy.fasta \\
-                 -decoy_string DECOY_ \\
-                 -decoy_string_position prefix \\
+                 -decoy_string ${params.decoy_affix} \\
+                 -decoy_string_position ${params.affix_type} \\
                  > ${mydatabase.baseName}_decoy_database.log
      """
 }
@@ -451,6 +449,7 @@ process search_engine_msgf {
                      -threads ${task.cpus} \\
                      -database "${database}" \\
                      -instrument ${params.instrument} \\
+                     -protocol "${params.protocol}" \\
                      -matches_per_spec ${params.num_hits} \\
                      -min_precursor_charge ${params.min_precursor_charge} \\
                      -max_precursor_charge ${params.max_precursor_charge} \\
@@ -463,6 +462,7 @@ process search_engine_msgf {
                      -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                      -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                      -max_mods ${params.max_mods} \\
+                     -debug ${params.db_debug} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
@@ -509,6 +509,7 @@ process search_engine_comet {
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
                    -fragment_bin_tolerance ${frag_tol} \\
+                   -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
      """
 }
@@ -593,8 +594,7 @@ process percolator {
             log.warn('Klammer will be implicitly off!')
         }
 
-        def pptdc = params.post_processing_tdc ? "" : "-post-processing-tdc"
-
+        // currently post-processing-tdc is always set since we do not support separate TD databases
         """
         ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
         ## to honor threads on clusters
@@ -602,11 +602,10 @@ process percolator {
                             -in ${id_file} \\
                             -out ${id_file.baseName}_perc.idXML \\
                             -threads ${task.cpus} \\
-                            ${pptdc} \\
                             -subset-max-train ${params.subset_max_train} \\
                             -decoy-pattern ${params.decoy_affix} \\
+                            -post-processing-tdc \\
                             > ${id_file.baseName}_percolator.log
-
         """
 }
 
@@ -902,6 +901,9 @@ process ptxqc {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ptxqc", mode: 'copy'
+
+    when:
+     params.enable_qc
 
     input:
      file mzTab from out_mzTab
