@@ -74,7 +74,6 @@ def helpMessage() {
       --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
       --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
       --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
-      --post-processing-tdc         Use target-decoy competition to assign q-values and PEPs.
       --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
       --generic-feature-set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
                                     features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
@@ -595,17 +594,15 @@ process percolator {
             log.warn('Klammer will be implicitly off!')
         }
 
-        def pptdc = params.post_processing_tdc ? "" : "-post-processing-tdc"
-
+        // currently post-processing-tdc is always set since we do not support separate TD databases
         """
         PercolatorAdapter  -in ${id_file} \\
                             -out ${id_file.baseName}_perc.idXML \\
                             -threads ${task.cpus} \\
-                            ${pptdc} \\
                             -subset-max-train ${params.subset_max_train} \\
                             -decoy-pattern ${params.decoy_affix} \\
+                            -post-processing-tdc \\
                             > ${id_file.baseName}_percolator.log
-
         """
 }
 

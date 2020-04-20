@@ -55,7 +55,6 @@
     * [`--train_FDR`](#--train_FDR)
     * [`--test_FDR`](#--test_FDR)
     * [`--percolator_fdr_level`](#--percolator_fdr_level)
-    * [`--post-processing-tdc`](#--post-processing-tdc)
     * [`--description_correct_features`](#--description_correct_features)
     * [`--generic-feature-set`](#--feature)
     * [`--subset-max-train`](#--subset-max-train)
@@ -371,6 +370,15 @@ before going into feature finding, map alignment and inference.
 
 ### Percolator specific
 
+In the following you can find help for the Percolator specific options that are only used if [`--posterior_probabilities`](#--posterior_probabilities) was set to "percolator".
+Note that there are currently some restrictions to the original options of Percolator:
+
+* no Percolator protein FDR possible (currently OpenMS' FDR is used on protein level)
+* no support for separate target and decoy databases (i.e. no min-max q-value calculation or target-decoy competition strategy)
+* no support for combined or experiment-wide peptide re-scoring. Currently search results per input file are submitted to Percolator independently.
+
+With time, some of the limitations might be removed. Pull requests are always welcome.
+
 ### `--train_FDR`
 
 False discovery rate threshold to define positive examples in training. Set to testFDR if 0
@@ -382,10 +390,6 @@ False discovery rate threshold for evaluating best cross validation result and r
 ### `--percolator_fdr_level`
 
 Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
-
-### `--post-processing-tdc`
-
-Use target-decoy competition to assign q-values and PEPs.
 
 ### `--description_correct_features`
 
@@ -415,6 +419,9 @@ Default: 300,000
 Retention time features are calculated as in Klammer et al. instead of with Elude. Default: false
 
 ### Distribution-fitting (IDPEP) specific
+
+Use this instead of Percolator if there are problems with Percolator (e.g. due to bad separation) or for performance
+reasons.
 
 ### `--outlier_handling`
 
