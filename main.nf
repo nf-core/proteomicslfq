@@ -831,7 +831,7 @@ process luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(mzml_file), file(id_file), frag_meth from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
+     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
 
     output:
      set mzml_id, file("${id_file.baseName}_luciphor.idXML") into id_files_luciphor
@@ -843,6 +843,9 @@ process luciphor {
     script:
      id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq = Channel.empty()
      id_files_idx_feat_perc_fdr_filter_switched_plfq = Channel.empty()
+     def losses = params.luciphor_neutral_losses ? '-neutral_losses "${params.luciphor_neutral_losses}"' : ''
+     def dec_mass = params.luciphor_decoy_mass ? '-decoy_mass "${params.luciphor_decoy_mass}"' : ''
+     def dec_losses = params.luciphor_decoy_neutral_losses ? '-decoy_neutral_losses "${params.luciphor_decoy_neutral_losses}' : ''
      """
      LuciphorAdapter    -id ${id_file} \\
                         -in ${mzml_file} \\
@@ -851,9 +854,9 @@ process luciphor {
                         -num_threads ${task.cpus} \\
                         -target_modifications ${params.mod_localization.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                         -fragment_method ${frag_method} \\
-                        -neutral_losses "${params.luciphor_neutral_losses}" \\
-                        -decoy_mass "${params.luciphor_decoy_mass}" \\
-                        -decoy_neutral_losses "${params.luciphor_decoy_neutral_losses}" \\
+                        ${losses} \\
+                        ${dec_mass} \\
+                        ${dec_losses} \\
                         -max_charge_state ${params.max_precursor_charge} \\
                         -max_peptide_length ${params.max_peptide_length} \\
                         > ${id_file.baseName}_scoreswitcher.log
