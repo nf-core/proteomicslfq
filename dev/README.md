@@ -5,7 +5,7 @@ Depends on the DockerHub builds of [openms/executables](https://hub.docker.com/r
 Build with:
 
 ```bash
-docker build -t proteomicslfq-dev . 
+docker build -t proteomicslfq-dev .
 ```
 
 Then use the dev profile to use this container.
