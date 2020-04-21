@@ -99,6 +99,58 @@ if (length(lvls) == 1)
                          width=12, height=12,dot.size = 2,ylimUp = 7)
   }
   
+  # annotate how often the protein was quantified in each condition (NA values introduced by merge of completely missing are set to 1.0)
+  ############ also calculate missingness on condition level
+
+# input: ProcessedData matrix of MSstats
+# output: 
+#   calculate fraction of na in condition (per protein)
+# Groups:   PROTEIN [762]
+#   PROTEIN                 `1`   `2`
+#   <fct>                 <dbl> <dbl>
+# 1 sp|A1ANS1|HTPG_PELPD   0    0.5  
+# 2 sp|A2I7N3|SPA37_BOVIN  0    0.5  
+# 3 sp|A2VDF0|FUCM_HUMAN   0    0.5  
+# 4 sp|A6ND91|ASPD_HUMAN   0.5  0.5  
+# 5 sp|A7E3W2|LG3BP_BOVIN  0.5  0.5  
+# 6 sp|B8FGT4|ATPB_DESAA   0    0.5
+
+getMissingInCondition <- function(processedData)
+{
+  p <- processedData
+
+  # count number of samples per condition
+  n_samples = p %>% group_by(GROUP) %>% summarize(n_samples = length(unique((as.numeric(SUBJECT))))) 
+
+  p <- p %>% 
+   filter(!is.na(INTENSITY)) %>% # remove rows with INTENSITY=NA
+   select(PROTEIN, GROUP, SUBJECT) %>%
+   distinct() %>% 
+   group_by(PROTEIN, GROUP) %>% 
+   summarize(non_na = n())  # count non-NA values for this protein and condition
+   
+  p <- left_join(p, n_samples) %>% 
+       mutate(missingInCondition = 1 - non_na/n_samples) # calculate fraction of missing values in condition
+
+  # create one column for every condition containing the missingness
+  p <- spread(data = p[,c("PROTEIN", "GROUP", "missingInCondition")], key = GROUP, value = missingInCondition)
+  return(p)
+}
+  
+  mic <- getMissingInCondition(processed.quant$ProcessedData)
+  
+  test.MSstats$ComparisonResult <- merge(x=test.MSstats$ComparisonResult, y=mic, by.x="Protein", by.y="PROTEIN")
+  commoncols <- intersect(colnames(mic), colnames(test.MSstats$ComparisonResult))
+  test.MSstats$ComparisonResult[, commoncols]<-test.MSstats$ComparisonResult %>% select(commoncols) %>% mutate_all(funs(replace(., is.na(.), 1))) 
+				 			 
+  #write comparison to CSV (one CSV per contrast)							 
+  writeComparisonToCSV <- function(DF) 
+  {
+    write.table(DF, file=paste0("comparison_",unique(DF$Label),".csv"), quote=FALSE, sep='\t', row.names = FALSE)
+    return(DF)
+  }
+  test.MSstats$ComparisonResult %>% group_by(Label) %>% do(writeComparisonToCSV(as.data.frame(.)))  
+  
   #for (comp in rownames(contrast_mat))
   #{
   #  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
