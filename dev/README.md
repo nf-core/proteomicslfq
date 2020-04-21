@@ -1,4 +1,4 @@
-### Build a development container
+# Build a development container
 
 Use this Dockerfile to create a container with nightly OpenMS versions.
 Depends on the DockerHub builds of [openms/executables](https://hub.docker.com/r/openms/executables).
