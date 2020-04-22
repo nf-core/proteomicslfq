@@ -221,7 +221,7 @@ else
        """
        ## -t2 since the one-table format parser is broken in OpenMS2.5
        ## -l for legacy behavior to always add sample columns
-       parse_sdrf.py convert-openms -t2 -l -s ${sdrf} > sdrf_parsing.log
+       parse_sdrf convert-openms -t2 -l -s ${sdrf} > sdrf_parsing.log
        """
   }
 
