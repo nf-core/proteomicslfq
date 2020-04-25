@@ -305,6 +305,9 @@ branched_input.mzML
  */
 process raw_file_conversion {
 
+    label 'process_low'
+    label 'process_single_thread'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
@@ -323,6 +326,8 @@ process raw_file_conversion {
  * STEP 0.2 - MzML indexing
  */
 process mzml_indexing {
+
+    label 'process_low'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
@@ -352,6 +357,9 @@ branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).in
 
 //Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
+
+    label 'process_very_low'
+    label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
@@ -415,6 +423,8 @@ if (params.search_engine == "msgf")
 
 process search_engine_msgf {
 
+    label 'process_medium'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     // ---------------------------------------------------------------------------------------------------------------------
@@ -469,6 +479,8 @@ process search_engine_msgf {
 
 process search_engine_comet {
 
+    label 'process_medium'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     // ---------------------------------------------------------------------------------------------------------------------
@@ -517,6 +529,8 @@ process search_engine_comet {
 
 process index_peptides {
 
+    label 'process_low'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
@@ -548,6 +562,9 @@ process index_peptides {
 
 process extract_percolator_features {
 
+    label 'process_very_low'
+    label 'process_single_thread'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
@@ -573,6 +590,13 @@ process extract_percolator_features {
 //Note: from here, we do not need any settings anymore. so we can skip adding the mzml_id to the channels
 //TODO parameterize and find a way to run across all runs merged
 process percolator {
+
+    //TODO Actually it heavily depends on the subset_max_train option and the number of IDs
+    // would be cool to get an estimate by parsing the number of IDs from previous tools.
+    label 'process_medium'
+    //TODO The current percolator version only supports up to 3-fold CV so the following might make sense now
+    // but in the next version it will have nested CV 
+    cpus { check_max( 3, 'cpus' ) }
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
@@ -611,6 +635,9 @@ process percolator {
 
 process idfilter {
 
+    label 'process_very_low'
+    label 'process_single_thread'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
@@ -635,6 +662,9 @@ process idfilter {
 }
 
 process idscoreswitcher {
+
+    label 'process_very_low'
+    label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
@@ -669,6 +699,9 @@ process idscoreswitcher {
 // Note: for IDPEP we never need any file specific settings so we can stop adding the mzml_idto the channels
 process fdr_idpep {
 
+    label 'process_very_low'
+    label 'process_single_thread'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
@@ -694,6 +727,9 @@ process fdr_idpep {
 }
 
 process idscoreswitcher_idpep_pre {
+
+    label 'process_very_low'
+    label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
@@ -722,6 +758,9 @@ process idscoreswitcher_idpep_pre {
 
 process idpep {
 
+    label 'process_low'
+    // I think Eigen optimization is multi-threaded, so leave threads open
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
@@ -744,6 +783,9 @@ process idpep {
 }
 
 process idscoreswitcher_idpep_post {
+
+    label 'process_very_low'
+    label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
@@ -771,6 +813,9 @@ process idscoreswitcher_idpep_post {
 
 process idfilter_idpep {
 
+    label 'process_very_low'
+    label 'process_single_thread'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
@@ -795,6 +840,9 @@ process idfilter_idpep {
 }
 
 process idscoreswitcher_idpep_postfilter {
+
+    label 'process_very_low'
+    label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
@@ -825,6 +873,8 @@ process idscoreswitcher_idpep_postfilter {
 // Main Branch
 
 process proteomicslfq {
+
+    label 'process_high'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
@@ -875,6 +925,8 @@ process proteomicslfq {
 
 process msstats {
 
+    label 'process_medium'
+
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/msstats", mode: 'copy'
 
@@ -898,6 +950,9 @@ process msstats {
 //TODO allow user config yml (as second arg to the script
 
 process ptxqc {
+
+    label 'process_very_low'
+    label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/ptxqc", mode: 'copy'
