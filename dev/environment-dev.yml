@@ -18,4 +18,5 @@ dependencies:
   - conda-forge::markdown=3.2.1
   - conda-forge::pymdown-extensions=6.0
   - conda-forge::pygments=2.5.2
+  - bioconda::sdrf-pipelines=0.0.4
 
