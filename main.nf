@@ -60,6 +60,10 @@ def helpMessage() {
 
       //TODO probably also still some options missing. Try to consolidate them whenever the two search engines share them
 
+    Peptide Re-indexing:
+      --IL_equivalent               Should isoleucine and leucine be treated interchangeably? Default: true
+      --allow_unmatched             Ignore unmatched peptides (Default: false; only activate if you double-checked all other settings)
+
     PSM Rescoring:
       --posterior_probabilities     How to calculate posterior probabilities for PSMs:
                                     "percolator" = Re-score based on PSM-feature-based SVM and transform distance
@@ -544,13 +548,17 @@ process index_peptides {
      file "*.log"
 
     script:
+     def il = params.IL_equivalent ? '-IL_equivalent' : ''
+     def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
      """
      PeptideIndexer -in ${id_file} \\
                     -out ${id_file.baseName}_idx.idXML \\
                     -threads ${task.cpus} \\
                     -fasta ${database} \\
                     -enzyme:name "${enzyme}" \\
-                    -enzyme:specificity ${pepidx_num_enzyme_termini}
+                    -enzyme:specificity ${pepidx_num_enzyme_termini} \\
+                    ${il} \\
+                    ${allow_um} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
