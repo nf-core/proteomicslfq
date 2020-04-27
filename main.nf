@@ -228,7 +228,7 @@ else
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
-  .multiMap{ row -> id = it.toString().md5()
+  .multiMap{ row -> id = row.toString().md5()
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
                                     row[3],
