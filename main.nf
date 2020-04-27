@@ -181,7 +181,7 @@ if (!params.sdrf)
 {
   ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
   ch_spectra
-  .multiMap{ it -> id = UUID.randomUUID().toString()
+  .multiMap{ it -> id = it.toString().md5()
                     comet_settings: msgf_settings: tuple(id,
                                     params.fixed_mods,
                                     params.variable_mods,
@@ -228,7 +228,7 @@ else
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
-  .multiMap{ row -> id = UUID.randomUUID().toString()
+  .multiMap{ row -> id = it.toString().md5()
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
                                     row[3],
