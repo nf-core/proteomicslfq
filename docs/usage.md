@@ -47,6 +47,9 @@
   * [`--isotope_error_range`](#--isotope_error_range)
   * [`--max_mods`](#--max_mods)
   * [`--db_debug`](#--db_debug)
+* [Peptide reindexing](#peptide-reindexing)
+  * [`--IL_equivalent`](#--IL_equivalent)
+  * [`--allow_unmatched`](#--allow_unmatched)
 * [PSM rescoring](#psm-rescoring)
   * [`--posterior_probabilities`](#--posterior_probabilities)
   * [`--rescoring_debug`](#--rescoring_debug)
@@ -347,6 +350,16 @@ Maximum number of modifications per peptide. If this value is large, the search 
 
 Set debug level for the search engines (regulates if intermediate output is kept and if you are going to see the output
 of the underlying search engine)
+
+## Peptide reindexing
+
+### `--IL_equivalent`
+
+Should isoleucine and leucine be treated interchangeably? Default: true
+
+### `--allow_unmatched`
+
+Ignore unmatched peptides (Default: false; only activate if you double-checked all other settings)
 
 ## PSM Rescoring
 
