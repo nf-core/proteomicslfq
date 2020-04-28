@@ -43,15 +43,15 @@ def helpMessage() {
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
-      --precursor_mass_tolerance    Mass tolerance of precursor mass
-      --precursor_mass_tolerance_unit Da or ppm
-      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
-      --fragment_mass_tolerance_unit Da or ppm (currently always Da)
-      --allowed_missed_cleavages    Allowed missed cleavages
-      --min_precursor_charge        Minimum precursor ion charge
-      --max_precursor_charge        Maximum precursor ion charge
-      --min_peptide_length          Minimum peptide length to consider
-      --max_peptide_length          Maximum peptide length to consider
+      --precursor_mass_tolerance    Mass tolerance of precursor mass (default: 5)
+      --precursor_mass_tolerance_unit Da or ppm (default: ppm)
+      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol) (default: 0.03)
+      --fragment_mass_tolerance_unit Da or ppm (default: Da)
+      --allowed_missed_cleavages    Allowed missed cleavages (default: 2)
+      --min_precursor_charge        Minimum precursor ion charge (default: 2)
+      --max_precursor_charge        Maximum precursor ion charge (default: 4)
+      --min_peptide_length          Minimum peptide length to consider (default: 6)
+      --max_peptide_length          Maximum peptide length to consider (default: 40)
       --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
       --protocol                    Used labeling or enrichment protocol (if any)
       --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let                                     them determine from the spectrum metadata)
