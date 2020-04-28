@@ -46,7 +46,7 @@ def helpMessage() {
       --precursor_mass_tolerance    Mass tolerance of precursor mass
       --precursor_mass_tolerance_unit Da or ppm
       --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
-      --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
+      --fragment_mass_tolerance_unit Da or ppm (currently always Da)
       --allowed_missed_cleavages    Allowed missed cleavages
       --min_precursor_charge        Minimum precursor ion charge
       --max_precursor_charge        Maximum precursor ion charge
@@ -512,19 +512,30 @@ process search_engine_comet {
        // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
        // and uses Comet's defaults for bin size, in case unsupported unit "ppm" was given.
        if (frag_tol.toDouble() < 50) {
-         bin_tol = "0.01"
+         bin_tol = "0.03"
+         bin_offset = "0.0"
+         if (!params.instrument)
+           inst = "high_res"
        } else {
-         bin_tol = "1.005"
+         bin_tol = "1.0005"
+         bin_offset = "0.4"
+         if (!params.instrument)
+           inst = "low_res"
        }
+       log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
+         " instrument and set the fragment_bin_tolerance to " + bin_tol
      } else {
        bin_tol = frag_tol
+       bin_offset = frag_tol.toDouble() < 0.1 ? "0.0" : "0.4"
+       if (!params.instrument)
+         inst = frag_tol.toDouble() < 0.1 ? "high_res" : "low_res"
      }
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
                    -database "${database}" \\
-                   -instrument ${params.instrument} \\
+                   -instrument ${inst} \\
                    -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
@@ -536,6 +547,7 @@ process search_engine_comet {
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
                    -fragment_bin_tolerance ${bin_tol} \\
+                   -fragment_bin_offset ${bin_offset} \\
                    -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
      """
