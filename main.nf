@@ -468,7 +468,7 @@ process search_engine_msgf {
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
                      -database "${database}" \\
-                     -instrument ${params.instrument ?: 'high} \\
+                     -instrument ${inst} \\
                      -protocol "${params.protocol}" \\
                      -matches_per_spec ${params.num_hits} \\
                      -min_precursor_charge ${params.min_precursor_charge} \\
