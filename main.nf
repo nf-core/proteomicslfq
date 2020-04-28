@@ -60,6 +60,10 @@ def helpMessage() {
 
       //TODO probably also still some options missing. Try to consolidate them whenever the two search engines share them
 
+    Peak picking:
+      --openms_peakpicking          Use the OpenMS PeakPicker to ADDITIONALLY pick the spectra before the search. This is usually done
+                                    during conversion already. Only activate if something goes wrong.
+
     Peptide Re-indexing:
       --IL_equivalent               Should isoleucine and leucine be treated interchangeably? Default: true
       --allow_unmatched             Ignore unmatched peptides (Default: false; only activate if you double-checked all other settings)
@@ -294,16 +298,6 @@ branched_input.mzML
 //This piece only runs on data that is a.) raw and b.) needs conversion
 //mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-)
 
-
-//GENERAL TODOS
-// - Check why we depend on full filepaths and if that is needed
-/* Proposition from nextflow gitter https://gitter.im/nextflow-io/nextflow?at=5e25fabea259cb0f0607a1a1
-*
-* unless the specific filenames are important (depends on the tool you're using), I usually use the pattern outlined here:
-* https://www.nextflow.io/docs/latest/process.html#multiple-input-files
-* e.g: file "?????.mzML" from mzmls_plfq.toSortedList() and ProteomicsLFQ -in *.mzML -ids *.id
-*/
-
 /*
  * STEP 0.1 - Raw file conversion
  */
@@ -351,7 +345,15 @@ process mzml_indexing {
 
 //Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
 
-branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
+if (params.openms_peakpicking)
+{
+  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).set{mzmls_pp}
+}
+else
+{
+  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
+}
+
 
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
@@ -387,8 +389,8 @@ process generate_decoy_database {
      """
 }
 
-// Doesnt work. Py script needs all the inputs to be together in a folder
-// Wont work with nextflow. It needs to accept a list of paths for the inputs!!
+// Doesnt work yet. Maybe point the script to the workspace?
+// All the files should be there after collecting. 
 //process generate_simple_exp_design_file {
 //    publishDir "${params.outdir}", mode: 'copy'
 //    input:
@@ -405,6 +407,35 @@ process generate_decoy_database {
 //       create_trivial_design.py ${strng} 1 > expdesign.tsv
 //     """
 //}
+
+process openms_peakpicker {
+
+    label 'process_low'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, path(mzml_file) from mzmls_pp
+
+    when:
+      params.openms_peakpicking
+
+    output:
+     set mzml_id, file("${mzml_file.baseName}_picked.mzML") into mzmls_comet, mzmls_msgf, mzmls_plfq
+     file "*.log"
+
+    script:
+     // TODO maybe allow specifying ms-levels and inmemory
+     """
+     PeakPickerHiRes -in ${mzml_file} \\
+                     -out ${mzml_file.baseName}_picked.mzML \\
+                     -threads ${task.cpus} \\
+                     -debug ${params.pp_debug} \\
+                     -processOption lowmemory \\
+                     > ${mzml_file.baseName}_msgf.log
+     """
+}
+
 
 if (params.enzyme == "unspecific cleavage")
 {
@@ -461,6 +492,7 @@ process search_engine_msgf {
      MSGFPlusAdapter -in ${mzml_file} \\
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
+                     -java_memory ${task.memory.toMega()} \\
                      -database "${database}" \\
                      -instrument ${params.instrument} \\
                      -protocol "${params.protocol}" \\
