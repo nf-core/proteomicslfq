@@ -426,13 +426,14 @@ process openms_peakpicker {
      file "*.log"
 
     script:
-     // TODO maybe allow specifying ms-levels and inmemory
+     // TODO maybe allow specifying ms-levels
+     in_mem = params.peakpicker_inmemory ? "inmemory" : "lowmemory"
      """
      PeakPickerHiRes -in ${mzml_file} \\
                      -out ${mzml_file.baseName}_picked.mzML \\
                      -threads ${task.cpus} \\
                      -debug ${params.pp_debug} \\
-                     -processOption lowmemory \\
+                     -processOption ${in_mem} \\
                      > ${mzml_file.baseName}_msgf.log
      """
 }
