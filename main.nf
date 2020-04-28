@@ -43,15 +43,15 @@ def helpMessage() {
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
-      --precursor_mass_tolerance    Mass tolerance of precursor mass
-      --precursor_mass_tolerance_unit Da or ppm
-      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
-      --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
-      --allowed_missed_cleavages    Allowed missed cleavages
-      --min_precursor_charge        Minimum precursor ion charge
-      --max_precursor_charge        Maximum precursor ion charge
-      --min_peptide_length          Minimum peptide length to consider
-      --max_peptide_length          Maximum peptide length to consider
+      --precursor_mass_tolerance    Mass tolerance of precursor mass (default: 5)
+      --precursor_mass_tolerance_unit Da or ppm (default: ppm)
+      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol) (default: 0.03)
+      --fragment_mass_tolerance_unit Da or ppm (default: Da)
+      --allowed_missed_cleavages    Allowed missed cleavages (default: 2)
+      --min_precursor_charge        Minimum precursor ion charge (default: 2)
+      --max_precursor_charge        Maximum precursor ion charge (default: 4)
+      --min_peptide_length          Minimum peptide length to consider (default: 6)
+      --max_peptide_length          Maximum peptide length to consider (default: 40)
       --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
       --protocol                    Used labeling or enrichment protocol (if any)
       --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let                                     them determine from the spectrum metadata)
@@ -508,12 +508,34 @@ process search_engine_comet {
 
     //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
     script:
+     if (frag_tol_unit == "ppm") {
+       // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
+       // and uses Comet's defaults for bin size, in case unsupported unit "ppm" was given.
+       if (frag_tol.toDouble() < 50) {
+         bin_tol = "0.03"
+         bin_offset = "0.0"
+         if (!params.instrument)
+           inst = "high_res"
+       } else {
+         bin_tol = "1.0005"
+         bin_offset = "0.4"
+         if (!params.instrument)
+           inst = "low_res"
+       }
+       log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
+         " instrument and set the fragment_bin_tolerance to " + bin_tol
+     } else {
+       bin_tol = frag_tol
+       bin_offset = frag_tol.toDouble() < 0.1 ? "0.0" : "0.4"
+       if (!params.instrument)
+         inst = frag_tol.toDouble() < 0.1 ? "high_res" : "low_res"
+     }
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
                    -database "${database}" \\
-                   -instrument ${params.instrument} \\
+                   -instrument ${inst} \\
                    -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
@@ -524,7 +546,8 @@ process search_engine_comet {
                    -max_variable_mods_in_peptide ${params.max_mods} \\
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
-                   -fragment_bin_tolerance ${frag_tol} \\
+                   -fragment_bin_tolerance ${bin_tol} \\
+                   -fragment_bin_offset ${bin_offset} \\
                    -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
      """
