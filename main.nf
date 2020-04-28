@@ -508,6 +508,17 @@ process search_engine_comet {
 
     //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
     script:
+     if (frag_tol_unit == "ppm") {
+       // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
+       // and uses Comet's defaults for bin size, in case unsupported unit "ppm" was given.
+       if (frag_tol.toDouble() < 50) {
+         bin_tol = "0.01"
+       } else {
+         bin_tol = "1.005"
+       }
+     } else {
+       bin_tol = frag_tol
+     }
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
@@ -524,7 +535,7 @@ process search_engine_comet {
                    -max_variable_mods_in_peptide ${params.max_mods} \\
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
-                   -fragment_bin_tolerance ${frag_tol} \\
+                   -fragment_bin_tolerance ${bin_tol} \\
                    -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
      """
