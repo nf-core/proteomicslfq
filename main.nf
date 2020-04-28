@@ -352,8 +352,8 @@ if (params.openms_peakpicking)
 else
 {
   branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
+  mzmls_pp = Channel.empty()
 }
-
 
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
