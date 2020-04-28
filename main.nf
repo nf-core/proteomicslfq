@@ -421,7 +421,7 @@ process openms_peakpicker {
       params.openms_peakpicking
 
     output:
-     set mzml_id, file("${mzml_file.baseName}_picked.mzML") into mzmls_comet, mzmls_msgf, mzmls_plfq
+     set mzml_id, file("${mzml_file.baseName}_picked.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
      file "*.log"
 
     script:
@@ -469,7 +469,11 @@ process search_engine_msgf {
     errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings))
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme
+      from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf)
+            .combine(
+              mzmls_msgf.mix(mzmls_msgf_picked)
+              .join(ch_sdrf_config.msgf_settings))
 
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
@@ -525,7 +529,11 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings))
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme
+      from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
+            .combine(
+              mzmls_comet.mix(mzmls_comet_picked)
+              .join(ch_sdrf_config.comet_settings))
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
@@ -920,7 +928,7 @@ process proteomicslfq {
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
 
     input:
-     file mzmls from mzmls_plfq.map{it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
+     file mzmls from mzmls_plfq.mix(mzmls_plfq_picked).map{it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
      file id_files from id_files_idx_feat_perc_fdr_filter_switched
          .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
          .toSortedList({ a, b -> b.baseName <=> a.baseName })
