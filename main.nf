@@ -457,12 +457,18 @@ process search_engine_msgf {
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
 
+      if ((frag_tol.toDouble() < 50 && frag_tol_unit == "ppm") || (frag_tol.toDouble() < 0.1 && frag_tol_unit == "Da"))
+      {
+        inst = params.instrument ?: "high_res"
+      } else {
+        inst = params.instrument ?: "low_res"
+      }
      """
      MSGFPlusAdapter -in ${mzml_file} \\
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
                      -database "${database}" \\
-                     -instrument ${params.instrument} \\
+                     -instrument ${params.instrument ?: 'high} \\
                      -protocol "${params.protocol}" \\
                      -matches_per_spec ${params.num_hits} \\
                      -min_precursor_charge ${params.min_precursor_charge} \\
