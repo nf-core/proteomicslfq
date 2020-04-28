@@ -514,13 +514,11 @@ process search_engine_comet {
        if (frag_tol.toDouble() < 50) {
          bin_tol = "0.03"
          bin_offset = "0.0"
-         if (!params.instrument)
-           inst = "high_res"
+         inst = params.instrument ?: "high_res"
        } else {
          bin_tol = "1.0005"
          bin_offset = "0.4"
-         if (!params.instrument)
-           inst = "low_res"
+         inst = params.instrument ?: "low_res"
        }
        log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
          " instrument and set the fragment_bin_tolerance to " + bin_tol
@@ -528,7 +526,11 @@ process search_engine_comet {
        bin_tol = frag_tol
        bin_offset = frag_tol.toDouble() < 0.1 ? "0.0" : "0.4"
        if (!params.instrument)
+       {
          inst = frag_tol.toDouble() < 0.1 ? "high_res" : "low_res"
+       } else {
+         inst = params.instrument
+       }
      }
      """
      CometAdapter  -in ${mzml_file} \\
