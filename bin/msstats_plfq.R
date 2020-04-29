@@ -137,26 +137,30 @@ if (length(lvls) == 1)
 		return(p)
 	}
 
-		mic <- getMissingInCondition(processed.quant$ProcessedData)
+  print ("WTH")
+	mic <- getMissingInCondition(processed.quant$ProcessedData)
 
-		test.MSstats$ComparisonResult <- merge(x=test.MSstats$ComparisonResult, y=mic, by.x="Protein", by.y="PROTEIN")
-		commoncols <- intersect(colnames(mic), colnames(test.MSstats$ComparisonResult))
-		test.MSstats$ComparisonResult[, commoncols]<-test.MSstats$ComparisonResult %>% select(commoncols) %>% mutate_all(funs(replace(., is.na(.), 1))) 
-
-		#write comparison to CSV (one CSV per contrast)							 
-		writeComparisonToCSV <- function(DF) 
-		{
-			write.table(DF, file=paste0("comparison_",unique(DF$Label),".csv"), quote=FALSE, sep='\t', row.names = FALSE)
-			return(DF)
-		}
-		test.MSstats$ComparisonResult %>% group_by(Label) %>% do(writeComparisonToCSV(as.data.frame(.)))  
-
-		#for (comp in rownames(contrast_mat))
-		#{
-		#  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
-		#                       width=12, height=12,dot.size = 2,ylimUp = 7, sig=1)#,
-		#                       which.Comparison = comp,
-		#                       address=F)
-		#  # try to plot all comparisons
-		#}
+	test.MSstats$ComparisonResult <- merge(x=test.MSstats$ComparisonResult, y=mic, by.x="Protein", by.y="PROTEIN")
+  print ("WTH")
+	commoncols <- intersect(colnames(mic), colnames(test.MSstats$ComparisonResult))
+  print ("WTH")
+	test.MSstats$ComparisonResult[, commoncols]<-test.MSstats$ComparisonResult %>% select(commoncols) %>% mutate_all(funs(replace(., is.na(.), 1))) 
+print ("WTH")
+	#write comparison to CSV (one CSV per contrast)							 
+	writeComparisonToCSV <- function(DF) 
+	{
+		write.table(DF, file=paste0("comparison_",unique(DF$Label),".csv"), quote=FALSE, sep='\t', row.names = FALSE)
+		return(DF)
 	}
+  print ("WTH")
+	test.MSstats$ComparisonResult %>% group_by(Label) %>% do(writeComparisonToCSV(as.data.frame(.)))  
+print ("WTH")
+	#for (comp in rownames(contrast_mat))
+	#{
+	#  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
+	#                       width=12, height=12,dot.size = 2,ylimUp = 7, sig=1)#,
+	#                       which.Comparison = comp,
+	#                       address=F)
+	#  # try to plot all comparisons
+	#}
+}
