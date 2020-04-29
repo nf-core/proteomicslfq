@@ -891,7 +891,7 @@ process msstats {
 
     script:
      """
-     msstats_plfq.R ${csv} > msstats.log"
+     msstats_plfq.R ${csv} > msstats.log
      """
 }
 
