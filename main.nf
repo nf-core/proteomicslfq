@@ -891,7 +891,7 @@ process msstats {
 
     script:
      """
-     msstats_plfq.R ${csv} > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
+     msstats_plfq.R ${csv} > msstats.log"
      """
 }
 
