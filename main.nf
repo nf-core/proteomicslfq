@@ -696,7 +696,7 @@ process percolator {
         """
         ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
         ## to honor threads on clusters
-        OMP_NUMBER_THREADS=${task.cpus} PercolatorAdapter \\
+        OMP_NUM_THREADS=${task.cpus} PercolatorAdapter \\
                             -in ${id_file} \\
                             -out ${id_file.baseName}_perc.idXML \\
                             -threads ${task.cpus} \\
