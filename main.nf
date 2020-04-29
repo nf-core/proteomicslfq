@@ -63,7 +63,8 @@ def helpMessage() {
     Peak picking:
       --openms_peakpicking          Use the OpenMS PeakPicker to ADDITIONALLY pick the spectra before the search. This is usually done
                                     during conversion already. Only activate if something goes wrong.
-      --peakpicking_inmemory         Perform OpenMS peakpicking in-memory. Needs at least the size of the mzML file as RAM but is faster. default: false
+      --peakpicking_inmemory        Perform OpenMS peakpicking in-memory. Needs at least the size of the mzML file as RAM but is faster. default: false
+      --peakpicking_ms_levels       Which MS levels to pick. default: [] which means auto-convert all non-centroided
 
     Peptide Re-indexing:
       --IL_equivalent               Should isoleucine and leucine be treated interchangeably? Default: true
@@ -427,7 +428,6 @@ process openms_peakpicker {
      file "*.log"
 
     script:
-     // TODO maybe allow specifying ms-levels
      in_mem = params.peakpicking_inmemory ? "inmemory" : "lowmemory"
      """
      PeakPickerHiRes -in ${mzml_file} \\
@@ -435,7 +435,8 @@ process openms_peakpicker {
                      -threads ${task.cpus} \\
                      -debug ${params.pp_debug} \\
                      -processOption ${in_mem} \\
-                     > ${mzml_file.baseName}_msgf.log
+                     -algorithm:ms_levels ${params.peakpicking_ms_levels} \\
+                     > ${mzml_file.baseName}_pp.log
      """
 }
 
