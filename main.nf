@@ -424,14 +424,15 @@ process openms_peakpicker {
       params.openms_peakpicking
 
     output:
-     set mzml_id, file("${mzml_file.baseName}_picked.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
+     set mzml_id, file("out/${mzml_file.baseName}.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
      file "*.log"
 
     script:
      in_mem = params.peakpicking_inmemory ? "inmemory" : "lowmemory"
      """
+     mkdir out
      PeakPickerHiRes -in ${mzml_file} \\
-                     -out ${mzml_file.baseName}_picked.mzML \\
+                     -out out/${mzml_file.baseName}.mzML \\
                      -threads ${task.cpus} \\
                      -debug ${params.pp_debug} \\
                      -processOption ${in_mem} \\
