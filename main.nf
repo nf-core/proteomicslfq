@@ -429,6 +429,7 @@ process openms_peakpicker {
 
     script:
      in_mem = params.peakpicking_inmemory ? "inmemory" : "lowmemory"
+     lvls = params.peakpicking_ms_levels ? "-algorithm:ms_levels ${params.peakpicking_ms_levels}" : ""
      """
      mkdir out
      PeakPickerHiRes -in ${mzml_file} \\
@@ -436,7 +437,7 @@ process openms_peakpicker {
                      -threads ${task.cpus} \\
                      -debug ${params.pp_debug} \\
                      -processOption ${in_mem} \\
-                     -algorithm:ms_levels ${params.peakpicking_ms_levels} \\
+                     ${lvls} \\
                      > ${mzml_file.baseName}_pp.log
      """
 }
