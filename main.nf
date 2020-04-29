@@ -1011,7 +1011,9 @@ process msstats {
      file csv from out_msstats
 
     output:
-     file "*.pdf"
+     // The generation of the PDFs from MSstats are very unstable, especially with auto-contrasts.
+     // And users can easily fix anything based on the csv and the included script -> make optional
+     file "*.pdf" optional true
      file "*.csv"
      file "*.log"
 
@@ -1025,7 +1027,7 @@ process msstats {
 
 process ptxqc {
 
-    label 'process_very_low'
+    label 'process_low'
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
