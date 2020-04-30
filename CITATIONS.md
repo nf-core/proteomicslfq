@@ -1,4 +1,4 @@
-# nf-core/imcyto: Citations
+# nf-core/proteomicslfq: Citations
 
 ## Pipeline tools
 
@@ -26,3 +26,4 @@
   > Grüning B., Dale R., Sjödin A., Chapman BA., Rowe J., Tomkins-Tinch CH., Valieris R., Köster J., Bioconda Team (2018). Bioconda: sustainable and comprehensive software distribution for the life sciences. Nature methods, 15(7), 475–476. https://doi.org/10.1038/s41592-018-0046-7. PubMed PMID: 29967506.
 
 * [Docker](https://www.docker.com/)
+  > Merkel D. (2014). Docker: lightweight Linux containers for consistent development and deployment. Linux journal, 2014(239), 2.
