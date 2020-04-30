@@ -14,6 +14,15 @@
 * [ThermoRawFileParser](https://www.ncbi.nlm.nih.gov/pubmed/31755270/)
   > Hulstaert N., Shofstahl J., Sachsenberg T., Walzer M., Barsnes H., Martens L., Perez-Riverol, Y. (2020). ThermoRawFileParser: Modular, Scalable, and Cross-Platform RAW File Conversion. Journal of proteome research, 19(1), 537–542. doi: 10.1021/acs.jproteome.9b00328. PubMed PMID: 31755270
 
+* [Comet](https://www.ncbi.nlm.nih.gov/pubmed/23148064/)
+  > Eng JK., Jahan TA., Hoopmann MR. (2013). Comet: an open-source MS/MS sequence database search tool. Proteomics, 13(1), 22–24. doi: 10.1002/pmic.201200439. PubMed PMID: 23148064
+
+* [MS-GF+](https://www.ncbi.nlm.nih.gov/pubmed/25358478/)
+  > Kim S., Pevzner PA. (2014). MS-GF+ makes progress towards a universal database search tool for proteomics. Nature communications, 5, 5277. doi: 10.1038/ncomms6277. PubMed PMID: 25358478; PubMed Central PMCID: PMC5036525
+
+* [PTXQC](https://www.ncbi.nlm.nih.gov/pubmed/26653327/)
+  > Bielow C., Mastrobuoni G., Kempa S. (2016). Proteomics Quality Control: Quality Control Software for MaxQuant Results. Journal of proteome research, 15(3), 777–787. doi: 10.1021/acs.jproteome.5b00780. PubMed PMID: 26653327
+
 ## Software packaging/containerisation tools
 
 * [BioContainers](https://www.ncbi.nlm.nih.gov/pubmed/28379341/)
