@@ -96,5 +96,5 @@ See PTXQC vignette. In the report itself the calculated and visualized QC metric
 
 #### PTXQC yaml config
 
-The default yaml config used to configure the structure of the QC report. In case you need to restructure, please edit this file and 
+The default yaml config used to configure the structure of the QC report. In case you need to restructure, please edit this file and
 re-run PTXQC manually.
