@@ -7,15 +7,15 @@ This document describes the output produced by the pipeline.
 The pipeline is built using [Nextflow](https://www.nextflow.io/)
 and processes data using the following steps:
 
-* (optional) Conversion of spectra data to indexedMzML: Using ThermoRawFileParser if Thermo Raw or using OpenMS' FileConverter if just an index is missing
-* (optional) Decoy database generation for the provided DB (fasta) with OpenMS
-* Database search with either MSGF+ or Comet through OpenMS adapters
-* Re-mapping potentially identified peptides to the database for consistency and error-checking (using OpenMS' PeptideIndexer)
-* (Intermediate score switching steps to use appropriate scores for the next step)
-* PSM rescoring using PSMFeatureExtractor and Percolator or a PeptideProphet-like distribution fitting approach in OpenMS
-* (Intermediate score switching steps to use appropriate scores for the next step)
-* PSM/Peptide-level FDR filtering
-* Protein inference and labelfree quantification based on MS1 feature detection, alignment and integration with OpenMS' ProteomicsLFQ
+1. (optional) Conversion of spectra data to indexedMzML: Using ThermoRawFileParser if Thermo Raw or using OpenMS' FileConverter if just an index is missing
+1. (optional) Decoy database generation for the provided DB (fasta) with OpenMS
+1. Database search with either MSGF+ or Comet through OpenMS adapters
+1. Re-mapping potentially identified peptides to the database for consistency and error-checking (using OpenMS' PeptideIndexer)
+1. (Intermediate score switching steps to use appropriate scores for the next step)
+1. PSM rescoring using PSMFeatureExtractor and Percolator or a PeptideProphet-like distribution fitting approach in OpenMS
+1. (Intermediate score switching steps to use appropriate scores for the next step)
+1. PSM/Peptide-level FDR filtering
+1. Protein inference and labelfree quantification based on MS1 feature detection, alignment and integration with OpenMS' ProteomicsLFQ
 
 ## Output
 
