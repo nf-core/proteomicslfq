@@ -23,26 +23,46 @@ Output is by default written to the $NXF_WORKSPACE/results folder. You can chang
 The output consists of the following folders:
 
 results
+
 ├── ids
+
 │   └── [${infile}\*.idXML](#identifications)
+
 ├── logs
+
 │   └── ...
+
 ├── msstats
+
 │   ├── [ComparisonPlot.pdf](#msstats-plots)
+
 │   ├── [VolcanoPlot.pdf](#msstats-plots)
+
 │   ├── [Heatmap.pdf](#msstats-plots)
-│   └── [msstats_results.csv](#msstats-table)
-├── pipeline_info
+
+│   └── [msstats\_results.csv](#msstats-table)
+
+├── pipeline\_info
+
 │   └── [...](#nextflow-pipeline-info)
-├── proteomics_lfq
-│   ├── [debug_*.idXML](#debug-output)
+
+├── proteomics\_lfq
+
+│   ├── [debug\_\*.idXML](#debug-output)
+
 │   ├── [out.consensusXML](#consenusxml)
+
 │   ├── [out.csv](#msstats-ready-quantity-table)
+
 │   └── [out.mzTab](#mztab)
+
 └── ptxqc
-    ├── [report_v1.0.2_out.yaml](#ptxqc-yaml-config)
-    ├── [report_v1.0.2_out_${hash}.html](#ptxqc-report)
-    └── [report_v1.0.2_out_${hash}.pdf](#ptxqc-report)
+
+    ├── [report\_v1.0.2\_out.yaml](#ptxqc-yaml-config)
+
+    ├── [report\_v1.0.2\_out\_${hash}.html](#ptxqc-report)
+    
+    └── [report\_v1.0.2\_out\_${hash}.pdf](#ptxqc-report)
 
 ### Nextflow pipeline info
 
