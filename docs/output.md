@@ -58,7 +58,7 @@ internal idXML format. TODO link to schema.
 
 ### ProteomicsLFQ main output
 
-The `proteomics\_lfq` folder contains the output of the pipeline without any statistical postprocessing.
+The `proteomics_lfq` folder contains the output of the pipeline without any statistical postprocessing.
 And is avaible in three different formats.
 
 #### ConsensusXML
