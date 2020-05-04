@@ -24,45 +24,26 @@ The output consists of the following folders:
 
 results
 
-├── ids
-
-│   └── [${infile}\*.idXML](#identifications)
-
-├── logs
-
-│   └── ...
-
-├── msstats
-
-│   ├── [ComparisonPlot.pdf](#msstats-plots)
-
-│   ├── [VolcanoPlot.pdf](#msstats-plots)
-
-│   ├── [Heatmap.pdf](#msstats-plots)
-
-│   └── [msstats\_results.csv](#msstats-table)
-
-├── pipeline\_info
-
-│   └── [...](#nextflow-pipeline-info)
-
-├── proteomics\_lfq
-
-│   ├── [debug\_\*.idXML](#debug-output)
-
-│   ├── [out.consensusXML](#consenusxml)
-
-│   ├── [out.csv](#msstats-ready-quantity-table)
-
-│   └── [out.mzTab](#mztab)
-
-└── ptxqc
-
-    ├── [report\_v1.0.2\_out.yaml](#ptxqc-yaml-config)
-
-    ├── [report\_v1.0.2\_out\_${hash}.html](#ptxqc-report)
-    
-    └── [report\_v1.0.2\_out\_${hash}.pdf](#ptxqc-report)
+* ids
+  * [${infile}\*.idXML](#identifications)
+* logs
+  * ...
+* msstats
+  * [ComparisonPlot.pdf](#msstats-plots)
+  * [VolcanoPlot.pdf](#msstats-plots)
+  * [Heatmap.pdf](#msstats-plots)
+  * [msstats\_results.csv](#msstats-table)
+* pipeline\_info
+  * [...](#nextflow-pipeline-info)
+* proteomics\_lfq
+  * [debug\_\*.idXML](#debug-output)
+  * [out.consensusXML](#consenusxml)
+  * [out.csv](#msstats-ready-quantity-table)
+  * [out.mzTab](#mztab)
+* ptxqc
+  * [report\_v1.0.2\_out.yaml](#ptxqc-yaml-config)
+  * [report\_v1.0.2\_out\_${hash}.html](#ptxqc-report)
+  * [report\_v1.0.2\_out\_${hash}.pdf](#ptxqc-report)
 
 ### Nextflow pipeline info
 
