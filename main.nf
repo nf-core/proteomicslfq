@@ -43,6 +43,8 @@ def helpMessage() {
       --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
       --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
+      --enable_mod_localization     Enable localization scoring with Luciphor
+      --mod_localization            Specify the var. modifications whose localizations should be rescored with the luciphor algorithm
       --precursor_mass_tolerance    Mass tolerance of precursor mass (default: 5)
       --precursor_mass_tolerance_unit Da or ppm (default: ppm)
       --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol) (default: 0.03)
@@ -204,6 +206,9 @@ if (!params.sdrf)
                                     params.enzyme)
                     idx_settings: tuple(id,
                                     params.enzyme)
+                    luciphor_settings: 
+                                  tuple(id,
+                                    params.fragment_method)
                     mzmls: tuple(id,it)}
   .set{ch_sdrf_config}
 }
@@ -251,6 +256,9 @@ else
                                     row[10])
                     idx_settings: tuple(id,
                                     row[10])
+                    luciphor_settings: 
+                                  tuple(id,
+                                    row[9])
                     mzmls: tuple(id, params.root_folder.length() == 0 ? row[0] : (params.root_folder + "/" + row[1]))}
   .set{ch_sdrf_config}
 }
@@ -350,13 +358,14 @@ process mzml_indexing {
 if (params.openms_peakpicking)
 {
   branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).set{mzmls_pp}
-  (mzmls_comet, mzmls_msgf, mzmls_plfq) = [Channel.empty(), Channel.empty(), Channel.empty()]
+  (mzmls_comet, mzmls_msgf, mzmls_luciphor, mzmls_plfq) = [Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty()]
 }
 else
 {
-  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
+  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_luciphor; mzmls_plfq}
   mzmls_pp = Channel.empty()
 }
+
 
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
@@ -681,7 +690,7 @@ process percolator {
      set mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     file "${id_file.baseName}_perc.idXML" into id_files_idx_feat_perc
+     set mzml_id, file("${id_file.baseName}_perc.idXML") into id_files_idx_feat_perc
      file "*.log"
 
     when:
@@ -719,10 +728,10 @@ process idfilter {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     file id_file from id_files_idx_feat_perc
+     set mzml_id, file(id_file) from id_files_idx_feat_perc
 
     output:
-     file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_filter
+     set mzml_id, file("${id_file.baseName}_filter.idXML") into id_files_idx_feat_perc_filter
      file "*.log"
 
     when:
@@ -746,10 +755,10 @@ process idscoreswitcher {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file id_file from id_files_idx_feat_perc_filter
+     set mzml_id, file(id_file) from id_files_idx_feat_perc_filter
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_feat_perc_fdr_filter_switched
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_feat_perc_fdr_filter_switched_luciphor, id_files_idx_feat_perc_fdr_filter_switched_plfq
      file "*.log"
 
     when:
@@ -768,8 +777,6 @@ process idscoreswitcher {
      """
 }
 
-
-
 // ---------------------------------------------------------------------
 // Branch b) Q-values and PEP from OpenMS
 
@@ -785,7 +792,7 @@ process fdr_idpep {
      set mzml_id, file(id_file) from id_files_idx_ForIDPEP
 
     output:
-     file "${id_file.baseName}_fdr.idXML" into id_files_idx_ForIDPEP_fdr
+     set mzml_id, file("${id_file.baseName}_fdr.idXML") into id_files_idx_ForIDPEP_fdr
      file "*.log"
 
     when:
@@ -811,10 +818,10 @@ process idscoreswitcher_idpep_pre {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch
      file "*.log"
 
     when:
@@ -841,10 +848,10 @@ process idpep {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch
 
     output:
-     file "${id_file.baseName}_idpep.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep
+     set mzml_id, file("${id_file.baseName}_idpep.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep
      file "*.log"
 
     when:
@@ -867,10 +874,10 @@ process idscoreswitcher_idpep_post {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch
      file "*.log"
 
     when:
@@ -897,10 +904,10 @@ process idfilter_idpep {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep_switch
 
     output:
-     file "${id_file.baseName}_filter.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+     set mzml_id, file("${id_file.baseName}_filter.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
      file "*.log"
 
     when:
@@ -909,10 +916,10 @@ process idfilter_idpep {
     script:
      """
      IDFilter -in ${id_file} \\
-                        -out ${id_file.baseName}_filter.idXML \\
-                        -threads ${task.cpus} \\
-                        -score:pep ${params.psm_pep_fdr_cutoff} \\
-                        > ${id_file.baseName}_idfilter1.log
+              -out ${id_file.baseName}_filter.idXML \\
+              -threads ${task.cpus} \\
+              -score:pep ${params.psm_pep_fdr_cutoff} \\
+              > ${id_file.baseName}_idfilter1.log
      """
 }
 
@@ -924,10 +931,10 @@ process idscoreswitcher_idpep_postfilter {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file id_file from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
 
     output:
-     file "${id_file.baseName}_switched.idXML" into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch
+     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq, id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor
      file "*.log"
 
     when:
@@ -945,9 +952,61 @@ process idscoreswitcher_idpep_postfilter {
      """
 }
 
+plfq_in_id = params.enable_mod_localization
+                    ? Channel.empty()
+                    : id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq
+			.mix(id_files_idx_feat_perc_fdr_filter_switched_plfq)
+
+process luciphor {
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
+
+    output:
+     set mzml_id, file("${id_file.baseName}_luciphor.idXML") into plfq_in_id_luciphor
+     file "*.log"
+
+    when:
+     params.enable_mod_localization
+
+    script:
+     def losses = params.luciphor_neutral_losses ? '-neutral_losses "${params.luciphor_neutral_losses}"' : ''
+     def dec_mass = params.luciphor_decoy_mass ? '-decoy_mass "${params.luciphor_decoy_mass}"' : ''
+     def dec_losses = params.luciphor_decoy_neutral_losses ? '-decoy_neutral_losses "${params.luciphor_decoy_neutral_losses}' : ''
+     """
+     LuciphorAdapter    -id ${id_file} \\
+                        -in ${mzml_file} \\
+                        -out ${id_file.baseName}_luciphor.idXML \\
+                        -threads ${task.cpus} \\
+                        -num_threads ${task.cpus} \\
+                        -target_modifications ${params.mod_localization.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                        -fragment_method ${frag_method} \\
+                        ${losses} \\
+                        ${dec_mass} \\
+                        ${dec_losses} \\
+                        -max_charge_state ${params.max_precursor_charge} \\
+                        -max_peptide_length ${params.max_peptide_length} \\
+                        > ${id_file.baseName}_scoreswitcher.log
+     """
+                     //        -fragment_mass_tolerance ${} \\
+                     //   -fragment_error_units ${} \\
+}
 
 // ---------------------------------------------------------------------
 // Main Branch
+
+// Join mzmls and ids by UID specified per mzml file in the beginning.
+// ID files can come directly from the Percolator branch, IDPEP branch or
+// after optional processing with Luciphor
+mzmls_plfq
+  .join(plfq_in_id.mix(plfq_in_id_luciphor))
+  .multiMap{ it ->
+      mzmls: it[1]
+      ids: it[2]
+  }
+  .set{ch_plfq}
 
 process proteomicslfq {
 
@@ -956,11 +1015,10 @@ process proteomicslfq {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
 
+    ///.toSortedList({ a, b -> b.baseName <=> a.baseName })
     input:
-     file mzmls from mzmls_plfq.mix(mzmls_plfq_picked).map{it[1]}.toSortedList({ a, b -> b.baseName <=> a.baseName })
-     file id_files from id_files_idx_feat_perc_fdr_filter_switched
-         .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch)
-         .toSortedList({ a, b -> b.baseName <=> a.baseName })
+     file(mzmls) from ch_plfq.mzmls.collect()
+     file(id_files) from ch_plfq.ids.collect()
      file expdes from ch_expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
@@ -1054,7 +1112,7 @@ process ptxqc {
      ptxqc.R ${mzTab} > ptxqc.log
      """
 }
-
+  
 
 
 //--------------------------------------------------------------- //
