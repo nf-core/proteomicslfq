@@ -233,7 +233,7 @@ else
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
-  .multiMap{ row -> id = it.toString().md5()
+  .multiMap{ row -> id = row.toString().md5()
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
                                     row[3],
@@ -874,6 +874,11 @@ process idscoreswitcher_idpep_postfilter {
      """
 }
 
+plfq_in_id = params.enable_mod_localization
+                    ? Channel.empty()
+                    : id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq
+			.mix(id_files_idx_feat_perc_fdr_filter_switched_plfq)
+
 process luciphor {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
@@ -882,15 +887,13 @@ process luciphor {
      tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
 
     output:
-     set mzml_id, file("${id_file.baseName}_luciphor.idXML") into id_files_luciphor
+     set mzml_id, file("${id_file.baseName}_luciphor.idXML") into plfq_in_id_luciphor
      file "*.log"
 
     when:
      params.enable_mod_localization
 
     script:
-     id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq = Channel.empty()
-     id_files_idx_feat_perc_fdr_filter_switched_plfq = Channel.empty()
      def losses = params.luciphor_neutral_losses ? '-neutral_losses "${params.luciphor_neutral_losses}"' : ''
      def dec_mass = params.luciphor_decoy_mass ? '-decoy_mass "${params.luciphor_decoy_mass}"' : ''
      def dec_losses = params.luciphor_decoy_neutral_losses ? '-decoy_neutral_losses "${params.luciphor_decoy_neutral_losses}' : ''
@@ -920,9 +923,7 @@ process luciphor {
 // ID files can come directly from the Percolator branch, IDPEP branch or
 // after optional processing with Luciphor
 mzmls_plfq
-  .join(id_files_luciphor
-        .mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq)
-        .mix(id_files_idx_feat_perc_fdr_filter_switched_plfq))
+  .join(plfq_in_id.mix(plfq_in_id_luciphor))
   .multiMap{ it ->
       mzmls: it[1]
       ids: it[2]
