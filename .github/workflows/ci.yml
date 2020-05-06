@@ -51,6 +51,9 @@ jobs:
       - name:  Run pipeline with test data
         run: |
           nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile test,docker
+      - name:  Run pipeline with test data
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile test_localize,docker
       - uses: actions/upload-artifact@v1
         if: always()
         name: Upload results
