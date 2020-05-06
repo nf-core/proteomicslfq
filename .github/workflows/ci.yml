@@ -14,11 +14,13 @@ jobs:
       NXF_VER: ${{ matrix.nxf_ver }}
       NXF_ANSI_LOG: false
       TOWER_ACCESS_TOKEN: ${{ secrets.NONAWS_TOWER_ACCESS_TOKEN }}
+      TEST_PROFILE: ${{ matrix.test_profile }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         # Nextflow versions: check pipeline minimum and current latest
         nxf_ver: ['20.01.0', '']
+        test_profile: ['test']
     steps:
       - uses: actions/checkout@v2
       - name: Determine tower usage
@@ -50,7 +52,7 @@ jobs:
           docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
       - name:  Run pipeline with test data
         run: |
-          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile test,docker
+          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile $TEST_PROFILE,docker
       - uses: actions/upload-artifact@v1
         if: always()
         name: Upload results
