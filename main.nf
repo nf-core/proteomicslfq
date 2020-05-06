@@ -296,7 +296,6 @@ branched_input.mzML
 
 //Push raw files through process that does the conversion, everything else directly to downstream Channel with mzMLs
 
-
 //This piece only runs on data that is a.) raw and b.) needs conversion
 //mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-)
 
@@ -357,7 +356,6 @@ else
   branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_plfq}
   mzmls_pp = Channel.empty()
 }
-
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
@@ -442,7 +440,6 @@ process openms_peakpicker {
      """
 }
 
-
 if (params.enzyme == "unspecific cleavage")
 {
   params.num_enzyme_termini == "none"
@@ -455,12 +452,8 @@ if (params.num_enzyme_termini == "fully")
 }
 
 /// Search engine
-if (params.search_engine == "msgf")
-{
-    search_engine_score = "SpecEValue"
-} else { //comet
-    search_engine_score = "expect"
-}
+search_engine_score_msgf = "SpecEValue"
+search_engine_score_comet = "expect"
 
 process search_engine_msgf {
 
@@ -481,7 +474,7 @@ process search_engine_msgf {
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      //each file(mzml_file) from mzmls
     when:
-      params.search_engine == "msgf"
+      params.search_engine.contains("msgf")
 
     output:
      set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_msgf
@@ -539,12 +532,8 @@ process search_engine_comet {
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
-     //or
-     //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
-     //each file(mzml_file) from mzmls
-
     when:
-      params.search_engine == "comet"
+      params.search_engine.contains("comet")
 
     output:
      set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_comet
@@ -609,9 +598,6 @@ process index_peptides {
     input:
      tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.idx_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
 
-     //each mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet)
-     //file database from pepidx_in_db.mix(pepidx_in_db_decoy)
-
     output:
      set mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP
      file "*.log"
@@ -635,7 +621,6 @@ process index_peptides {
 
 // ---------------------------------------------------------------------
 // Branch a) Q-values and PEP from Percolator
-
 
 process extract_percolator_features {
 
@@ -672,7 +657,7 @@ process percolator {
     // would be cool to get an estimate by parsing the number of IDs from previous tools.
     label 'process_medium'
     //TODO The current percolator version only supports up to 3-fold CV so the following might make sense now
-    // but in the next version it will have nested CV 
+    // but in the next version it will have nested CV
     cpus { check_max( 3, 'cpus' ) }
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
@@ -681,33 +666,62 @@ process percolator {
      set mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     file "${id_file.baseName}_perc.idXML" into id_files_idx_feat_perc
+     set mzml_id, file("${id_file.baseName}_perc.idXML") into id_files_idx_feat_perc
      file "*.log"
 
     when:
-     params.posterior_probabilities == "percolator"
+     params.posterior_probabilities == "percolator" || params.
 
     // NICE-TO-HAVE: the decoy-pattern is automatically detected from PeptideIndexer.
     // Parse its output and put the correct one here.
     script:
-        if (params.klammer && params.description_correct_features == 0) {
-            log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
-            log.warn('Klammer will be implicitly off!')
-        }
+      if (params.klammer && params.description_correct_features == 0) {
+          log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
+          log.warn('Klammer will be implicitly off!')
+      }
 
-        // currently post-processing-tdc is always set since we do not support separate TD databases
-        """
-        ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
-        ## to honor threads on clusters
-        OMP_NUM_THREADS=${task.cpus} PercolatorAdapter \\
-                            -in ${id_file} \\
-                            -out ${id_file.baseName}_perc.idXML \\
-                            -threads ${task.cpus} \\
-                            -subset-max-train ${params.subset_max_train} \\
-                            -decoy-pattern ${params.decoy_affix} \\
-                            -post-processing-tdc \\
-                            > ${id_file.baseName}_percolator.log
-        """
+      // currently post-processing-tdc is always set since we do not support separate TD databases
+      """
+      ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
+      ## to honor threads on clusters
+      OMP_NUM_THREADS=${task.cpus} PercolatorAdapter \\
+                          -in ${id_file} \\
+                          -out ${id_file.baseName}_perc.idXML \\
+                          -threads ${task.cpus} \\
+                          -subset-max-train ${params.subset_max_train} \\
+                          -decoy-pattern ${params.decoy_affix} \\
+                          -post-processing-tdc \\
+                          > ${id_file.baseName}_percolator.log
+      """
+}
+
+process consensusid {
+
+    label 'process_medium'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
+
+    input:
+     tuple mzml_id, tuple(id_files_from_ses) from id_files_idx_feat_perc.groupTuple(size: params.search_engine.split(",").size())
+
+    output:
+     file "${id_file.baseName}_filter.idXML" into id_files_idx_feat_perc_filter
+     file "*.log"
+
+    when:
+     params.search_engine.split(",").size() > 1
+
+    script:
+     """
+     ConsensusID -in ${id_files_from_ses}.toList().join(" ") \\
+                        -out ${id_file.baseName}_consensus.idXML \\
+                        -threads ${task.cpus} \\
+                        -algorithm best \\
+                        > ${id_file.baseName}_idfilter.log
+     """
+
 }
 
 process idfilter {
