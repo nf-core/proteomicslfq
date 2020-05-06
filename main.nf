@@ -45,15 +45,15 @@ def helpMessage() {
       --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
       --enable_mod_localization     Enable localization scoring with Luciphor
       --mod_localization            Specify the var. modifications whose localizations should be rescored with the luciphor algorithm
-      --precursor_mass_tolerance    Mass tolerance of precursor mass
-      --precursor_mass_tolerance_unit Da or ppm
-      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol)
-      --fragment_mass_tolerance_unit Da or ppm (currently always ppm)
-      --allowed_missed_cleavages    Allowed missed cleavages
-      --min_precursor_charge        Minimum precursor ion charge
-      --max_precursor_charge        Maximum precursor ion charge
-      --min_peptide_length          Minimum peptide length to consider
-      --max_peptide_length          Maximum peptide length to consider
+      --precursor_mass_tolerance    Mass tolerance of precursor mass (default: 5)
+      --precursor_mass_tolerance_unit Da or ppm (default: ppm)
+      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol) (default: 0.03)
+      --fragment_mass_tolerance_unit Da or ppm (default: Da)
+      --allowed_missed_cleavages    Allowed missed cleavages (default: 2)
+      --min_precursor_charge        Minimum precursor ion charge (default: 2)
+      --max_precursor_charge        Maximum precursor ion charge (default: 4)
+      --min_peptide_length          Minimum peptide length to consider (default: 6)
+      --max_peptide_length          Maximum peptide length to consider (default: 40)
       --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
       --protocol                    Used labeling or enrichment protocol (if any)
       --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let                                     them determine from the spectrum metadata)
@@ -61,6 +61,16 @@ def helpMessage() {
       --db_debug                    Debug level during database search
 
       //TODO probably also still some options missing. Try to consolidate them whenever the two search engines share them
+
+    Peak picking:
+      --openms_peakpicking          Use the OpenMS PeakPicker to ADDITIONALLY pick the spectra before the search. This is usually done
+                                    during conversion already. Only activate if something goes wrong.
+      --peakpicking_inmemory        Perform OpenMS peakpicking in-memory. Needs at least the size of the mzML file as RAM but is faster. default: false
+      --peakpicking_ms_levels       Which MS levels to pick. default: [] which means auto-convert all non-centroided
+
+    Peptide Re-indexing:
+      --IL_equivalent               Should isoleucine and leucine be treated interchangeably? Default: true
+      --allow_unmatched             Ignore unmatched peptides (Default: false; only activate if you double-checked all other settings)
 
     PSM Rescoring:
       --posterior_probabilities     How to calculate posterior probabilities for PSMs:
@@ -298,16 +308,6 @@ branched_input.mzML
 //This piece only runs on data that is a.) raw and b.) needs conversion
 //mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-)
 
-
-//GENERAL TODOS
-// - Check why we depend on full filepaths and if that is needed
-/* Proposition from nextflow gitter https://gitter.im/nextflow-io/nextflow?at=5e25fabea259cb0f0607a1a1
-*
-* unless the specific filenames are important (depends on the tool you're using), I usually use the pattern outlined here:
-* https://www.nextflow.io/docs/latest/process.html#multiple-input-files
-* e.g: file "?????.mzML" from mzmls_plfq.toSortedList() and ProteomicsLFQ -in *.mzML -ids *.id
-*/
-
 /*
  * STEP 0.1 - Raw file conversion
  */
@@ -355,13 +355,23 @@ process mzml_indexing {
 
 //Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
 
-branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_luciphor; mzmls_plfq}
+if (params.openms_peakpicking)
+{
+  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).set{mzmls_pp}
+  (mzmls_comet, mzmls_msgf, mzmls_luciphor, mzmls_plfq) = [Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty()]
+}
+else
+{
+  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_luciphor; mzmls_plfq}
+  mzmls_pp = Channel.empty()
+}
+
 
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
                     ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
-                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database)  ] )
+                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database) ] )
 
 //Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
@@ -391,8 +401,8 @@ process generate_decoy_database {
      """
 }
 
-// Doesnt work. Py script needs all the inputs to be together in a folder
-// Wont work with nextflow. It needs to accept a list of paths for the inputs!!
+// Doesnt work yet. Maybe point the script to the workspace?
+// All the files should be there after collecting. 
 //process generate_simple_exp_design_file {
 //    publishDir "${params.outdir}", mode: 'copy'
 //    input:
@@ -409,6 +419,38 @@ process generate_decoy_database {
 //       create_trivial_design.py ${strng} 1 > expdesign.tsv
 //     """
 //}
+
+process openms_peakpicker {
+
+    label 'process_low'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, path(mzml_file) from mzmls_pp
+
+    when:
+      params.openms_peakpicking
+
+    output:
+     set mzml_id, file("out/${mzml_file.baseName}.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
+     file "*.log"
+
+    script:
+     in_mem = params.peakpicking_inmemory ? "inmemory" : "lowmemory"
+     lvls = params.peakpicking_ms_levels ? "-algorithm:ms_levels ${params.peakpicking_ms_levels}" : ""
+     """
+     mkdir out
+     PeakPickerHiRes -in ${mzml_file} \\
+                     -out out/${mzml_file.baseName}.mzML \\
+                     -threads ${task.cpus} \\
+                     -debug ${params.pp_debug} \\
+                     -processOption ${in_mem} \\
+                     ${lvls} \\
+                     > ${mzml_file.baseName}_pp.log
+     """
+}
+
 
 if (params.enzyme == "unspecific cleavage")
 {
@@ -442,7 +484,7 @@ process search_engine_msgf {
     errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.join(ch_sdrf_config.msgf_settings))
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.mix(mzmls_msgf_picked).join(ch_sdrf_config.msgf_settings))
 
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
@@ -461,12 +503,19 @@ process search_engine_msgf {
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
 
+      if ((frag_tol.toDouble() < 50 && frag_tol_unit == "ppm") || (frag_tol.toDouble() < 0.1 && frag_tol_unit == "Da"))
+      {
+        inst = params.instrument ?: "high_res"
+      } else {
+        inst = params.instrument ?: "low_res"
+      }
      """
      MSGFPlusAdapter -in ${mzml_file} \\
                      -out ${mzml_file.baseName}.idXML \\
                      -threads ${task.cpus} \\
+                     -java_memory ${task.memory.toMega()} \\
                      -database "${database}" \\
-                     -instrument ${params.instrument} \\
+                     -instrument ${inst} \\
                      -protocol "${params.protocol}" \\
                      -matches_per_spec ${params.num_hits} \\
                      -min_precursor_charge ${params.min_precursor_charge} \\
@@ -497,7 +546,7 @@ process search_engine_comet {
     // I actually dont know, where else this would be needed.
     errorStrategy 'terminate'
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.join(ch_sdrf_config.comet_settings))
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
      //or
      //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
@@ -512,12 +561,36 @@ process search_engine_comet {
 
     //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
     script:
+     if (frag_tol_unit == "ppm") {
+       // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
+       // and uses Comet's defaults for bin size, in case unsupported unit "ppm" was given.
+       if (frag_tol.toDouble() < 50) {
+         bin_tol = "0.03"
+         bin_offset = "0.0"
+         inst = params.instrument ?: "high_res"
+       } else {
+         bin_tol = "1.0005"
+         bin_offset = "0.4"
+         inst = params.instrument ?: "low_res"
+       }
+       log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
+         " instrument and set the fragment_bin_tolerance to " + bin_tol
+     } else {
+       bin_tol = frag_tol
+       bin_offset = frag_tol.toDouble() < 0.1 ? "0.0" : "0.4"
+       if (!params.instrument)
+       {
+         inst = frag_tol.toDouble() < 0.1 ? "high_res" : "low_res"
+       } else {
+         inst = params.instrument
+       }
+     }
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}.idXML \\
                    -threads ${task.cpus} \\
                    -database "${database}" \\
-                   -instrument ${params.instrument} \\
+                   -instrument ${inst} \\
                    -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
@@ -528,7 +601,8 @@ process search_engine_comet {
                    -max_variable_mods_in_peptide ${params.max_mods} \\
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
-                   -fragment_bin_tolerance ${frag_tol} \\
+                   -fragment_bin_tolerance ${bin_tol} \\
+                   -fragment_bin_offset ${bin_offset} \\
                    -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
      """
@@ -552,13 +626,17 @@ process index_peptides {
      file "*.log"
 
     script:
+     def il = params.IL_equivalent ? '-IL_equivalent' : ''
+     def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
      """
      PeptideIndexer -in ${id_file} \\
                     -out ${id_file.baseName}_idx.idXML \\
                     -threads ${task.cpus} \\
                     -fasta ${database} \\
                     -enzyme:name "${enzyme}" \\
-                    -enzyme:specificity ${pepidx_num_enzyme_termini}
+                    -enzyme:specificity ${pepidx_num_enzyme_termini} \\
+                    ${il} \\
+                    ${allow_um} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
@@ -630,7 +708,7 @@ process percolator {
         """
         ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
         ## to honor threads on clusters
-        OMP_NUMBER_THREADS=${task.cpus} PercolatorAdapter \\
+        OMP_NUM_THREADS=${task.cpus} PercolatorAdapter \\
                             -in ${id_file} \\
                             -out ${id_file.baseName}_perc.idXML \\
                             -threads ${task.cpus} \\
@@ -939,8 +1017,8 @@ process proteomicslfq {
 
     ///.toSortedList({ a, b -> b.baseName <=> a.baseName })
     input:
-     file(mzmls) from ch_plfq.mzmls.collect().view()
-     file(id_files) from ch_plfq.ids.collect().view()
+     file(mzmls) from ch_plfq.mzmls.collect()
+     file(id_files) from ch_plfq.ids.collect()
      file expdes from ch_expdesign
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
@@ -994,7 +1072,9 @@ process msstats {
      file csv from out_msstats
 
     output:
-     file "*.pdf"
+     // The generation of the PDFs from MSstats are very unstable, especially with auto-contrasts.
+     // And users can easily fix anything based on the csv and the included script -> make optional
+     file "*.pdf" optional true
      file "*.csv"
      file "*.log"
 
@@ -1008,7 +1088,7 @@ process msstats {
 
 process ptxqc {
 
-    label 'process_very_low'
+    label 'process_low'
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
