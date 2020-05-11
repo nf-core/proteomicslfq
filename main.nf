@@ -481,7 +481,7 @@ process search_engine_msgf {
       params.search_engine.contains("msgf")
 
     output:
-     tuple mzml_id, file("${mzml_file.baseName}.idXML") into id_files_msgf
+     tuple mzml_id, file("${mzml_file.baseName}_msgf.idXML") into id_files_msgf
      file "*.log"
 
     script:
@@ -499,7 +499,7 @@ process search_engine_msgf {
       }
      """
      MSGFPlusAdapter -in ${mzml_file} \\
-                     -out ${mzml_file.baseName}.idXML \\
+                     -out ${mzml_file.baseName}_msgf.idXML \\
                      -threads ${task.cpus} \\
                      -java_memory ${task.memory.toMega()} \\
                      -database "${database}" \\
@@ -540,7 +540,7 @@ process search_engine_comet {
       params.search_engine.contains("comet")
 
     output:
-     tuple mzml_id, file("${mzml_file.baseName}.idXML") into id_files_comet
+     tuple mzml_id, file("${mzml_file.baseName}_comet.idXML") into id_files_comet
      file "*.log"
 
     //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
@@ -571,7 +571,7 @@ process search_engine_comet {
      }
      """
      CometAdapter  -in ${mzml_file} \\
-                   -out ${mzml_file.baseName}.idXML \\
+                   -out ${mzml_file.baseName}_comet.idXML \\
                    -threads ${task.cpus} \\
                    -database "${database}" \\
                    -instrument ${inst} \\
@@ -600,7 +600,7 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.idx_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+     tuple mzml_id, file(id_file), val(enzyme), file(database) from id_files_msgf.mix(id_files_comet).combine(ch_sdrf_config.idx_settings, by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy)).view()
 
     output:
      tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
@@ -670,7 +670,7 @@ process percolator {
      tuple mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), "MS:1001491" into id_files_perc, id_files_perc_consID
+     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491") into id_files_perc, id_files_perc_consID
      file "*.log"
 
     when:
@@ -748,7 +748,7 @@ process idpep {
      tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP_FDR.mix(id_files_idx_ForIDPEP_noFDR)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), "q-value_score" into id_files_idpep, id_files_idpep_consID
+     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score") into id_files_idpep, id_files_idpep_consID
      file "*.log"
 
     when:
@@ -807,10 +807,10 @@ process consensusid {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     tuple mzml_id, file(id_files_from_ses), qval_score from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engine.split(",").size())
+     tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engine.split(",").size())
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into consensusids
+     tuple mzml_id, file("${mzml_id}_consensus.idXML") into consensusids
      file "*.log"
 
     when:
@@ -818,7 +818,7 @@ process consensusid {
 
     script:
      """
-     ConsensusID -in ${id_files_from_ses}.toList().join(" ") \\
+     ConsensusID -in ${id_files_from_ses} \\
                         -out ${mzml_id}_consensus.idXML \\
                         -per_spectrum \\
                         -threads ${task.cpus} \\
@@ -872,7 +872,7 @@ process idfilter {
      tuple mzml_id, file(id_file) from id_files_noConsID_qval.mix(consensusids_fdr)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into id_filtered
+     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into id_filtered, id_filtered_luciphor
      file "*.log"
 
     script:
@@ -894,7 +894,7 @@ process luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_filtered).join(ch_sdrf_config.luciphor_settings)
+     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_filtered_luciphor).join(ch_sdrf_config.luciphor_settings)
 
     output:
      set mzml_id, file("${id_file.baseName}_luciphor.idXML") into plfq_in_id_luciphor
