@@ -703,6 +703,10 @@ process percolator {
 // ---------------------------------------------------------------------
 // Branch b) Q-values and PEP from OpenMS
 
+if(params.posterior_probabilities != "percolator" && params.search_engine.split(",").size() == 1)
+{
+  id_files_idx_ForIDPEP_noFDR = Channel.empty()
+}
 process fdr_idpep {
 
     label 'process_very_low'
@@ -732,11 +736,7 @@ process fdr_idpep {
      """
 }
 
-if (params.search_engine.split(",").size() != 1)
-{
-  id_files_idx_ForIDPEP_fdr = Channel.empty()
-}
-
+//idpep picks the best scores for each search engine automatically. No switching needed after FDR.
 process idpep {
 
     label 'process_low'
