@@ -276,8 +276,8 @@ Is the decoy label a prefix or suffix. Prefix is highly recommended as some tool
 
 A comma-separated list of search engines to run in parallel on each mzML file. Currently supported: comet and msgf (default: comet)
 If more than one search engine is given, results are combined based on posterior error probabilities (see the different types
-of estimation procedures under [`--posterior_probabilities`](#--posterior_probabilities)). Combination is done with 
-[CometAdapter](https://abibuilder.informatik.uni-tuebingen.de/archive/openms/Documentation/release/latest/html/TOPP_CometAdapter.html).
+of estimation procedures under [`--posterior_probabilities`](#--posterior_probabilities)). Combination is done with
+[ConsensusID](https://abibuilder.informatik.uni-tuebingen.de/archive/openms/Documentation/release/latest/html/TOPP_ConsensusID.html).
 See also its corresponding [`--consensusid_algorithm`](#--consensusid_algorithm) parameter for different combination strategies.
 Combinations may profit from an increased [`--num_hits`](#--num_hits) parameter.
 
