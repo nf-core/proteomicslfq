@@ -36,7 +36,7 @@ def helpMessage() {
       --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)
 
     Database Search:
-      --search_engine               Which search engine: "comet" (default) or "msgf"
+      --search_engines               Which search engine: "comet" (default) or "msgf"
       --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
       --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default:
                                          'fully' valid: 'semi', 'fully')
@@ -478,7 +478,7 @@ process search_engine_msgf {
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      //each file(mzml_file) from mzmls
     when:
-      params.search_engine.contains("msgf")
+      params.search_engines.contains("msgf")
 
     output:
      tuple mzml_id, file("${mzml_file.baseName}_msgf.idXML") into id_files_msgf
@@ -537,7 +537,7 @@ process search_engine_comet {
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
     when:
-      params.search_engine.contains("comet")
+      params.search_engines.contains("comet")
 
     output:
      tuple mzml_id, file("${mzml_file.baseName}_comet.idXML") into id_files_comet
@@ -703,7 +703,7 @@ process percolator {
 // ---------------------------------------------------------------------
 // Branch b) Q-values and PEP from OpenMS
 
-if(params.posterior_probabilities != "percolator" && params.search_engine.split(",").size() == 1)
+if(params.posterior_probabilities != "percolator" && params.search_engines.split(",").size() == 1)
 {
   id_files_idx_ForIDPEP_noFDR = Channel.empty()
 }
@@ -722,7 +722,7 @@ process fdr_idpep {
      file "*.log"
 
     when:
-     params.posterior_probabilities != "percolator" && params.search_engine.split(",").size() == 1
+     params.posterior_probabilities != "percolator" && params.search_engines.split(",").size() == 1
 
     script:
      """
@@ -758,7 +758,8 @@ process idpep {
      """
      IDPosteriorErrorProbability    -in ${id_file} \\
                                     -out ${id_file.baseName}_idpep.idXML \\
-                                    -threads ${task.cpus} \\
+                                    -fit_algorithm:outlier_handling ${params.outlier_handling} \\
+				    -threads ${task.cpus} \\
                                     > ${id_file.baseName}_idpep.log
      """
 }
@@ -782,7 +783,7 @@ process idscoreswitcher_to_qval {
      file "*.log"
 
     when:
-     params.search_engine.split(",").size() == 1
+     params.search_engines.split(",").size() == 1
 
     script:
      """
@@ -807,14 +808,14 @@ process consensusid {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engine.split(",").size())
+     tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
 
     output:
      tuple mzml_id, file("${mzml_id}_consensus.idXML") into consensusids
      file "*.log"
 
     when:
-     params.search_engine.split(",").size() > 1
+     params.search_engines.split(",").size() > 1
 
     script:
      """
