@@ -828,7 +828,9 @@ process consensusid {
                         -out ${mzml_id}_consensus.idXML \\
                         -per_spectrum \\
                         -threads ${task.cpus} \\
-                        -algorithm best \\
+                        -algorithm ${params.consensusid_algorithm} \\
+                        -filter:min_support ${params.min_consensus_support} \\
+                        -filter:considered_hits ${params.consensusid_considered_top_hits} \\
                         > ${mzml_id}_consensusID.log
      """
 
