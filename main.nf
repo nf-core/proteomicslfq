@@ -103,6 +103,11 @@ def helpMessage() {
 
       //TODO add more options for rescoring part
 
+    ConsensusID:
+      --consensusid_algorithm       Choose method to combine probabilities from multiple search engines (if used). Valid: best, worst, average, rank, PEPMatrix, PEPIons (Default: best)
+      --min_consensus_support       Choose ratio of ADDITIONAL evidence for a peptide ID of a spectrum. Varies across methods. See documentation for further info. (Default: 0)
+      --consensusid_considered_top_hits Number of top hits per spectrum considered for consensus scoring. (Default: 0 = all)
+
     Inference and Quantification:
       --inf_quant_debug             Debug level during inference and quantification. (WARNING: Higher than 666 may produce a lot
                                     of additional output files)
