@@ -605,7 +605,7 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), val(enzyme), file(database) from id_files_msgf.mix(id_files_comet).combine(ch_sdrf_config.idx_settings, by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy)).view()
+     tuple mzml_id, file(id_file), val(enzyme), file(database) from id_files_msgf.mix(id_files_comet).combine(ch_sdrf_config.idx_settings, by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
 
     output:
      tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
@@ -810,7 +810,6 @@ process consensusid {
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
-    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
      tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
@@ -839,7 +838,6 @@ process consensusid {
 process fdr_consensusid {
 
     label 'process_medium'
-    //TODO could be easily parallelized
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
@@ -853,7 +851,7 @@ process fdr_consensusid {
      file "*.log"
 
     when:
-     params.search_engine.split(",").size() > 1
+     params.search_engines.split(",").size() > 1
 
     script:
      """
