@@ -12,6 +12,7 @@
   Either (using a PRIDE Sample to data relation format file):
   * [`--sdrf`](#--sdrf)
   * [`--root_folder`](#--root_folder)
+  * [`--local_input_type`](#--rlocal_input_type)
 
   Or (using spectrum files and an OpenMS style experimental design):
   * [`--spectra`](#--spectra)
@@ -178,6 +179,12 @@ following parameters will currently be overwritten by the ones specified in the 
 This optional parameter can be used to specify a root folder in which the spectrum files specified in the SDRF are searched.
 It is usually used if you have a local version of the experiment already. Note that this option does not support recursive
 searching yet.
+
+### `--local_input_type`
+
+If the above [`--root_folder`](#--root_folder) was given to load local input files, this overwrites the file type/extension of
+the filename as specified in the SDRF. Usually used in case you have an mzML-converted version of the files already. Needs to be
+one of 'mzML' or 'raw' (the letter cases should match your files exactly).
 
 -----
 
