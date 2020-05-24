@@ -259,7 +259,11 @@ else
                     luciphor_settings: 
                                   tuple(id,
                                     row[9])
-                    mzmls: tuple(id, params.root_folder.length() == 0 ? row[0] : (params.root_folder + "/" + row[1]))}
+                    mzmls: tuple(id, !params.root_folder ?
+                                    row[0] :
+                                    params.root_folder + "/" + (params.local_input_type ? 
+                                        row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
+                                        row[1]))}  
   .set{ch_sdrf_config}
 }
 
