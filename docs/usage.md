@@ -12,7 +12,7 @@
   Either (using a PRIDE Sample to data relation format file):
   * [`--sdrf`](#--sdrf)
   * [`--root_folder`](#--root_folder)
-  * [`--local_input_type`](#--rlocal_input_type)
+  * [`--local_input_type`](#--local_input_type)
 
   Or (using spectrum files and an OpenMS style experimental design):
   * [`--spectra`](#--spectra)
