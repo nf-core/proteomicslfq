@@ -23,6 +23,7 @@ def helpMessage() {
       Either:
       --sdrf                        Path to PRIDE Sample to data relation format file
       --root_folder                 (Optional) If given, looks for the filenames in the SDRF in this folder, locally
+      --local_input_type            (Optional) If given and 'root_folder' was specified, it overwrites the filetype in the SDRF for local lookup and matches only the basename.
       Or:
       --spectra                     Path to input spectra as mzML or Thermo Raw
       --expdesign                   Path to optional experimental design file (if not given, it assumes unfractionated, unrelated samples)
@@ -56,7 +57,7 @@ def helpMessage() {
       --max_peptide_length          Maximum peptide length to consider (default: 40)
       --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
       --protocol                    Used labeling or enrichment protocol (if any)
-      --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let                                     them determine from the spectrum metadata)
+      --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let them determine from the spectrum metadata)
       --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
       --db_debug                    Debug level during database search
 
@@ -259,7 +260,11 @@ else
                     luciphor_settings: 
                                   tuple(id,
                                     row[9])
-                    mzmls: tuple(id, params.root_folder.length() == 0 ? row[0] : (params.root_folder + "/" + row[1]))}
+                    mzmls: tuple(id, !params.root_folder ?
+                                    row[0] :
+                                    params.root_folder + "/" + (params.local_input_type ? 
+                                        row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
+                                        row[1]))}  
   .set{ch_sdrf_config}
 }
 
