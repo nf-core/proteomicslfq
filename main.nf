@@ -37,7 +37,7 @@ def helpMessage() {
       --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)
 
     Database Search:
-      --search_engine               Which search engine: "comet" (default) or "msgf"
+      --search_engines               Which search engine: "comet" (default) or "msgf"
       --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
       --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default:
                                          'fully' valid: 'semi', 'fully')
@@ -103,6 +103,11 @@ def helpMessage() {
       --top_hits_only               Use only the top hits for fitting
 
       //TODO add more options for rescoring part
+
+    ConsensusID:
+      --consensusid_algorithm       Choose method to combine probabilities from multiple search engines (if used). Valid: best, worst, average, rank, PEPMatrix, PEPIons (Default: best)
+      --min_consensus_support       Choose ratio of ADDITIONAL evidence for a peptide ID of a spectrum. Varies across methods. See documentation for further info. (Default: 0)
+      --consensusid_considered_top_hits Number of top hits per spectrum considered for consensus scoring. (Default: 0 = all)
 
     Inference and Quantification:
       --inf_quant_debug             Debug level during inference and quantification. (WARNING: Higher than 666 may produce a lot
@@ -309,7 +314,6 @@ branched_input.mzML
 
 //Push raw files through process that does the conversion, everything else directly to downstream Channel with mzMLs
 
-
 //This piece only runs on data that is a.) raw and b.) needs conversion
 //mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-)
 
@@ -327,7 +331,7 @@ process raw_file_conversion {
      tuple mzml_id, path(rawfile) from branched_input.raw
 
     output:
-     set mzml_id, file("*.mzML") into mzmls_converted
+     tuple mzml_id, file("*.mzML") into mzmls_converted
 
     script:
      """
@@ -345,10 +349,10 @@ process mzml_indexing {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, path(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
+     tuple mzml_id, path(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
 
     output:
-     set mzml_id, file("out/*.mzML") into mzmls_indexed
+     tuple mzml_id, file("out/*.mzML") into mzmls_indexed
      file "*.log"
 
     script:
@@ -370,8 +374,6 @@ else
   branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_luciphor; mzmls_plfq}
   mzmls_pp = Channel.empty()
 }
-
-
 
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
@@ -438,7 +440,7 @@ process openms_peakpicker {
       params.openms_peakpicking
 
     output:
-     set mzml_id, file("out/${mzml_file.baseName}.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
+     tuple mzml_id, file("out/${mzml_file.baseName}.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
      file "*.log"
 
     script:
@@ -456,7 +458,6 @@ process openms_peakpicker {
      """
 }
 
-
 if (params.enzyme == "unspecific cleavage")
 {
   params.num_enzyme_termini == "none"
@@ -466,14 +467,6 @@ pepidx_num_enzyme_termini = params.num_enzyme_termini
 if (params.num_enzyme_termini == "fully")
 {
   pepidx_num_enzyme_termini = "full"
-}
-
-/// Search engine
-if (params.search_engine == "msgf")
-{
-    search_engine_score = "SpecEValue"
-} else { //comet
-    search_engine_score = "expect"
 }
 
 process search_engine_msgf {
@@ -495,10 +488,10 @@ process search_engine_msgf {
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      //each file(mzml_file) from mzmls
     when:
-      params.search_engine == "msgf"
+      params.search_engines.contains("msgf")
 
     output:
-     set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_msgf
+     tuple mzml_id, file("${mzml_file.baseName}_msgf.idXML") into id_files_msgf
      file "*.log"
 
     script:
@@ -516,7 +509,7 @@ process search_engine_msgf {
       }
      """
      MSGFPlusAdapter -in ${mzml_file} \\
-                     -out ${mzml_file.baseName}.idXML \\
+                     -out ${mzml_file.baseName}_msgf.idXML \\
                      -threads ${task.cpus} \\
                      -java_memory ${task.memory.toMega()} \\
                      -database "${database}" \\
@@ -553,15 +546,11 @@ process search_engine_comet {
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
-     //or
-     //file database from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet)
-     //each file(mzml_file) from mzmls
-
     when:
-      params.search_engine == "comet"
+      params.search_engines.contains("comet")
 
     output:
-     set mzml_id, file("${mzml_file.baseName}.idXML") into id_files_comet
+     tuple mzml_id, file("${mzml_file.baseName}_comet.idXML") into id_files_comet
      file "*.log"
 
     //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
@@ -592,7 +581,7 @@ process search_engine_comet {
      }
      """
      CometAdapter  -in ${mzml_file} \\
-                   -out ${mzml_file.baseName}.idXML \\
+                   -out ${mzml_file.baseName}_comet.idXML \\
                    -threads ${task.cpus} \\
                    -database "${database}" \\
                    -instrument ${inst} \\
@@ -621,13 +610,10 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), enzyme, file(database) from id_files_msgf.mix(id_files_comet).join(ch_sdrf_config.idx_settings).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
-
-     //each mzml_id, file(id_file) from id_files_msgf.mix(id_files_comet)
-     //file database from pepidx_in_db.mix(pepidx_in_db_decoy)
+     tuple mzml_id, file(id_file), val(enzyme), file(database) from id_files_msgf.mix(id_files_comet).combine(ch_sdrf_config.idx_settings, by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
 
     output:
-     set mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP
+     tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
      file "*.log"
 
     script:
@@ -650,7 +636,6 @@ process index_peptides {
 // ---------------------------------------------------------------------
 // Branch a) Q-values and PEP from Percolator
 
-
 process extract_percolator_features {
 
     label 'process_very_low'
@@ -659,10 +644,10 @@ process extract_percolator_features {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(id_file) from id_files_idx_ForPerc
+     tuple mzml_id, file(id_file) from id_files_idx_ForPerc
 
     output:
-     set mzml_id, file("${id_file.baseName}_feat.idXML") into id_files_idx_feat
+     tuple mzml_id, file("${id_file.baseName}_feat.idXML") into id_files_idx_feat
      file "*.log"
 
     when:
@@ -679,23 +664,23 @@ process extract_percolator_features {
 
 
 //Note: from here, we do not need any settings anymore. so we can skip adding the mzml_id to the channels
-//TODO parameterize and find a way to run across all runs merged
+//TODO find a way to run across all runs merged
 process percolator {
 
     //TODO Actually it heavily depends on the subset_max_train option and the number of IDs
     // would be cool to get an estimate by parsing the number of IDs from previous tools.
     label 'process_medium'
     //TODO The current percolator version only supports up to 3-fold CV so the following might make sense now
-    // but in the next version it will have nested CV 
+    // but in the next version it will have nested CV
     cpus { check_max( 3, 'cpus' ) }
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(id_file) from id_files_idx_feat
+     tuple mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     set mzml_id, file("${id_file.baseName}_perc.idXML") into id_files_idx_feat_perc
+     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491") into id_files_perc, id_files_perc_consID
      file "*.log"
 
     when:
@@ -704,88 +689,34 @@ process percolator {
     // NICE-TO-HAVE: the decoy-pattern is automatically detected from PeptideIndexer.
     // Parse its output and put the correct one here.
     script:
-        if (params.klammer && params.description_correct_features == 0) {
-            log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
-            log.warn('Klammer will be implicitly off!')
-        }
+      if (params.klammer && params.description_correct_features == 0) {
+          log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
+          log.warn('Klammer will be implicitly off!')
+      }
 
-        // currently post-processing-tdc is always set since we do not support separate TD databases
-        """
-        ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
-        ## to honor threads on clusters
-        OMP_NUM_THREADS=${task.cpus} PercolatorAdapter \\
-                            -in ${id_file} \\
-                            -out ${id_file.baseName}_perc.idXML \\
-                            -threads ${task.cpus} \\
-                            -subset-max-train ${params.subset_max_train} \\
-                            -decoy-pattern ${params.decoy_affix} \\
-                            -post-processing-tdc \\
-                            > ${id_file.baseName}_percolator.log
-        """
-}
-
-process idfilter {
-
-    label 'process_very_low'
-    label 'process_single_thread'
-
-    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
-    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
-
-    input:
-     set mzml_id, file(id_file) from id_files_idx_feat_perc
-
-    output:
-     set mzml_id, file("${id_file.baseName}_filter.idXML") into id_files_idx_feat_perc_filter
-     file "*.log"
-
-    when:
-     params.posterior_probabilities == "percolator"
-
-    script:
-     """
-     IDFilter -in ${id_file} \\
-                        -out ${id_file.baseName}_filter.idXML \\
-                        -threads ${task.cpus} \\
-                        -score:pep ${params.psm_pep_fdr_cutoff} \\
-                        > ${id_file.baseName}_idfilter.log
-     """
-}
-
-process idscoreswitcher {
-
-    label 'process_very_low'
-    label 'process_single_thread'
-
-    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
-
-    input:
-     set mzml_id, file(id_file) from id_files_idx_feat_perc_filter
-
-    output:
-     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_feat_perc_fdr_filter_switched_luciphor, id_files_idx_feat_perc_fdr_filter_switched_plfq
-     file "*.log"
-
-    when:
-     params.posterior_probabilities == "percolator"
-
-    script:
-     """
-     IDScoreSwitcher    -in ${id_file} \\
-                        -out ${id_file.baseName}_switched.idXML \\
-                        -threads ${task.cpus} \\
-                        -old_score q-value \\
-                        -new_score MS:1001493 \\
-                        -new_score_orientation lower_better \\
-                        -new_score_type "Posterior Error Probability" \\
-                        > ${id_file.baseName}_scoreswitcher.log
-     """
+      // currently post-processing-tdc is always set since we do not support separate TD databases
+      """
+      ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
+      ## to honor threads on clusters
+      OMP_NUM_THREADS=${task.cpus} PercolatorAdapter \\
+                          -in ${id_file} \\
+                          -out ${id_file.baseName}_perc.idXML \\
+                          -threads ${task.cpus} \\
+                          -subset-max-train ${params.subset_max_train} \\
+                          -decoy-pattern ${params.decoy_affix} \\
+                          -post-processing-tdc \\
+                          -score_type pep \\
+                          > ${id_file.baseName}_percolator.log
+      """
 }
 
 // ---------------------------------------------------------------------
 // Branch b) Q-values and PEP from OpenMS
 
-// Note: for IDPEP we never need any file specific settings so we can stop adding the mzml_idto the channels
+if(params.posterior_probabilities != "percolator" && params.search_engines.split(",").size() == 1)
+{
+  id_files_idx_ForIDPEP_noFDR = Channel.empty()
+}
 process fdr_idpep {
 
     label 'process_very_low'
@@ -794,14 +725,14 @@ process fdr_idpep {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(id_file) from id_files_idx_ForIDPEP
+     tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP
 
     output:
-     set mzml_id, file("${id_file.baseName}_fdr.idXML") into id_files_idx_ForIDPEP_fdr
+     tuple mzml_id, file("${id_file.baseName}_fdr.idXML") into id_files_idx_ForIDPEP_FDR
      file "*.log"
 
     when:
-     params.posterior_probabilities != "percolator"
+     params.posterior_probabilities != "percolator" && params.search_engines.split(",").size() == 1
 
     script:
      """
@@ -815,36 +746,7 @@ process fdr_idpep {
      """
 }
 
-process idscoreswitcher_idpep_pre {
-
-    label 'process_very_low'
-    label 'process_single_thread'
-
-    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
-
-    input:
-     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr
-
-    output:
-     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch
-     file "*.log"
-
-    when:
-     params.posterior_probabilities != "percolator"
-
-    script:
-     """
-     IDScoreSwitcher    -in ${id_file} \\
-                        -out ${id_file.baseName}_switched.idXML \\
-                        -threads ${task.cpus} \\
-                        -old_score q-value \\
-                        -new_score ${search_engine_score}_score \\
-                        -new_score_orientation lower_better \\
-                        -new_score_type ${search_engine_score} \\
-                        > ${id_file.baseName}_scoreswitcher1.log
-     """
-}
-
+//idpep picks the best scores for each search engine automatically. No switching needed after FDR.
 process idpep {
 
     label 'process_low'
@@ -853,10 +755,10 @@ process idpep {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch
+     tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP_FDR.mix(id_files_idx_ForIDPEP_noFDR)
 
     output:
-     set mzml_id, file("${id_file.baseName}_idpep.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep
+     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score") into id_files_idpep, id_files_idpep_consID
      file "*.log"
 
     when:
@@ -866,12 +768,17 @@ process idpep {
      """
      IDPosteriorErrorProbability    -in ${id_file} \\
                                     -out ${id_file.baseName}_idpep.idXML \\
-                                    -threads ${task.cpus} \\
+                                    -fit_algorithm:outlier_handling ${params.outlier_handling} \\
+				    -threads ${task.cpus} \\
                                     > ${id_file.baseName}_idpep.log
      """
 }
 
-process idscoreswitcher_idpep_post {
+// ---------------------------------------------------------------------
+// Main Branch
+
+//TODO this can be removed if we would add a "score_type" option to IDFilter that looks and filters for that score
+process idscoreswitcher_to_qval {
 
     label 'process_very_low'
     label 'process_single_thread'
@@ -879,14 +786,14 @@ process idscoreswitcher_idpep_post {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep
+     tuple mzml_id, file(id_file), qval_score from id_files_idpep.mix(id_files_perc)
 
     output:
-     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+     tuple mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_noConsID_qval
      file "*.log"
 
     when:
-     params.posterior_probabilities != "percolator"
+     params.search_engines.split(",").size() == 1
 
     script:
      """
@@ -894,13 +801,77 @@ process idscoreswitcher_idpep_post {
                         -out ${id_file.baseName}_switched.idXML \\
                         -threads ${task.cpus} \\
                         -old_score "Posterior Error Probability" \\
-                        -new_score q-value \\
+                        -new_score ${qval_score} \\
+                        -new_score_type q-value \\
                         -new_score_orientation lower_better \\
-                        > ${id_file.baseName}_scoreswitcher2.log
+                        > ${id_file.baseName}_scoreswitcher_qval.log
      """
 }
 
-process idfilter_idpep {
+process consensusid {
+
+    label 'process_medium'
+    //TODO could be easily parallelized
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
+
+    output:
+     tuple mzml_id, file("${mzml_id}_consensus.idXML") into consensusids
+     file "*.log"
+
+    when:
+     params.search_engines.split(",").size() > 1
+
+    script:
+     """
+     ConsensusID -in ${id_files_from_ses} \\
+                        -out ${mzml_id}_consensus.idXML \\
+                        -per_spectrum \\
+                        -threads ${task.cpus} \\
+                        -algorithm ${params.consensusid_algorithm} \\
+                        -filter:min_support ${params.min_consensus_support} \\
+                        -filter:considered_hits ${params.consensusid_considered_top_hits} \\
+                        > ${mzml_id}_consensusID.log
+     """
+
+}
+
+process fdr_consensusid {
+
+    label 'process_medium'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
+
+    input:
+     tuple mzml_id, file(id_file) from consensusids
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_fdr.idXML") into consensusids_fdr
+     file "*.log"
+
+    when:
+     params.search_engines.split(",").size() > 1
+
+    script:
+     """
+     FalseDiscoveryRate -in ${id_file} \\
+                        -out ${id_file.baseName}_fdr.idXML \\
+                        -threads ${task.cpus} \\
+                        -protein false \\
+                        -algorithm:add_decoy_peptides \\
+                        -algorithm:add_decoy_proteins \\
+                        > ${id_file.baseName}_fdr.log
+     """
+
+}
+
+process idfilter {
 
     label 'process_very_low'
     label 'process_single_thread'
@@ -909,65 +880,32 @@ process idfilter_idpep {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep_switch
+     tuple mzml_id, file(id_file) from id_files_noConsID_qval.mix(consensusids_fdr)
 
     output:
-     set mzml_id, file("${id_file.baseName}_filter.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
+     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into id_filtered, id_filtered_luciphor
      file "*.log"
-
-    when:
-     params.posterior_probabilities != "percolator"
 
     script:
      """
      IDFilter -in ${id_file} \\
-              -out ${id_file.baseName}_filter.idXML \\
-              -threads ${task.cpus} \\
-              -score:pep ${params.psm_pep_fdr_cutoff} \\
-              > ${id_file.baseName}_idfilter1.log
-     """
-}
-
-process idscoreswitcher_idpep_postfilter {
-
-    label 'process_very_low'
-    label 'process_single_thread'
-
-    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
-
-    input:
-     set mzml_id, file(id_file) from id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter
-
-    output:
-     set mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq, id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor
-     file "*.log"
-
-    when:
-     params.posterior_probabilities != "percolator"
-
-    script:
-     """
-     IDScoreSwitcher    -in ${id_file} \\
-                        -out ${id_file.baseName}_switched.idXML \\
+                        -out ${id_file.baseName}_filter.idXML \\
                         -threads ${task.cpus} \\
-                        -old_score q-value \\
-                        -new_score "Posterior Error Probability" \\
-                        -new_score_orientation lower_better \\
-                        > ${id_file.baseName}_scoreswitcher3.log
+                        -score:pep ${params.psm_pep_fdr_cutoff} \\
+                        > ${id_file.baseName}_idfilter.log
      """
 }
 
 plfq_in_id = params.enable_mod_localization
                     ? Channel.empty()
-                    : id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_plfq
-			.mix(id_files_idx_feat_perc_fdr_filter_switched_plfq)
+                    : id_filtered
 
 process luciphor {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_files_idx_feat_perc_fdr_filter_switched_luciphor.mix(id_files_idx_ForIDPEP_fdr_switch_idpep_switch_filter_switch_luciphor)).join(ch_sdrf_config.luciphor_settings)
+     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_filtered_luciphor).join(ch_sdrf_config.luciphor_settings)
 
     output:
      set mzml_id, file("${id_file.baseName}_luciphor.idXML") into plfq_in_id_luciphor
@@ -998,9 +936,6 @@ process luciphor {
                      //        -fragment_mass_tolerance ${} \\
                      //   -fragment_error_units ${} \\
 }
-
-// ---------------------------------------------------------------------
-// Main Branch
 
 // Join mzmls and ids by UID specified per mzml file in the beginning.
 // ID files can come directly from the Percolator branch, IDPEP branch or

@@ -26,7 +26,7 @@
   * [`--decoy_affix`](#-decoy_affix)
   * [`--affix_type`](#-profile)
 * [Database search](#database-search)
-  * [`--search_engine`](#--search_engine)
+  * [`--search_engines`](#--search_engines)
   * [`--enzyme`](#--enzyme)
   * [`--num_enzyme_termini`](#--num_enzyme_termini)
   * [`--num_hits`](#--num_hits)
@@ -66,6 +66,10 @@
   * [Distribution specific](#distribution-specific)
     * [`--outlier_handling`](#--outlier_handling)
     * [`--top_hits_only`](#--top_hits_only)
+* [ConsensusID](#consensusid)
+  * [`--consensusid_algorithm`](#--consensusid_algorithm)
+  * [`--min_consensus_support`](#--min_consensus_support)
+  * [`--consensusid_considered_top_hits`](#--consensusid_considered_top_hits)
 * [Inference and Quantification](#inference-and-quantification)
   * [`--inf_quant_debug`](#--inf_quant_debug)
   * [Inference](#inference)
@@ -275,6 +279,15 @@ Is the decoy label a prefix or suffix. Prefix is highly recommended as some tool
 
 ## Database search
 
+### `--search_engines`
+
+A comma-separated list of search engines to run in parallel on each mzML file. Currently supported: comet and msgf (default: comet)
+If more than one search engine is given, results are combined based on posterior error probabilities (see the different types
+of estimation procedures under [`--posterior_probabilities`](#--posterior_probabilities)). Combination is done with
+[ConsensusID](https://abibuilder.informatik.uni-tuebingen.de/archive/openms/Documentation/release/latest/html/TOPP_ConsensusID.html).
+See also its corresponding [`--consensusid_algorithm`](#--consensusid_algorithm) parameter for different combination strategies.
+Combinations may profit from an increased [`--num_hits`](#--num_hits) parameter.
+
 ### `--precursor_mass_tolerance`
 
 Precursor mass tolerance used for database search. For High-Resolution instruments a precursor mass tolerance value of 5 ppm is recommended (i.e. 5). See also [`--precursor_mass_tolerance_unit`](#--precursor_mass_tolerance_unit).
@@ -455,6 +468,34 @@ How to handle outliers during fitting:
 ### `--top_hits_only`
 
 Use only the top peptide hits per spectrum for fitting. Default: true
+
+## ConsensusID
+
+The following parameters are only used when more than one search engine was specified in the [`--search_engines`](`#--search_engines`)
+parameter for combination.
+
+### `--consensusid_algorithm`
+
+Specifies how search engine results are combined: ConsensusID offers several algorithms that can aggregate results from multiple peptide identification engines ("search engines") into consensus identifications - typically one per MS2 spectrum. This works especially well for search engines that provide more than one peptide hit per spectrum, i.e. that report not just the best hit, but also a list of runner-up candidates with corresponding scores.
+
+The available algorithms are:
+
+* PEPMatrix: Scoring based on posterior error probabilities (PEPs) and peptide sequence similarities. This algorithm uses a substitution matrix to score the similarity of sequences not listed by all search engines. It requires PEPs as the scores for all peptide hits.
+* PEPIons: Scoring based on posterior error probabilities (PEPs) and fragment ion similarities ("shared peak count"). This algorithm, too, requires PEPs as scores.
+* best: For each peptide ID, this uses the best score of any search engine as the consensus score.
+* worst: For each peptide ID, this uses the worst score of any search engine as the consensus score.
+* average: For each peptide ID, this uses the average score of all search engines as the consensus score.
+* ranks: Calculates a consensus score based on the ranks of peptide IDs in the results of different search engines. The final score is in the range (0, 1], with 1 being the best score.
+
+To make scores comparable, for best, worst and average, PEPs are used as well. Peptide IDs are only considered the same if they map to exactly the same sequence (including modifications and their localization). Also isobaric aminoacids are (for now) only considered equal with the PEPMatrix/PEPIons algorithms.
+
+### `--min_consensus_support`
+
+This allows filtering of peptide hits based on agreement between search engines. Every peptide sequence in the analysis has been identified by at least one search run. This parameter defines which fraction (between 0 and 1) of the remaining search runs must "support" a peptide identification that should be kept. The meaning of "support" differs slightly between algorithms: For best, worst, average and rank, each search run supports peptides that it has also identified among its top considered\_hits candidates. So min\_support simply gives the fraction of additional search engines that must have identified a peptide. (For example, if there are three search runs, and only peptides identified by at least two of them should be kept, set min\_support to 0.5.) For the similarity-based algorithms PEPMatrix and PEPIons, the "support" for a peptide is the average similarity of the most-similar peptide from each (other) search run. (In the context of the JPR publication, this is the average of the similarity scores used in the consensus score calculation for a peptide.) Note: For most of the subsequent algorithms, only the best identification per spectrum is used.
+
+### `--consensusid_considered_top_hits`
+
+Limits the number of alternative peptide hits considered per spectrum/feature for each identification run. This helps to reduce runtime, especially for the PEPMatrix and PEPIons algorithms, which involve costly "all vs. all" comparisons of peptide hits per spectrum across engines.
 
 ## Inference and Quantification
 
