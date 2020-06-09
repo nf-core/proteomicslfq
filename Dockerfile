@@ -15,7 +15,7 @@ RUN cp $(find /opt/conda/envs/nf-core-proteomicslfq-*/share/luciphor2-*/luciphor
 
 # ------------- Parts for dev-only (to have nightly versions of some tools) -------------#
 
-RUN echo 'if (!require(devtools, quietly = TRUE)) install.packages("devtools"); library("devtools"); install_github("cbielow/PTXQC", build_vignettes = FALSE, dependencies = TRUE)' | Rscript -e
+RUN Rscript -e 'if (!require(devtools, quietly = TRUE)) install.packages("devtools"); library("devtools"); install_github("cbielow/PTXQC", build_vignettes = FALSE, dependencies = TRUE)'
 
 # Dump the details of the installed packages to a file for posterity
 RUN conda env export --name nf-core-proteomicslfq-1.0dev > nf-core-proteomicslfq-1.0dev.yml
