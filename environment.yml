@@ -7,6 +7,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  # TODO fix versions for release
   - bgruening::openms
   - bioconda::thermorawfileparser
   - bioconda::msgf_plus
@@ -14,10 +15,11 @@ dependencies:
   - bioconda::luciphor2
   - bioconda::percolator
   - bioconda::bioconductor-msstats=3.20.0 # will include R
-  - bioconda::sdrf-pipelines # for SDRF conversion
+  - bioconda::sdrf-pipelines=0.0.5 # for SDRF conversion
   # TODO for release, pin to a version. For now, install in Dockerfile from github
   #- conda-forge::r-ptxqc # for QC reports
-  - conda-forge::fonts-conda-ecosystem # for the fonts in QC reports
+  - conda-forge::r-devtools=2.3.0
+  - conda-forge::fonts-conda-ecosystem=1 # for the fonts in QC reports
   - conda-forge::openjdk=8.* # pin java to 8 for MSGF (otherwise it somehow chooses 11)
   - conda-forge::python=3.8.1
   - conda-forge::markdown=3.2.1
