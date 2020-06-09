@@ -13,5 +13,14 @@ ENV PATH /opt/conda/envs/nf-core-proteomicslfq-1.0dev/bin:$PATH
 RUN cp $(find /opt/conda/envs/nf-core-proteomicslfq-*/share/msgf_plus-*/MSGFPlus.jar -maxdepth 0) $(find /opt/conda/envs/nf-core-proteomicslfq-*/bin/ -maxdepth 0)
 RUN cp $(find /opt/conda/envs/nf-core-proteomicslfq-*/share/luciphor2-*/luciphor2.jar -maxdepth 0) $(find /opt/conda/envs/nf-core-proteomicslfq-*/bin/ -maxdepth 0)
 
+# ------------- Parts for dev-only (to have nightly versions of some tools) -------------#
+
+Rscript <<E0F
+  ## Install ptxqc from GitHub
+  if (!require(devtools, quietly = TRUE)) install.packages("devtools")
+  library("devtools")
+  install_github("cbielow/PTXQC", build_vignettes = FALSE, dependencies = TRUE)
+E0F
+
 # Dump the details of the installed packages to a file for posterity
 RUN conda env export --name nf-core-proteomicslfq-1.0dev > nf-core-proteomicslfq-1.0dev.yml
