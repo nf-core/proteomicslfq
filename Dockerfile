@@ -15,7 +15,7 @@ RUN cp $(find /opt/conda/envs/nf-core-proteomicslfq-*/share/luciphor2-*/luciphor
 
 # ------------- Parts for dev-only (to have nightly versions of some tools) -------------#
 
-Rscript <<E0F
+RUN Rscript <<E0F
   ## Install ptxqc from GitHub
   if (!require(devtools, quietly = TRUE)) install.packages("devtools")
   library("devtools")
