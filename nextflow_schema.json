@@ -1,0 +1,588 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/nf-core/proteomicslfq/master/nextflow_schema.json",
+    "title": "nf-core/proteomicslfq pipeline parameters",
+    "description": "Proteomics label-free quantification (LFQ) analysis pipeline using OpenMS and MSstats, with feature quantification, feature summarization, quality control and group-based statistical analysis.",
+    "type": "object",
+    "properties": {
+        "Input/output options": {
+            "type": "object",
+            "properties": {
+                "outdir": {
+                    "type": "string",
+                    "description": "The output directory where the results will be saved.",
+                    "default": "./results",
+                    "fa_icon": "fas fa-folder-open",
+                    "help_text": ""
+                },
+                "email": {
+                    "type": "string",
+                    "description": "Email address for completion summary.",
+                    "fa_icon": "fas fa-envelope",
+                    "help_text": "An email address to send a summary email to when the pipeline is completed.",
+                    "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
+                }
+            },
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data."
+        },
+        "Generic options": {
+            "type": "object",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-question-circle",
+                    "default": false
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Workflow name.",
+                    "fa_icon": "fas fa-fingerprint",
+                    "hidden": true,
+                    "help_text": "A custom name for the pipeline run. Unlike the core nextflow `-name` option with one hyphen this parameter can be reused multiple times, for example if using `-resume`. Passed through to steps such as MultiQC and used for things like report filenames and titles."
+                },
+                "email_on_fail": {
+                    "type": "string",
+                    "description": "Email address for completion summary, only when pipeline fails.",
+                    "fa_icon": "fas fa-exclamation-triangle",
+                    "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$",
+                    "hidden": true,
+                    "help_text": "An email address to send a summary email to when the pipeline is completed - ONLY sent if the pipeline does not exit successfully."
+                },
+                "plaintext_email": {
+                    "type": "boolean",
+                    "description": "Send plain-text email instead of HTML.",
+                    "fa_icon": "fas fa-remove-format",
+                    "hidden": true,
+                    "default": false,
+                    "help_text": ""
+                },
+                "monochrome_logs": {
+                    "type": "boolean",
+                    "description": "Do not use coloured log outputs.",
+                    "fa_icon": "fas fa-palette",
+                    "hidden": true,
+                    "default": false,
+                    "help_text": ""
+                },
+                "tracedir": {
+                    "type": "string",
+                    "description": "Directory to keep pipeline Nextflow logs and reports.",
+                    "default": "${params.outdir}/pipeline_info",
+                    "fa_icon": "fas fa-cogs",
+                    "hidden": true,
+                    "help_text": ""
+                }
+            },
+            "fa_icon": "fas fa-file-import",
+            "description": "Less common options for the pipeline, typically set in a config file.",
+            "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`."
+        },
+        "Max job request options": {
+            "type": "object",
+            "properties": {
+                "max_cpus": {
+                    "type": "integer",
+                    "description": "Maximum number of CPUs that can be requested  for any single job.",
+                    "default": 16,
+                    "fa_icon": "fas fa-microchip",
+                    "hidden": true,
+                    "help_text": "Use to set an upper-limit for the CPU requirement for each process. Should be an integer e.g. `--max_cpus 1`"
+                },
+                "max_memory": {
+                    "type": "string",
+                    "description": "Maximum amount of memory that can be requested for any single job.",
+                    "default": "128.GB",
+                    "fa_icon": "fas fa-memory",
+                    "hidden": true,
+                    "help_text": "Use to set an upper-limit for the memory requirement for each process. Should be a string in the format integer-unit e.g. `--max_memory '8.GB'`"
+                },
+                "max_time": {
+                    "type": "string",
+                    "description": "Maximum amount of time that can be requested for any single job.",
+                    "default": "240.h",
+                    "fa_icon": "far fa-clock",
+                    "hidden": true,
+                    "help_text": "Use to set an upper-limit for the time requirement for each process. Should be a string in the format integer-unit e.g. `--max_time '2.h'`"
+                }
+            },
+            "fa_icon": "fab fa-acquisitions-incorporated",
+            "description": "Set the top limit for requested resources for any single job.",
+            "help_text": "If you are running on a smaller system, a pipeline step requesting more resources than are available may cause the Nextflow to stop the run with an error. These options allow you to cap the maximum resources requested by any single job so that the pipeline will run on your system.\n\nNote that you can not _increase_ the resources requested by any job using these options. For that you will need your own configuration file. See [the nf-core website](https://nf-co.re/usage/configuration) for details."
+        },
+        "Institutional config options": {
+            "type": "object",
+            "properties": {
+                "custom_config_version": {
+                    "type": "string",
+                    "description": "Git commit id for Institutional configs.",
+                    "default": "master",
+                    "hidden": true,
+                    "fa_icon": "fas fa-users-cog",
+                    "help_text": ""
+                },
+                "custom_config_base": {
+                    "type": "string",
+                    "description": "Base directory for Institutional configs.",
+                    "default": "https://raw.githubusercontent.com/nf-core/configs/master",
+                    "hidden": true,
+                    "help_text": "If you're running offline, Nextflow will not be able to fetch the institutional config files from the internet. If you don't need them, then this is not a problem. If you do need them, you should download the files from the repo and tell Nextflow where to find them with this parameter.",
+                    "fa_icon": "fas fa-users-cog"
+                },
+                "hostnames": {
+                    "type": "string",
+                    "description": "Institutional configs hostname.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-users-cog",
+                    "help_text": ""
+                },
+                "config_profile_description": {
+                    "type": "string",
+                    "description": "Institutional config description.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-users-cog",
+                    "help_text": ""
+                },
+                "config_profile_contact": {
+                    "type": "string",
+                    "description": "Institutional config contact information.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-users-cog",
+                    "help_text": ""
+                },
+                "config_profile_url": {
+                    "type": "string",
+                    "description": "Institutional config URL link.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-users-cog",
+                    "help_text": ""
+                }
+            },
+            "fa_icon": "fas fa-university",
+            "description": "Parameters used to describe centralised config profiles. These should not be edited.",
+            "help_text": "The centralised nf-core configuration profiles use a handful of pipeline parameters to describe themselves. This information is then printed to the Nextflow log when you run a pipeline. You should not need to change these values when you run a pipeline."
+        },
+        "Main parameters (SDRF)": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "sdrf": {
+                    "type": "string",
+                    "fa_icon": "fas fa-vials"
+                },
+                "root_folder": {
+                    "type": "string",
+                    "fa_icon": "fas fa-folder"
+                },
+                "local_input_type": {
+                    "type": "string",
+                    "fa_icon": "fas fa-file-invoice"
+                }
+            },
+            "fa_icon": "far fa-chart-bar"
+        },
+        "Main parameters (TSV)": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "expdesign": {
+                    "type": "string",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "spectra": {
+                    "type": "string",
+                    "fa_icon": "fas fa-copy"
+                }
+            },
+            "fa_icon": "far fa-chart-bar"
+        },
+        "Protein database": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "database": {
+                    "type": "string",
+                    "fa_icon": "fas fa-file"
+                },
+                "add_decoys": {
+                    "type": "string",
+                    "fa_icon": "fas fa-coins"
+                },
+                "decoy_affix": {
+                    "type": "string",
+                    "default": "DECOY_",
+                    "fa_icon": "fas fa-font"
+                },
+                "affix_type": {
+                    "type": "string",
+                    "default": "prefix",
+                    "fa_icon": "fas fa-list-ol"
+                }
+            },
+            "fa_icon": "fas fa-database",
+            "required": [
+                "database"
+            ]
+        },
+        "Spectrum preprocessing": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "openms_peakpicking": {
+                    "type": "string",
+                    "fa_icon": "far fa-check-square"
+                },
+                "peakpicking_inmemory": {
+                    "type": "string",
+                    "fa_icon": "far fa-check-square"
+                },
+                "peakpicking_ms_levels": {
+                    "type": "string",
+                    "fa_icon": "fas fa-font"
+                }
+            },
+            "fa_icon": "far fa-chart-bar"
+        },
+        "Database search": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "search_engines": {
+                    "type": "string",
+                    "default": "comet",
+                    "fa_icon": "fas fa-tasks"
+                },
+                "enzyme": {
+                    "type": "string",
+                    "default": "Trypsin",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "num_enzyme_termini": {
+                    "type": "string",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "allowed_missed_cleavages": {
+                    "type": "integer",
+                    "default": 2,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "precursor_mass_tolerance": {
+                    "type": "integer",
+                    "default": 5,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "precursor_mass_tolerance_unit": {
+                    "type": "string",
+                    "default": "ppm",
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "fragment_mass_tolerance": {
+                    "type": "number",
+                    "default": 0.03,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "fragment_mass_tolerance_unit": {
+                    "type": "string",
+                    "default": "Da",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "fixed_mods": {
+                    "type": "string",
+                    "default": "Carbamidomethyl (C)",
+                    "fa_icon": "fas fa-tasks"
+                },
+                "variable_mods": {
+                    "type": "string",
+                    "default": "Oxidation (M)",
+                    "fa_icon": "fas fa-tasks"
+                },
+                "fragment_method": {
+                    "type": "string",
+                    "default": "HCD",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "isotope_error_range": {
+                    "type": "string",
+                    "default": "0,1",
+                    "fa_icon": "fas fa-tasks"
+                },
+                "instrument": {
+                    "type": "string",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "protocol": {
+                    "type": "string",
+                    "default": "automatic",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "min_precursor_charge": {
+                    "type": "integer",
+                    "default": 2,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "max_precursor_charge": {
+                    "type": "integer",
+                    "default": 4,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "min_peptide_length": {
+                    "type": "integer",
+                    "default": 6,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "max_peptide_length": {
+                    "type": "integer",
+                    "default": 40,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "num_hits": {
+                    "type": "integer",
+                    "default": 1,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "max_mods": {
+                    "type": "integer",
+                    "default": 3,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "db_debug": {
+                    "type": "integer",
+                    "default": 0,
+                    "fa_icon": "fas fa-bug"
+                }
+            },
+            "fa_icon": "fas fa-search"
+        },
+        "Modification localization": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "enable_mod_localization": {
+                    "type": "string",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "mod_localization": {
+                    "type": "string",
+                    "default": "Phospho (S),Phospho (T),Phospho (Y)",
+                    "fa_icon": "fas fa-tasks"
+                }
+            },
+            "fa_icon": "fas fa-search-location"
+        },
+        "Peptide re-indexing": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "allow_unmatched": {
+                    "type": "string",
+                    "fa_icon": "far fa-check-square"
+                },
+                "IL_equivalent": {
+                    "type": "string",
+                    "default": "true",
+                    "fa_icon": "far fa-check-square"
+                }
+            },
+            "fa_icon": "fas fa-project-diagram"
+        },
+        "PSM re-scoring (general)": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "posterior_probabilities": {
+                    "type": "string",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "psm_pep_fdr_cutoff": {
+                    "type": "number",
+                    "default": 0.1,
+                    "fa_icon": "fas fa-filter"
+                },
+                "pp_debug": {
+                    "type": "integer",
+                    "default": 0,
+                    "fa_icon": "fas fa-bug"
+                }
+            },
+            "fa_icon": "fas fa-star-half-alt"
+        },
+        "PSM re-scoring (Percolator)": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "FDR_level": {
+                    "type": "string",
+                    "default": "peptide-level-fdrs",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "train_FDR": {
+                    "type": "number",
+                    "default": 0.05,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "test_FDR": {
+                    "type": "number",
+                    "default": 0.05,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "subset_max_train": {
+                    "type": "integer",
+                    "default": 300000,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "klammer": {
+                    "type": "string",
+                    "fa_icon": "far fa-check-square"
+                },
+                "description_correct_features": {
+                    "type": "integer",
+                    "default": 0,
+                    "fa_icon": "fas fa-list-ol"
+                }
+            },
+            "fa_icon": "fas fa-star-half"
+        },
+        "PSM re-scoring (distribution fitting)": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "outlier_handling": {
+                    "type": "string",
+                    "default": "none",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "new_param_2": {
+                    "type": "string",
+                    "description": "",
+                    "default": ""
+                }
+            },
+            "fa_icon": "far fa-star-half"
+        },
+        "protein_inference": {
+            "type": "string",
+            "default": "aggregation",
+            "fa_icon": "fas fa-list-ol"
+        },
+        "protein_level_fdr_cutoff": {
+            "type": "number",
+            "default": 0.05,
+            "fa_icon": "fas fa-filter"
+        },
+        "consensusid_algorithm": {
+            "type": "string",
+            "default": "best",
+            "fa_icon": "fas fa-list-ol"
+        },
+        "min_consensus_support": {
+            "type": "integer",
+            "default": 0,
+            "fa_icon": "fas fa-filter"
+        },
+        "consensusid_considered_top_hits": {
+            "type": "integer",
+            "default": 0,
+            "fa_icon": "fas fa-sliders-h"
+        },
+        "luciphor_neutral_losses": {
+            "type": "string",
+            "fa_icon": "fas fa-font",
+            "hidden": true
+        },
+        "luciphor_decoy_mass": {
+            "type": "number",
+            "fa_icon": "fas fa-font",
+            "hidden": true
+        },
+        "luciphor_decoy_neutral_losses": {
+            "type": "string",
+            "fa_icon": "fas fa-font",
+            "hidden": true
+        },
+        "inf_quant_debug": {
+            "type": "integer",
+            "default": 0,
+            "fa_icon": "fas fa-bug"
+        },
+        "targeted_only": {
+            "type": "string",
+            "default": "true",
+            "fa_icon": "far fa-check-square"
+        },
+        "mass_recalibration": {
+            "type": "string",
+            "fa_icon": "far fa-check-square"
+        },
+        "transfer_ids": {
+            "type": "string",
+            "fa_icon": "far fa-check-square"
+        },
+        "skip_post_msstats": {
+            "type": "string",
+            "fa_icon": "fas fa-forward"
+        },
+        "ref_condition": {
+            "type": "string",
+            "fa_icon": "fas fa-font"
+        },
+        "contrasts": {
+            "type": "string",
+            "fa_icon": "fas fa-font"
+        },
+        "enable_qc": {
+            "type": "string",
+            "fa_icon": "fas fa-toggle-on"
+        },
+        "ptxqc_report_layout": {
+            "type": "string",
+            "fa_icon": "far fa-file"
+        },
+        "Consensus ID": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {},
+            "fa_icon": "fas fa-code-branch"
+        },
+        "Protein inference": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {},
+            "fa_icon": "fab fa-hubspot"
+        },
+        "Protein quantification": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {},
+            "fa_icon": "fas fa-braille"
+        },
+        "Statistical post-processing": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {},
+            "fa_icon": "fab fa-r-project"
+        },
+        "Quality control": {
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {},
+            "fa_icon": "fas fa-file-medical-alt"
+        }
+    }
+}
