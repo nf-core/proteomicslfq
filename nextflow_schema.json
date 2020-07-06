@@ -373,6 +373,21 @@
                     "type": "string",
                     "default": "Phospho (S),Phospho (T),Phospho (Y)",
                     "fa_icon": "fas fa-tasks"
+                },
+                "luciphor_neutral_losses": {
+                    "type": "string",
+                    "fa_icon": "fas fa-font",
+                    "hidden": true
+                },
+                "luciphor_decoy_mass": {
+                    "type": "number",
+                    "fa_icon": "fas fa-font",
+                    "hidden": true
+                },
+                "luciphor_decoy_neutral_losses": {
+                    "type": "string",
+                    "fa_icon": "fas fa-font",
+                    "hidden": true
                 }
             },
             "fa_icon": "fas fa-search-location"
@@ -462,126 +477,111 @@
                     "type": "string",
                     "default": "none",
                     "fa_icon": "fas fa-list-ol"
-                },
-                "new_param_2": {
-                    "type": "string",
-                    "description": "",
-                    "default": ""
                 }
             },
             "fa_icon": "far fa-star-half"
-        },
-        "protein_inference": {
-            "type": "string",
-            "default": "aggregation",
-            "fa_icon": "fas fa-list-ol"
-        },
-        "protein_level_fdr_cutoff": {
-            "type": "number",
-            "default": 0.05,
-            "fa_icon": "fas fa-filter"
-        },
-        "consensusid_algorithm": {
-            "type": "string",
-            "default": "best",
-            "fa_icon": "fas fa-list-ol"
-        },
-        "min_consensus_support": {
-            "type": "integer",
-            "default": 0,
-            "fa_icon": "fas fa-filter"
-        },
-        "consensusid_considered_top_hits": {
-            "type": "integer",
-            "default": 0,
-            "fa_icon": "fas fa-sliders-h"
-        },
-        "luciphor_neutral_losses": {
-            "type": "string",
-            "fa_icon": "fas fa-font",
-            "hidden": true
-        },
-        "luciphor_decoy_mass": {
-            "type": "number",
-            "fa_icon": "fas fa-font",
-            "hidden": true
-        },
-        "luciphor_decoy_neutral_losses": {
-            "type": "string",
-            "fa_icon": "fas fa-font",
-            "hidden": true
-        },
-        "inf_quant_debug": {
-            "type": "integer",
-            "default": 0,
-            "fa_icon": "fas fa-bug"
-        },
-        "targeted_only": {
-            "type": "string",
-            "default": "true",
-            "fa_icon": "far fa-check-square"
-        },
-        "mass_recalibration": {
-            "type": "string",
-            "fa_icon": "far fa-check-square"
-        },
-        "transfer_ids": {
-            "type": "string",
-            "fa_icon": "far fa-check-square"
-        },
-        "skip_post_msstats": {
-            "type": "string",
-            "fa_icon": "fas fa-forward"
-        },
-        "ref_condition": {
-            "type": "string",
-            "fa_icon": "fas fa-font"
-        },
-        "contrasts": {
-            "type": "string",
-            "fa_icon": "fas fa-font"
-        },
-        "enable_qc": {
-            "type": "string",
-            "fa_icon": "fas fa-toggle-on"
-        },
-        "ptxqc_report_layout": {
-            "type": "string",
-            "fa_icon": "far fa-file"
         },
         "Consensus ID": {
             "type": "object",
             "description": "",
             "default": "",
-            "properties": {},
+            "properties": {
+                "consensusid_algorithm": {
+                    "type": "string",
+                    "default": "best",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "consensusid_considered_top_hits": {
+                    "type": "integer",
+                    "default": 0,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "min_consensus_support": {
+                    "type": "integer",
+                    "default": 0,
+                    "fa_icon": "fas fa-filter"
+                }
+            },
             "fa_icon": "fas fa-code-branch"
         },
         "Protein inference": {
             "type": "object",
             "description": "",
             "default": "",
-            "properties": {},
+            "properties": {
+                "protein_inference": {
+                    "type": "string",
+                    "default": "aggregation",
+                    "fa_icon": "fas fa-list-ol"
+                },
+                "protein_level_fdr_cutoff": {
+                    "type": "number",
+                    "default": 0.05,
+                    "fa_icon": "fas fa-filter"
+                }
+            },
             "fa_icon": "fab fa-hubspot"
         },
         "Protein quantification": {
             "type": "object",
             "description": "",
             "default": "",
-            "properties": {},
+            "properties": {
+                "mass_recalibration": {
+                    "type": "string",
+                    "fa_icon": "far fa-check-square"
+                },
+                "transfer_ids": {
+                    "type": "string",
+                    "fa_icon": "far fa-check-square"
+                },
+                "targeted_only": {
+                    "type": "string",
+                    "default": "true",
+                    "fa_icon": "far fa-check-square"
+                },
+                "inf_quant_debug": {
+                    "type": "integer",
+                    "default": 0,
+                    "fa_icon": "fas fa-bug"
+                }
+            },
             "fa_icon": "fas fa-braille"
         },
         "Statistical post-processing": {
             "type": "object",
             "description": "",
             "default": "",
-            "properties": {},
+            "properties": {
+                "skip_post_msstats": {
+                    "type": "string",
+                    "fa_icon": "fas fa-forward"
+                },
+                "ref_condition": {
+                    "type": "string",
+                    "fa_icon": "fas fa-font"
+                },
+                "contrasts": {
+                    "type": "string",
+                    "fa_icon": "fas fa-font"
+                }
+            },
             "fa_icon": "fab fa-r-project"
         },
         "Quality control": {
             "type": "object",
             "description": "",
             "default": "",
-            "properties": {},
+            "properties": {
+                "enable_qc": {
+                    "type": "string",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "ptxqc_report_layout": {
+                    "type": "string",
+                    "fa_icon": "far fa-file"
+                }
+            },
             "fa_icon": "fas fa-file-medical-alt"
         }
     }
