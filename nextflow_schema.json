@@ -166,7 +166,7 @@
         },
         "Main parameters (SDRF)": {
             "type": "object",
-            "description": "The input to the pipeline can be specified in two **mutually exclusive** ways:\nHere by using a path or URI to a PRIDE Sample to data relation format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see here TODO for examples). Alternatively, you can use the [TSV options](#main_parameters__tsv_)",
+            "description": "The input to the pipeline can be specified in two **mutually exclusive** ways:\nHere by using a path or URI to a PRIDE Sample to Data Relation Format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see [here](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) for examples). Alternatively, you can use the [TSV options](#main_parameters__tsv_)",
             "default": "",
             "properties": {
                 "sdrf": {
@@ -192,7 +192,7 @@
         },
         "Main parameters (TSV)": {
             "type": "object",
-            "description": "",
+            "description": "The input to the pipeline can be specified in two **mutually exclusive** ways:\nHere by specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style experimental design file. Alternatively, you can use the [SDRF options](#main_parameters__sdrf_)",
             "default": "",
             "properties": {
                 "expdesign": {
@@ -201,33 +201,43 @@
                 },
                 "spectra": {
                     "type": "string",
-                    "fa_icon": "fas fa-copy"
+                    "description": "Location of mzML or Thermo RAW files",
+                    "fa_icon": "fas fa-copy",
+                    "help_text": "Use this to specify the location of your input mzML or Thermo RAW files:\n\n```bash\n--spectra 'path/to/data/*.mzML'\n```\n\nor\n\n```bash\n--spectra 'path/to/data/*.raw'\n```\n\nPlease note the following requirements:\n\n1. The path must be enclosed in quotes\n2. The path must have at least one `*` wildcard character"
                 }
             },
             "fa_icon": "far fa-chart-bar"
         },
         "Protein database": {
             "type": "object",
-            "description": "",
+            "description": "Settings that relate to the mandatory protein database and the optional generation of decoy entries.",
             "default": "",
             "properties": {
                 "database": {
                     "type": "string",
-                    "fa_icon": "fas fa-file"
+                    "description": "The `fasta` protein database used during database search.",
+                    "fa_icon": "fas fa-file",
+                    "help_text": "Since the database is not included in an SDRF, this parameter always needs to be given to specify the input protein database\nwhen you run the pipeline. Remember to include contaminants (and decoys if not added in the pipeline with \\-\\-add-decoys)\n\n```bash\n--database '[path to Fasta protein database]'\n```"
                 },
                 "add_decoys": {
                     "type": "string",
-                    "fa_icon": "fas fa-coins"
+                    "description": "Generate and append decoys to the given protein database",
+                    "fa_icon": "fas fa-coins",
+                    "help_text": "If decoys were not yet included in the input database, they have to be appended by OpenMS DecoyGenerator by adding this flag (TODO allow specifying type).\nDefault: pseudo-reverse peptides"
                 },
                 "decoy_affix": {
                     "type": "string",
+                    "description": "Pre- or suffix of decoy proteins in their accession",
                     "default": "DECOY_",
-                    "fa_icon": "fas fa-font"
+                    "fa_icon": "fas fa-font",
+                    "help_text": "If [`--add-decoys`](#params_add_decoys) was set, this setting is used during generation and passed to all tools that need decoy information.\n If decoys were appended to the database externally, this setting needs to match the used affix. (While OpenMS tools can infer the affix automatically, some thirdparty tools might not.)\nTypical values are 'rev', 'decoy', 'dec'. Look for them in your database."
                 },
                 "affix_type": {
                     "type": "string",
+                    "description": "Location of the decoy marker string in the fasta accession. Before (prefix) or after (suffix)",
                     "default": "prefix",
-                    "fa_icon": "fas fa-list-ol"
+                    "fa_icon": "fas fa-list-ol",
+                    "help_text": "Prefix is highly recommended. Only in case an external tool marked decoys with a suffix, e.g. `sp|Q12345|ProteinA_DECOY` change this parameter to suffix."
                 }
             },
             "fa_icon": "fas fa-database",
@@ -237,20 +247,26 @@
         },
         "Spectrum preprocessing": {
             "type": "object",
-            "description": "",
+            "description": "In case you start from profile mode mzMLs or the internal preprocessing during conversion with the ThermoRawFileParser fails (e.g. due to new instrument types), preprocessing has to be performed with OpenMS. Use this section to configure.",
             "default": "",
             "properties": {
                 "openms_peakpicking": {
-                    "type": "string",
-                    "fa_icon": "far fa-check-square"
+                    "type": "boolean",
+                    "description": "Activate OpenMS-internal peak picking",
+                    "fa_icon": "far fa-check-square",
+                    "help_text": "Activate OpenMS-internal peak picking with the tool PeakPickerHiRes. Skips already picked spectra."
                 },
                 "peakpicking_inmemory": {
-                    "type": "string",
-                    "fa_icon": "far fa-check-square"
+                    "type": "boolean",
+                    "description": "Perform peakpicking in memory",
+                    "fa_icon": "far fa-check-square",
+                    "help_text": "Perform peakpicking in memory. Use only if problems occur.",
                 },
                 "peakpicking_ms_levels": {
                     "type": "string",
-                    "fa_icon": "fas fa-font"
+                    "description": "Which MS levels to pick as comma separated list. Leave empty for auto-detection.",
+                    "fa_icon": "fas fa-font",
+                    "help_text": "Which MS levels to pick as comma separated list, e.g. `--peakpicking_ms_levels 1,2`. Leave empty for auto-detection."
                 }
             },
             "fa_icon": "far fa-chart-bar"
@@ -262,22 +278,31 @@
             "properties": {
                 "search_engines": {
                     "type": "string",
+                    "description": "A comma separated list of search engines. Valid: comet, msgf",
                     "default": "comet",
-                    "fa_icon": "fas fa-tasks"
+                    "fa_icon": "fas fa-tasks",
+                    "help_text": "A comma-separated list of search engines to run in parallel on each mzML file. Currently supported: comet and msgf (default: comet)\nIf more than one search engine is given, results are combined based on posterior error probabilities (see the different types\nof estimation procedures under [`--posterior_probabilities`](#--posterior_probabilities)). Combination is done with\n[ConsensusID](https://abibuilder.informatik.uni-tuebingen.de/archive/openms/Documentation/release/latest/html/TOPP_ConsensusID.html).\nSee also its corresponding [`--consensusid_algorithm`](#--consensusid_algorithm) parameter for different combination strategies.\nCombinations may profit from an increased [`--num_hits`](#--num_hits) parameter."
                 },
                 "enzyme": {
                     "type": "string",
+                    "description": "The enzyme to be used for in-silico digestion",
                     "default": "Trypsin",
-                    "fa_icon": "fas fa-list-ol"
+                    "fa_icon": "fas fa-list-ol",
+                    "help_text": "Specify which enzymatic restriction should be applied, e.g. 'unspecific cleavage', 'Trypsin' (default), see OpenMS\n[enzymes](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/CHEMISTRY/Enzymes.xml). Note: MSGF does not support extended\ncutting rules, as used by default with `Trypsin`. I.e. if you specify `Trypsin with MSGF, it will be automatically converted to\n`Trypsin/P`= 'Trypsin without proline rule'."
                 },
                 "num_enzyme_termini": {
                     "type": "string",
-                    "fa_icon": "fas fa-list-ol"
+                    "description": "Specify the amount of termini matching the enzyme cutting rules for a peptide to be considered. Valid values are `fully` (default), `semi`, or `none`",
+                    "default": "fully",
+                    "fa_icon": "fas fa-list-ol",
+                    "help_text": ""
                 },
                 "allowed_missed_cleavages": {
                     "type": "integer",
+                    "description": "Specify the maximum number of allowed missed enzyme cleavages in a peptide. The parameter is not applied if `unspecific cleavage` is specified as enzyme.",
                     "default": 2,
-                    "fa_icon": "fas fa-sliders-h"
+                    "fa_icon": "fas fa-sliders-h",
+                    "help_text": ""
                 },
                 "precursor_mass_tolerance": {
                     "type": "integer",
