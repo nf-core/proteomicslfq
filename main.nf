@@ -680,7 +680,7 @@ process percolator {
      tuple mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491"), val("pep") into id_files_perc, id_files_perc_consID
+     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491") into id_files_perc, id_files_perc_consID
      file "*.log"
 
     when:
@@ -758,7 +758,7 @@ process idpep {
      tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP_FDR.mix(id_files_idx_ForIDPEP_noFDR)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score"), val("Posterior Error Probability") into id_files_idpep, id_files_idpep_consID
+     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score") into id_files_idpep, id_files_idpep_consID
      file "*.log"
 
     when:
@@ -786,10 +786,10 @@ process idscoreswitcher_to_qval {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), val(qval_score), val(pep_score) from id_files_idpep.mix(id_files_perc)
+     tuple mzml_id, file(id_file), val(qval_score) from id_files_idpep.mix(id_files_perc)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_switched.idXML"), val(pep_score) into id_files_noConsID_qval
+     tuple mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_noConsID_qval
      file "*.log"
 
     when:
@@ -818,18 +818,16 @@ process consensusid {
 
     // we can drop qval_score in this branch since we have to recalculate FDR anyway
     input:
-     tuple mzml_id, file(id_files_from_ses), val(qval_score), val(pep_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
+     tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
 
     output:
-     tuple mzml_id, file("${mzml_id}_consensus.idXML"), val(pep_score_first) into consensusids
+     tuple mzml_id, file("${mzml_id}_consensus.idXML") into consensusids
      file "*.log"
 
     when:
      params.search_engines.split(",").size() > 1
 
     script:
-     // pep scores have to be the same. Otherwise the tool fails anyway.
-     pep_score_first = pep_score[0]
      """
      ConsensusID -in ${id_files_from_ses} \\
                         -out ${mzml_id}_consensus.idXML \\
@@ -852,10 +850,10 @@ process fdr_consensusid {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     tuple mzml_id, file(id_file), val(pep_score) from consensusids
+     tuple mzml_id, file(id_file) from consensusids
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_fdr.idXML"), val(pep_score) into consensusids_fdr
+     tuple mzml_id, file("${id_file.baseName}_fdr.idXML") into consensusids_fdr
      file "*.log"
 
     when:
@@ -883,10 +881,10 @@ process idfilter {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     tuple mzml_id, file(id_file), val(pep_score) from id_files_noConsID_qval.mix(consensusids_fdr)
+     tuple mzml_id, file(id_file) from id_files_noConsID_qval.mix(consensusids_fdr)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_filter.idXML"), val(pep_score) into id_filtered, id_filtered_luciphor
+     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into id_filtered, id_filtered_luciphor
      file "*.log"
 
     script:
@@ -912,7 +910,7 @@ process idscoreswitcher_for_luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), val(pep_score) from id_filtered_luciphor
+     tuple mzml_id, file(id_file) from id_filtered_luciphor
 
     output:
      tuple mzml_id, file("${id_file.baseName}_pep.idXML") into id_filtered_luciphor_pep
@@ -927,7 +925,7 @@ process idscoreswitcher_for_luciphor {
                         -out ${id_file.baseName}_pep.idXML \\
                         -threads ${task.cpus} \\
                         -old_score "q-value" \\
-                        -new_score "${pep_score}_score" \\
+                        -new_score "Posterior Error Probability_score" \\
                         -new_score_type "Posterior Error Probability" \\
                         -new_score_orientation lower_better \\
                         > ${id_file.baseName}_switch_pep_for_luciphor.log
@@ -968,7 +966,7 @@ process luciphor {
                         ${dec_losses} \\
                         -max_charge_state ${params.max_precursor_charge} \\
                         -max_peptide_length ${params.max_peptide_length} \\
-                        -debug ${params.localization_debug} \\
+                        -debug ${params.luciphor_debug} \\
                         > ${id_file.baseName}_luciphor.log
      """
                      //        -fragment_mass_tolerance ${} \\
