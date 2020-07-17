@@ -632,6 +632,15 @@ process index_peptides {
     script:
      def il = params.IL_equivalent ? '-IL_equivalent' : ''
      def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
+     // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying.
+     if (params.search_engines.contains("msgf"))
+     {
+        if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+        else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+        else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+        else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+        else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     }
      """
      PeptideIndexer -in ${id_file} \\
                     -out ${id_file.baseName}_idx.idXML \\
