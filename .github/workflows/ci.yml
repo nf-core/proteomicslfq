@@ -64,13 +64,13 @@ jobs:
         run: |
           nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile $TEST_PROFILE,docker
       - name: Gather failed logs
-        if: ${{ failed() }} || $ {{ cancelled() }}
+        if: failure() || cancelled()
         run: |
           mkdir failed_logs
           failed=$(grep "FAILED" results/pipeline_info/execution_trace.txt | cut -f 2)
           while read -r line ; do cp $(ls work/${line}*/*.log) failed_logs/ | true ; done <<< "$failed"
       - uses: actions/upload-artifact@v1
-        if: ${{ failed() }} || $ {{ cancelled() }}
+        if: failure() || cancelled()
         name: Upload failed logs
         with:
           name: failed_logs
