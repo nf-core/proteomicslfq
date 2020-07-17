@@ -579,6 +579,19 @@ process search_engine_comet {
          inst = params.instrument
        }
      }
+
+     // for consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF
+     // TODO find another solution. In ProteomicsLFQ we re-run PeptideIndexer (remove??) and if we
+     // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the 
+     // XTandem specific rules.
+     if (params.search_engines.contains("msgf"))
+     {
+        if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+        else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+        else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+        else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+        else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     }
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}_comet.idXML \\
