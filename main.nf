@@ -697,6 +697,7 @@ process percolator {
     cpus { check_max( 3, 'cpus' ) }
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
 
     input:
      tuple mzml_id, file(id_file) from id_files_idx_feat
@@ -775,6 +776,7 @@ process idpep {
     // I think Eigen optimization is multi-threaded, so leave threads open
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
 
     input:
      tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP_FDR.mix(id_files_idx_ForIDPEP_noFDR)
@@ -791,7 +793,7 @@ process idpep {
      IDPosteriorErrorProbability    -in ${id_file} \\
                                     -out ${id_file.baseName}_idpep.idXML \\
                                     -fit_algorithm:outlier_handling ${params.outlier_handling} \\
-				                            -threads ${task.cpus} \\
+                                    -threads ${task.cpus} \\
                                     > ${id_file.baseName}_idpep.log
      """
 }
@@ -837,6 +839,7 @@ process consensusid {
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/consensus_ids", mode: 'copy', pattern: '*.idXML'
 
     // we can drop qval_score in this branch since we have to recalculate FDR anyway
     input:
