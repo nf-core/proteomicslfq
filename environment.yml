@@ -7,7 +7,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  # TODO fix versions for release
+  # TODO fix versions for release (and also for develop, as soon as we have official nightly conda packages, with e.g. a date as version)
   - bgruening::openms
   - bioconda::thermorawfileparser
   - bioconda::msgf_plus
