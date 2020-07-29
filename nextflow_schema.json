@@ -268,7 +268,7 @@
                     "type": "boolean",
                     "description": "Perform peakpicking in memory",
                     "fa_icon": "far fa-check-square",
-                    "help_text": "Perform peakpicking in memory. Use only if problems occur.",
+                    "help_text": "Perform peakpicking in memory. Use only if problems occur."
                 },
                 "peakpicking_ms_levels": {
                     "type": "string",
@@ -634,5 +634,64 @@
             },
             "fa_icon": "fas fa-file-medical-alt"
         }
-    }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/generic_options"
+        },
+        {
+            "$ref": "#/definitions/max_job_request_options"
+        },
+        {
+            "$ref": "#/definitions/institutional_config_options"
+        },
+        {
+            "$ref": "#/definitions/main_parameters__sdrf_"
+        },
+        {
+            "$ref": "#/definitions/main_parameters__tsv_"
+        },
+        {
+            "$ref": "#/definitions/protein_database"
+        },
+        {
+            "$ref": "#/definitions/spectrum_preprocessing"
+        },
+        {
+            "$ref": "#/definitions/database_search"
+        },
+        {
+            "$ref": "#/definitions/modification_localization"
+        },
+        {
+            "$ref": "#/definitions/peptide_re_indexing"
+        },
+        {
+            "$ref": "#/definitions/psm_re_scoring__general_"
+        },
+        {
+            "$ref": "#/definitions/psm_re_scoring__percolator_"
+        },
+        {
+            "$ref": "#/definitions/psm_re_scoring__distribution_fitting_"
+        },
+        {
+            "$ref": "#/definitions/consensus_id"
+        },
+        {
+            "$ref": "#/definitions/protein_inference"
+        },
+        {
+            "$ref": "#/definitions/protein_quantification"
+        },
+        {
+            "$ref": "#/definitions/statistical_post_processing"
+        },
+        {
+            "$ref": "#/definitions/quality_control"
+        }
+    ]
 }
