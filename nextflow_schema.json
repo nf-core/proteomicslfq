@@ -13,8 +13,7 @@
                     "type": "string",
                     "description": "The output directory where the results will be saved.",
                     "default": "./results",
-                    "fa_icon": "fas fa-folder-open",
-                    "help_text": ""
+                    "fa_icon": "fas fa-folder-open"
                 },
                 "email": {
                     "type": "string",
@@ -35,8 +34,7 @@
                     "type": "boolean",
                     "description": "Display help text.",
                     "hidden": true,
-                    "fa_icon": "fas fa-question-circle",
-                    "default": false
+                    "fa_icon": "fas fa-question-circle"
                 },
                 "name": {
                     "type": "string",
@@ -57,25 +55,20 @@
                     "type": "boolean",
                     "description": "Send plain-text email instead of HTML.",
                     "fa_icon": "fas fa-remove-format",
-                    "hidden": true,
-                    "default": false,
-                    "help_text": ""
+                    "hidden": true
                 },
                 "monochrome_logs": {
                     "type": "boolean",
                     "description": "Do not use coloured log outputs.",
                     "fa_icon": "fas fa-palette",
-                    "hidden": true,
-                    "default": false,
-                    "help_text": ""
+                    "hidden": true
                 },
                 "tracedir": {
                     "type": "string",
                     "description": "Directory to keep pipeline Nextflow logs and reports.",
                     "default": "${params.outdir}/pipeline_info",
                     "fa_icon": "fas fa-cogs",
-                    "hidden": true,
-                    "help_text": ""
+                    "hidden": true
                 }
             },
             "fa_icon": "fas fa-file-import",
@@ -124,8 +117,7 @@
                     "description": "Git commit id for Institutional configs.",
                     "default": "master",
                     "hidden": true,
-                    "fa_icon": "fas fa-users-cog",
-                    "help_text": ""
+                    "fa_icon": "fas fa-users-cog"
                 },
                 "custom_config_base": {
                     "type": "string",
@@ -139,29 +131,25 @@
                     "type": "string",
                     "description": "Institutional configs hostname.",
                     "hidden": true,
-                    "fa_icon": "fas fa-users-cog",
-                    "help_text": ""
+                    "fa_icon": "fas fa-users-cog"
                 },
                 "config_profile_description": {
                     "type": "string",
                     "description": "Institutional config description.",
                     "hidden": true,
-                    "fa_icon": "fas fa-users-cog",
-                    "help_text": ""
+                    "fa_icon": "fas fa-users-cog"
                 },
                 "config_profile_contact": {
                     "type": "string",
                     "description": "Institutional config contact information.",
                     "hidden": true,
-                    "fa_icon": "fas fa-users-cog",
-                    "help_text": ""
+                    "fa_icon": "fas fa-users-cog"
                 },
                 "config_profile_url": {
                     "type": "string",
                     "description": "Institutional config URL link.",
                     "hidden": true,
-                    "fa_icon": "fas fa-users-cog",
-                    "help_text": ""
+                    "fa_icon": "fas fa-users-cog"
                 }
             },
             "fa_icon": "fas fa-university",
@@ -304,14 +292,17 @@
                     "description": "Specify the amount of termini matching the enzyme cutting rules for a peptide to be considered. Valid values are `fully` (default), `semi`, or `none`",
                     "default": "fully",
                     "fa_icon": "fas fa-list-ol",
-                    "help_text": ""
+                    "enum": [
+                        "fully",
+                        "semi",
+                        "none"
+                    ]
                 },
                 "allowed_missed_cleavages": {
                     "type": "integer",
                     "description": "Specify the maximum number of allowed missed enzyme cleavages in a peptide. The parameter is not applied if `unspecific cleavage` is specified as enzyme.",
                     "default": 2,
-                    "fa_icon": "fas fa-sliders-h",
-                    "help_text": ""
+                    "fa_icon": "fas fa-sliders-h"
                 },
                 "precursor_mass_tolerance": {
                     "type": "integer",
@@ -372,15 +363,13 @@
                     "type": "string",
                     "description": "Type of instrument that generated the data. 'low_res' or 'high_res' (default; refers to LCQ and LTQ instruments)",
                     "default": "high_res",
-                    "fa_icon": "fas fa-list-ol",
-                    "help_text": ""
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "protocol": {
                     "type": "string",
                     "description": "MSGF only: Labeling or enrichment protocol used, if any. Default: automatic",
                     "default": "automatic",
-                    "fa_icon": "fas fa-list-ol",
-                    "help_text": ""
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "min_precursor_charge": {
                     "type": "integer",
@@ -421,7 +410,6 @@
                 "db_debug": {
                     "type": "integer",
                     "description": "Debug level when running the database search. Logs become more verbose and at '>5' temporary files are kept.",
-                    "default": 0,
                     "fa_icon": "fas fa-bug"
                 }
             },
@@ -508,7 +496,6 @@
                 "pp_debug": {
                     "type": "integer",
                     "description": "Debug level when running the re-scoring. Logs become more verbose and at '>5' temporary files are kept.",
-                    "default": 0,
                     "fa_icon": "fas fa-bug"
                 }
             },
@@ -545,7 +532,7 @@
                     "fa_icon": "fas fa-sliders-h"
                 },
                 "klammer": {
-                    "type": "string",
+                    "type": "boolean",
                     "description": "Retention time features are calculated as in Klammer et al. instead of with Elude. Default: false",
                     "fa_icon": "far fa-check-square",
                     "hidden": true
@@ -553,7 +540,6 @@
                 "description_correct_features": {
                     "type": "integer",
                     "description": "Use additional features whose values are learnt by correct entries. See help text. Default: 0 = none",
-                    "default": 0,
                     "fa_icon": "fas fa-list-ol",
                     "help_text": "Percolator provides the possibility to use so called description of correct features, i.e. features for which desirable values are learnt from the previously identified target PSMs. The absolute value of the difference between desired value and observed value is then used as predictive features.\n\n1 -> iso-electric point\n\n2 -> mass calibration\n\n4 -> retention time\n\n8 -> `delta_retention_time * delta_mass_calibration`"
                 }
@@ -586,19 +572,22 @@
                     "description": "How to combine the probabilities from the single search engines: best, combine using a sequence similarity-matrix (PEPMatrix), combine using shared ion count of peptides (PEPIons). See help for further info.",
                     "default": "best",
                     "fa_icon": "fas fa-list-ol",
-                    "help_text": "Specifies how search engine results are combined: ConsensusID offers several algorithms that can aggregate results from multiple peptide identification engines ('search engines') into consensus identifications - typically one per MS2 spectrum. This works especially well for search engines that provide more than one peptide hit per spectrum, i.e. that report not just the best hit, but also a list of runner-up candidates with corresponding scores.\n\nThe available algorithms are:\n\n* PEPMatrix: Scoring based on posterior error probabilities (PEPs) and peptide sequence similarities. This algorithm uses a substitution matrix to score the similarity of sequences not listed by all search engines. It requires PEPs as the scores for all peptide hits.\n* PEPIons: Scoring based on posterior error probabilities (PEPs) and fragment ion similarities ('shared peak count'). This algorithm, too, requires PEPs as scores.\n* best: For each peptide ID, this uses the best score of any search engine as the consensus score.\n* worst: For each peptide ID, this uses the worst score of any search engine as the consensus score.\n* average: For each peptide ID, this uses the average score of all search engines as the consensus score.\n* ranks: Calculates a consensus score based on the ranks of peptide IDs in the results of different search engines. The final score is in the range (0, 1], with 1 being the best score.\n\nTo make scores comparable, for best, worst and average, PEPs are used as well. Peptide IDs are only considered the same if they map to exactly the same sequence (including modifications and their localization). Also isobaric aminoacids are (for now) only considered equal with the PEPMatrix/PEPIons algorithms."
+                    "help_text": "Specifies how search engine results are combined: ConsensusID offers several algorithms that can aggregate results from multiple peptide identification engines ('search engines') into consensus identifications - typically one per MS2 spectrum. This works especially well for search engines that provide more than one peptide hit per spectrum, i.e. that report not just the best hit, but also a list of runner-up candidates with corresponding scores.\n\nThe available algorithms are:\n\n* PEPMatrix: Scoring based on posterior error probabilities (PEPs) and peptide sequence similarities. This algorithm uses a substitution matrix to score the similarity of sequences not listed by all search engines. It requires PEPs as the scores for all peptide hits.\n* PEPIons: Scoring based on posterior error probabilities (PEPs) and fragment ion similarities ('shared peak count'). This algorithm, too, requires PEPs as scores.\n* best: For each peptide ID, this uses the best score of any search engine as the consensus score.\n* worst: For each peptide ID, this uses the worst score of any search engine as the consensus score.\n* average: For each peptide ID, this uses the average score of all search engines as the consensus score.\n* ranks: Calculates a consensus score based on the ranks of peptide IDs in the results of different search engines. The final score is in the range (0, 1], with 1 being the best score.\n\nTo make scores comparable, for best, worst and average, PEPs are used as well. Peptide IDs are only considered the same if they map to exactly the same sequence (including modifications and their localization). Also isobaric aminoacids are (for now) only considered equal with the PEPMatrix/PEPIons algorithms.",
+                    "enum": [
+                        "best",
+                        "PEPMatrix",
+                        "PEPIons"
+                    ]
                 },
                 "consensusid_considered_top_hits": {
                     "type": "integer",
                     "description": "Only use the top N hits per search engine and spectrum for combination. Default: 0 = all",
-                    "default": 0,
                     "fa_icon": "fas fa-sliders-h",
                     "help_text": "Limits the number of alternative peptide hits considered per spectrum/feature for each identification run. This helps to reduce runtime, especially for the PEPMatrix and PEPIons algorithms, which involve costly 'all vs. all' comparisons of peptide hits per spectrum across engines."
                 },
                 "min_consensus_support": {
                     "type": "integer",
                     "description": "A threshold for the ratio of occurence/similarity scores of a peptide in other runs, to be reported. See help.",
-                    "default": 0,
                     "fa_icon": "fas fa-filter",
                     "help_text": "This allows filtering of peptide hits based on agreement between search engines. Every peptide sequence in the analysis has been identified by at least one search run. This parameter defines which fraction (between 0 and 1) of the remaining search runs must 'support' a peptide identification that should be kept. The meaning of 'support' differs slightly between algorithms: For best, worst, average and rank, each search run supports peptides that it has also identified among its top `consensusid_considered_top_hits` candidates. So `min_consensus_support` simply gives the fraction of additional search engines that must have identified a peptide. (For example, if there are three search runs, and only peptides identified by at least two of them should be kept, set `min_support` to 0.5.) For the similarity-based algorithms PEPMatrix and PEPIons, the 'support' for a peptide is the average similarity of the most-similar peptide from each (other) search run. (In the context of the JPR publication, this is the average of the similarity scores used in the consensus score calculation for a peptide.) Note: For most of the subsequent algorithms, only the best identification per spectrum is used."
                 }
@@ -638,15 +627,22 @@
                     "type": "string",
                     "description": "Quantify proteins based on:\n\n* 'unique_peptides' = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)\n* 'strictly_unique_peptides' = use peptides mapping to a unique single protein only\n* 'shared_peptides' = use shared peptides, too, but only greedily for its best group (by inference score)",
                     "default": "unique_peptides",
-                    "enum": ["unique_peptides","strictly_unique_peptides","shared_peptides"],
-                    "fa_icon": "far fa-check-square"
+                    "enum": [
+                        "unique_peptides",
+                        "strictly_unique_peptides",
+                        "shared_peptides"
+                    ],
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "quantification_method": {
                     "type": "string",
                     "description": "Currently UNSUPPORTED in this workflow. Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs (spectral_counting).",
                     "default": "feature_intensity",
-                    "enum": ["feature_intensity", "spectral_counting"],
-                    "fa_icon": "far fa-check-square"
+                    "enum": [
+                        "feature_intensity",
+                        "spectral_counting"
+                    ],
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "mass_recalibration": {
                     "type": "boolean",
@@ -656,7 +652,6 @@
                 "transfer_ids": {
                     "type": "boolean",
                     "description": "Transfer IDs over aligned samples to increase the number of quantifiable features (WARNING: increased memory consumption). (default: 'false')",
-                    "default": false,
                     "fa_icon": "far fa-check-square"
                 },
                 "targeted_only": {
@@ -668,7 +663,6 @@
                 "inf_quant_debug": {
                     "type": "integer",
                     "description": "Debug level when running the re-scoring. Logs become more verbose and at '>666' potentially very large temporary files are kept.",
-                    "default": 0,
                     "fa_icon": "fas fa-bug"
                 }
             },
@@ -683,19 +677,16 @@
                 "skip_post_msstats": {
                     "type": "boolean",
                     "description": "Skip MSstats for statistical post-processing?",
-                    "default": false,
                     "fa_icon": "fas fa-forward"
                 },
                 "ref_condition": {
                     "type": "string",
                     "description": "Instead of all pairwise contrasts (default), uses the given condition name/number (corresponding to your experimental design) as a reference and creates pairwise contrasts against it. (TODO not yet fully implemented)",
-                    "default": "",
                     "fa_icon": "fas fa-font"
                 },
                 "contrasts": {
                     "type": "string",
                     "description": "Allows full control over contrasts by specifying a set of contrasts in a semicolon seperated list of R-compatible contrasts with the condition names/numbers as variables (e.g. `1-2;1-3;2-3`). Overwrites '--ref_condition' (TODO not yet fully implemented)",
-                    "default": "",
                     "fa_icon": "fas fa-font"
                 }
             },
@@ -710,13 +701,11 @@
                 "enable_qc": {
                     "type": "boolean",
                     "description": "Enable generation of quality control report by PTXQC? default: 'false' since it is still unstable",
-                    "default": false,
                     "fa_icon": "fas fa-toggle-on"
                 },
                 "ptxqc_report_layout": {
                     "type": "string",
                     "description": "Specify a yaml file for the report layout (see PTXQC documentation) (TODO not yet fully implemented)",
-                    "default": "",
                     "fa_icon": "far fa-file"
                 }
             },
