@@ -984,6 +984,7 @@ process proteomicslfq {
                     -targeted_only ${params.targeted_only} \\
                     -mass_recalibration ${params.mass_recalibration} \\
                     -transfer_ids ${params.transfer_ids} \\
+                    -protein_quantification ${params.protein_quant} \\
                     -out out.mzTab \\
                     -threads ${task.cpus} \\
                     -out_msstats out.csv \\
