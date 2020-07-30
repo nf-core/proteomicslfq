@@ -510,7 +510,7 @@ Debug level during inference and quantification. (WARNING: Higher than 666 may p
 Infer proteins through:
 
 * "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum) (default)
-* "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
+* "bayesian"     = computes a posterior probability for every protein based on a Bayesian network (i.e. using Epifany)
 * ("percolator" not yet supported)
 
 ### `--protein_level_fdr_cutoff`
