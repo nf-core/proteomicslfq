@@ -77,6 +77,10 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
   * Includes links to test data on GitHub and PRIDE and therefore doesn't need additional parameters
   * Warning: Downloads roughly 9GB of raw data from PRIDE and analyzes
 
+### `-name`
+
+Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic.
+
 ### `-resume`
 
 Specify this when restarting a pipeline. Nextflow will used cached results from any pipeline steps where the inputs are the same, continuing from where it got to previously.
