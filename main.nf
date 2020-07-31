@@ -146,37 +146,51 @@ def helpMessage() {
     Quality control:
       --ptxqc_report_layout         Specify a yaml file for the report layout (see PTXQC documentation) (TODO fully implement)
 
-    Other nextflow options:
-      --outdir                      The output directory where the results will be saved
-      --email                       Set this parameter to your e-mail address to get a summary e-mail with details of the
-                                    run sent to you when the workflow exits
-      -name                         Name for the pipeline run. If not specified, Nextflow will automatically generate a random
-                                    mnemonic.
-      -profile                      Configuration profile to use. Can use multiple (comma separated)
-                                    Available: conda, docker, singularity, awsbatch, test and more.
+    Other options:
+      --outdir [file]                 The output directory where the results will be saved
+      --publish_dir_mode [str]        Mode for publishing results in the output directory. Available: symlink, rellink, link, copy, copyNoFollow, move (Default: copy)
+      --email [email]                 Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
+      --email_on_fail [email]         Same as --email, except only send mail if the workflow is not successful
+      -name [str]                     Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
 
+    AWSBatch options:
+      --awsqueue [str]                The AWSBatch JobQueue that needs to be set when running on AWSBatch
+      --awsregion [str]               The AWS Region for your AWS Batch job to run on
+      --awscli [str]                  Path to the AWS CLI tool
     """.stripIndent()
+}
+
+// Show help message
+if (params.help) {
+    helpMessage()
+    exit 0
 }
 
 /*
  * SET UP CONFIGURATION VARIABLES
  */
 
-// Show help message
-if (params.help){
-    helpMessage()
-    exit 0
+// Has the run name been specified by the user?
+// this has the bonus effect of catching both -name and --name
+custom_runName = params.name
+if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
+    custom_runName = workflow.runName
 }
 
-// Has the run name been specified by the user?
-//  this has the bonus effect of catching both -name and --name
-custom_runName = params.name
-if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
-  custom_runName = workflow.runName
+// Check AWS batch settings
+if (workflow.profile.contains('awsbatch')) {
+    // AWSBatch sanity checking
+    if (!params.awsqueue || !params.awsregion) exit 1, "Specify correct --awsqueue and --awsregion parameters on AWSBatch!"
+    // Check outdir paths to be S3 buckets if running on AWSBatch
+    // related: https://github.com/nextflow-io/nextflow/issues/813
+    if (!params.outdir.startsWith('s3:')) exit 1, "Outdir not on S3 - specify S3 Bucket to run on AWSBatch!"
+    // Prevent trace files to be stored on S3 since S3 does not support rolling files.
+    if (params.tracedir.startsWith('s3:')) exit 1, "Specify a local tracedir or run without trace! S3 cannot be used for tracefiles."
 }
 
 // Stage config files
-ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
+ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
+ch_output_docs_images = file("$baseDir/docs/images/", checkIfExists: true)
 
 
 // Validate inputs
@@ -212,7 +226,7 @@ if (!params.sdrf)
                                     params.enzyme)
                     idx_settings: tuple(id,
                                     params.enzyme)
-                    luciphor_settings: 
+                    luciphor_settings:
                                   tuple(id,
                                     params.fragment_method)
                     mzmls: tuple(id,it)}
@@ -262,14 +276,14 @@ else
                                     row[10])
                     idx_settings: tuple(id,
                                     row[10])
-                    luciphor_settings: 
+                    luciphor_settings:
                                   tuple(id,
                                     row[9])
                     mzmls: tuple(id, !params.root_folder ?
                                     row[0] :
-                                    params.root_folder + "/" + (params.local_input_type ? 
+                                    params.root_folder + "/" + (params.local_input_type ?
                                         row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
-                                        row[1]))}  
+                                        row[1]))}
   .set{ch_sdrf_config}
 }
 
@@ -409,7 +423,7 @@ process generate_decoy_database {
 }
 
 // Doesnt work yet. Maybe point the script to the workspace?
-// All the files should be there after collecting. 
+// All the files should be there after collecting.
 //process generate_simple_exp_design_file {
 //    publishDir "${params.outdir}", mode: 'copy'
 //    input:
@@ -1092,7 +1106,7 @@ process ptxqc {
      ptxqc.R ${mzTab} > ptxqc.log
      """
 }
-  
+
 
 
 //--------------------------------------------------------------- //
@@ -1103,28 +1117,32 @@ process ptxqc {
 // Header log info
 log.info nfcoreHeader()
 def summary = [:]
+if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Run Name']         = custom_runName ?: workflow.runName
 // TODO nf-core: Report custom parameters here
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
-if(workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
+if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
 summary['Launch dir']       = workflow.launchDir
 summary['Working dir']      = workflow.workDir
 summary['Script dir']       = workflow.projectDir
 summary['User']             = workflow.userName
-if(workflow.profile == 'awsbatch'){
-   summary['AWS Region']    = params.awsregion
-   summary['AWS Queue']     = params.awsqueue
+if (workflow.profile.contains('awsbatch')) {
+    summary['AWS Region']   = params.awsregion
+    summary['AWS Queue']    = params.awsqueue
+    summary['AWS CLI']      = params.awscli
 }
 summary['Config Profile'] = workflow.profile
-if(params.config_profile_description) summary['Config Description'] = params.config_profile_description
-if(params.config_profile_contact)     summary['Config Contact']     = params.config_profile_contact
-if(params.config_profile_url)         summary['Config URL']         = params.config_profile_url
-if(params.email) {
-  summary['E-mail Address']  = params.email
+if (params.config_profile_description) summary['Config Profile Description'] = params.config_profile_description
+if (params.config_profile_contact)     summary['Config Profile Contact']     = params.config_profile_contact
+if (params.config_profile_url)         summary['Config Profile URL']         = params.config_profile_url
+summary['Config Files'] = workflow.configFiles.join(', ')
+if (params.email || params.email_on_fail) {
+    summary['E-mail Address']    = params.email
+    summary['E-mail on failure'] = params.email_on_fail
 }
 log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
-log.info "\033[2m----------------------------------------------------\033[0m"
+log.info "-\033[2m--------------------------------------------------\033[0m-"
 
 // Check the hostnames against configured profiles
 checkHostname()
@@ -1145,12 +1163,11 @@ Channel.from(summary.collect{ [it.key, it.value] })
     """.stripIndent() }
     .set { ch_workflow_summary }
 
-
 /*
  * Parse software version numbers
  */
 process get_software_versions {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy',
+    publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode,
         saveAs: { filename ->
                       if (filename.indexOf(".csv") > 0) filename
                       else null
@@ -1188,12 +1205,12 @@ process get_software_versions {
 /*
  * STEP 3 - Output Description HTML
  */
-/* TODO Deactivated for now
 process output_documentation {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+    publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode
 
     input:
     file output_docs from ch_output_docs
+    file images from ch_output_docs_images
 
     output:
     file "results_description.html"
@@ -1203,8 +1220,6 @@ process output_documentation {
     markdown_to_html.py $output_docs -o results_description.html
     """
 }
-*/
-
 
 /*
  * Completion e-mail notification
@@ -1239,6 +1254,12 @@ workflow.onComplete {
     email_fields['summary']['Nextflow Build'] = workflow.nextflow.build
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
+    // Check if we are only sending emails on failure
+    email_address = params.email
+    if (!params.email && params.email_on_fail && !workflow.success) {
+        email_address = params.email_on_fail
+    }
+
     // Render the TXT template
     def engine = new groovy.text.GStringTemplateEngine()
     def tf = new File("$baseDir/assets/email_template.txt")
@@ -1251,7 +1272,7 @@ workflow.onComplete {
     def email_html = html_template.toString()
 
     // Render the sendmail template
-    def smail_fields = [ email: params.email, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report ]
+    def smail_fields = [ email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report ]
     def sf = new File("$baseDir/assets/sendmail_template.txt")
     def sendmail_template = engine.createTemplate(sf).make(smail_fields)
     def sendmail_html = sendmail_template.toString()
@@ -1265,7 +1286,11 @@ workflow.onComplete {
             log.info "[nf-core/proteomicslfq] Sent summary e-mail to $email_address (sendmail)"
         } catch (all) {
             // Catch failures and try with plaintext
-            [ 'mail', '-s', subject, email_address ].execute() << email_txt
+            def mail_cmd = [ 'mail', '-s', subject, '--content-type=text/html', email_address ]
+            if ( mqc_report.size() <= params.max_multiqc_email_size.toBytes() ) {
+              mail_cmd += [ '-A', mqc_report ]
+            }
+            mail_cmd.execute() << email_html
             log.info "[nf-core/proteomicslfq] Sent summary e-mail to $email_address (mail)"
         }
     }

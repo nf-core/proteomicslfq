@@ -1,3 +1,5 @@
+.dockerignore
+.idea
 .nextflow*
 work/
 data/
@@ -5,5 +7,5 @@ results/
 .DS_Store
 tests/
 testing/
+testing*
 *.pyc
-.dockerignore
