@@ -1,3 +1,5 @@
+.dockerignore
+.idea
 .nextflow*
 work/
 data/

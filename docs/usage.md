@@ -6,10 +6,10 @@
 
 ## Running the pipeline
 
-The typical command for running the pipeline is as follows:
+The most simple command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/proteomicslfq --input '*_R{1,2}.fastq.gz' -profile docker
+nextflow run nf-core/proteomicslfq --spectra '*.mzML' --database '*.fasta' -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -45,9 +45,10 @@ This version number will be logged in reports when you run the pipeline, so that
 
 ### `-profile`
 
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments.
+Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker,test` - the order of arguments is important!
 
 Several generic profiles are bundled with the pipeline which instruct the pipeline to use software packaged using different methods (Docker, Singularity, Conda) - see below.
+If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
 
 > We highly recommend the use of Docker or Singularity containers for full pipeline reproducibility, however when this is not possible, Conda is also supported.
 
@@ -71,6 +72,10 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 * `test`
   * A profile with a complete configuration for automated testing
   * Includes links to test data so needs no other parameters
+* `test_full`
+  * A profile with a complete configuration for automated testing on AWS
+  * Includes links to test data on GitHub and PRIDE and therefore doesn't need additional parameters
+  * Warning: Downloads roughly 9GB of raw data from PRIDE and analyzes
 
 ### `-resume`
 

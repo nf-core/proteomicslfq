@@ -4,7 +4,7 @@
 
 [![GitHub Actions CI Status](https://github.com/nf-core/proteomicslfq/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/proteomicslfq/actions)
 [![GitHub Actions Linting Status](https://github.com/nf-core/proteomicslfq/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/proteomicslfq/actions)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.01.0-brightgreen.svg)](https://www.nextflow.io/)
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](https://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/nfcore/proteomicslfq.svg)](https://hub.docker.com/r/nfcore/proteomicslfq)
@@ -33,7 +33,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
     <!-- TODO nf-core: Update the example "typical command" below used to run the pipeline -->
 
     ```bash
-    nextflow run nf-core/proteomicslfq -profile <docker/singularity/conda/institute> --input '*_R{1,2}.fastq.gz' --genome GRCh37
+    nextflow run nf-core/proteomicslfq -profile <docker/singularity/conda/institute> --spectra '*.mzml' --database '*.fasta' --expdesign '*.tsv'
     ```
 
 See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
@@ -46,7 +46,7 @@ The nf-core/proteomicslfq pipeline comes with documentation about the pipeline w
 
 ## Credits
 
-nf-core/proteomicslfq was originally written by Julianus Pfeuffer, Lukas Heumos, Leon Bichmann, Timo Sachsenberg.
+nf-core/proteomicslfq was originally written by Julianus Pfeuffer, Lukas Heumos, Leon Bichmann, Timo Sachsenberg, Yasset Perez-Riverol.
 
 ## Contributions and Support
 
@@ -67,3 +67,5 @@ You can cite the `nf-core` publication as follows:
 >
 > _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).
 > ReadCube: [Full Access Link](https://rdcu.be/b1GjZ)
+
+An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
