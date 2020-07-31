@@ -1,7 +1,8 @@
-FROM nfcore/base:1.10.1
+FROM nfcore/base:1.10.2
 LABEL authors="Julianus Pfeuffer, Lukas Heumos, Leon Bichmann, Timo Sachsenberg, Yasset Perez-Riverol" \
       description="Docker image containing all software requirements for the nf-core/proteomicslfq pipeline"
 
+# Install the conda environment
 COPY environment.yml /
 RUN conda env create --quiet -f /environment.yml && conda clean -a
 
