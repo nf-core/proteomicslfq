@@ -1,4 +1,4 @@
-FROM nfcore/base:1.10.1
+FROM nfcore/base:1.10.2
 LABEL authors="Julianus Pfeuffer, Lukas Heumos, Leon Bichmann, Timo Sachsenberg" \
       description="Docker image containing all software requirements for the nf-core/proteomicslfq pipeline"
 
