@@ -36,11 +36,11 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
     nextflow run nf-core/proteomicslfq -profile <docker/singularity/conda/institute> --spectra '*.mzml' --database '*.fasta' --expdesign '*.tsv'
     ```
 
-See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
+See [usage docs](https://nf-co.re/proteomicslfq/usage) for all of the available options when running the pipeline.
 
 ## Documentation
 
-The nf-core/proteomicslfq pipeline comes with documentation about the pipeline which you can read at [https://nf-co.re/proteomicslfq/docs](https://nf-co.re/proteomicslfq/docs) or find in the [`docs/` directory](docs).
+The nf-core/proteomicslfq pipeline comes with documentation about the pipeline which you can read at [https://nf-co.re/proteomicslfq](https://nf-co.re/proteomicslfq) or partly find in the [`docs/` directory](docs).
 
 <!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
