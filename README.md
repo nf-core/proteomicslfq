@@ -40,7 +40,7 @@ See [usage docs](docs/usage.md) for all of the available options when running th
 
 ## Documentation
 
-The nf-core/proteomicslfq pipeline comes with documentation about the pipeline which you can read at [https://nf-co.re/proteomicslfq/docs](https://nf-core/proteomicslfq/docs) or find in the [`docs/` directory](docs).
+The nf-core/proteomicslfq pipeline comes with documentation about the pipeline which you can read at [https://nf-co.re/proteomicslfq/docs](https://nf-co.re/proteomicslfq/docs) or find in the [`docs/` directory](docs).
 
 <!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
