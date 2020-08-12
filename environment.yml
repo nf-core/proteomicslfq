@@ -3,12 +3,12 @@
 name: nf-core-proteomicslfq-1.0dev
 
 channels:
-  - bgruening
+  - openms
   - conda-forge
   - bioconda
 dependencies:
   # TODO fix versions for release (and also for develop, as soon as we have official nightly conda packages, with e.g. a date as version)
-  - bgruening::openms
+  - openms::openms=2.6.0pre # nightly version
   - bioconda::thermorawfileparser
   - bioconda::msgf_plus
   - bioconda::comet-ms
