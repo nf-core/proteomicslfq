@@ -88,9 +88,9 @@ def helpMessage() {
       --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
       --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
       --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
-      --generic-feature-set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
+      --generic_feature_set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
                                     features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
-      --subset-max-train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
+      --subset_max_train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
                                     PSMs. Recommended when analyzing huge numbers (>1 million) of PSMs. When set to 0, all PSMs are used for training as normal.
       --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude
 
@@ -725,9 +725,9 @@ process percolator {
                           -in ${id_file} \\
                           -out ${id_file.baseName}_perc.idXML \\
                           -threads ${task.cpus} \\
-                          -subset-max-train ${params.subset_max_train} \\
-                          -decoy-pattern ${params.decoy_affix} \\
-                          -post-processing-tdc \\
+                          -subset_max_train ${params.subset_max_train} \\
+                          -decoy_pattern ${params.decoy_affix} \\
+                          -post_processing_tdc \\
                           -score_type pep \\
                           > ${id_file.baseName}_percolator.log
       """
