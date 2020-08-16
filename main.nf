@@ -559,18 +559,18 @@ process search_engine_comet {
        // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
        // and uses Comet's defaults for bin size, in case unsupported unit "ppm" was given.
        if (frag_tol.toDouble() < 50) {
-         bin_tol = "0.03"
+         bin_tol = "0.015"
          bin_offset = "0.0"
          inst = params.instrument ?: "high_res"
        } else {
-         bin_tol = "1.0005"
+         bin_tol = "0.50025"
          bin_offset = "0.4"
          inst = params.instrument ?: "low_res"
        }
        log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
          " instrument and set the fragment_bin_tolerance to " + bin_tol
      } else {
-       bin_tol = frag_tol
+       bin_tol = frag_tol.toDouble() / 2.0
        bin_offset = frag_tol.toDouble() < 0.1 ? "0.0" : "0.4"
        if (!params.instrument)
        {
@@ -598,7 +598,7 @@ process search_engine_comet {
                    -threads ${task.cpus} \\
                    -database "${database}" \\
                    -instrument ${inst} \\
-                   -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
+                   -missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
                    -enzyme "${enzyme}" \\
@@ -608,7 +608,7 @@ process search_engine_comet {
                    -max_variable_mods_in_peptide ${params.max_mods} \\
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
-                   -fragment_bin_tolerance ${bin_tol} \\
+                   -fragment_mass_tolerance ${bin_tol} \\
                    -fragment_bin_offset ${bin_offset} \\
                    -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
