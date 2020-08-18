@@ -198,9 +198,9 @@ params.sdrf = ""
 params.spectra = ""
 
 // Validate input
-if (params.input.endsWith("sdrf") || params.input.endsWith("SDRF")) {
+if (params.input.toLowerCase().endsWith("sdrf")) {
   params.sdrf = params.input
-} else if (params.input.endsWith("mzml") || params.input.endsWith("mzML") || params.input.endsWith("raw") || params.input.endsWith("RAW")) {
+} else if (params.input.toLowerCase().endsWith("mzml") || params.input.toLowerCase().endsWith("raw")) {
   params.spectra = params.input
 } else {
   log.error "EITHER spectra data (mzML/raw) OR an SDRF needs to be provided as input."; exit 1
