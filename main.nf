@@ -193,14 +193,17 @@ if (workflow.profile.contains('awsbatch')) {
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 ch_output_docs_images = file("$baseDir/docs/images/", checkIfExists: true)
 
-
-params.sdrf = []
-params.spectra = []
-
 // Validate input
-if (params.input[0].toLowerCase().endsWith("sdrf")) {
+if (isCollectionOrArray(params.input))
+{
+  tocheck = params.input[0]
+} else {
+  tocheck = params.input
+}
+
+if (tocheck.toLowerCase().endsWith("sdrf")) {
   params.sdrf = params.input
-} else if (params.input[0].toLowerCase().endsWith("mzml") || params.input[0].toLowerCase().endsWith("raw")) {
+} else if (tocheck.toLowerCase().endsWith("mzml") || tocheck.toLowerCase().endsWith("raw")) {
   params.spectra = params.input
 } else {
   log.error "EITHER spectra data (mzML/raw) OR an SDRF needs to be provided as input."; exit 1
@@ -1380,4 +1383,8 @@ def checkHostname() {
 // Check file extension
 def hasExtension(it, extension) {
     it.toString().toLowerCase().endsWith(extension.toLowerCase())
+}
+
+boolean isCollectionOrArray(object) {    
+    [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
 }
