@@ -642,8 +642,8 @@
             },
             "fa_icon": "fas fa-code-branch"
         },
-        "protein_inference": {
-            "title": "Protein inference",
+        "protein_inference_": {
+            "title": "Protein inference ",
             "type": "object",
             "description": "To group proteins, calculate scores on the protein (group) level and to potentially modify associations from peptides to proteins.",
             "default": "",
@@ -653,7 +653,11 @@
                     "description": "The inference method to use. 'aggregation' (default) or 'bayesian'.",
                     "default": "aggregation",
                     "fa_icon": "fas fa-list-ol",
-                    "help_text": "Infer proteins through:\n\n* 'aggregation'  = aggregates all peptide scores across a protein (by calculating the maximum) (default)\n* 'bayesian'     = computes a posterior probability for every protein based on a Bayesian network (i.e. using Epifany)\n* ('percolator' not yet supported)"
+                    "help_text": "Infer proteins through:\n\n* 'aggregation'  =  aggregates all peptide scores across a protein (by calculating the maximum) (default)\n* 'bayesian'        =  compute a posterior probability for every protein based on a Bayesian network (i.e. using Epifany)\n* ('percolator' not yet supported)\n\n**Note:** If protein grouping is performed also depends on the `protein_quant` parameter (i.e. if peptides have to be unique or unique to a group only)",
+                    "enum": [
+                        "aggregation",
+                        "bayesian"
+                    ]
                 },
                 "protein_level_fdr_cutoff": {
                     "type": "number",
@@ -808,7 +812,7 @@
             "$ref": "#/definitions/consensus_id"
         },
         {
-            "$ref": "#/definitions/protein_inference"
+            "$ref": "#/definitions/protein_inference_"
         },
         {
             "$ref": "#/definitions/protein_quantification"
