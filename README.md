@@ -33,7 +33,11 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
     <!-- TODO nf-core: Update the example "typical command" below used to run the pipeline -->
 
     ```bash
-    nextflow run nf-core/proteomicslfq -profile <docker/singularity/conda/institute> --input '*.mzml' --database 'myProteinDB.fasta' --expdesign 'myDesign.tsv'
+    nextflow run nf-core/proteomicslfq \
+      -profile <docker/singularity/conda/institute> \
+      --input '*.mzml' \
+      --database 'myProteinDB.fasta' \
+      --expdesign 'myDesign.tsv'
     ```
 
 See [usage docs](https://nf-co.re/proteomicslfq/usage) for all of the available options when running the pipeline. Or configure the pipeline via
