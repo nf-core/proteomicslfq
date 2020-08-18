@@ -16,9 +16,9 @@
             "properties": {
                 "input": {
                     "type": "string",
-                    "fa_icon": "fas fa-dna",
-                    "description": "Input FastQ files.",
-                    "help_text": "Use this to specify the location of your input FastQ files. For example:\n\n```bash\n--input 'path/to/data/sample_*_{1,2}.fastq'\n```\n\nPlease note the following requirements:\n\n1. The path must be enclosed in quotes\n2. The path must have at least one `*` wildcard character\n3. When using the pipeline with paired end data, the path must use `{1,2}` notation to specify read pairs.\n\nIf left unspecified, a default pattern is used: `data/*{1,2}.fastq.gz`"
+                    "fa_icon": "fas fa-vials",
+                    "description": "URI/path to an [SDRF](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) file **OR** globbing pattern for URIs/paths of mzML or Thermo RAW files",
+                    "help_text": "The input to the pipeline can be specified in two **mutually exclusive** ways:\n  - using a path or URI to a PRIDE Sample to Data Relation Format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see [here](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) for examples). Input files will be downloaded and cached from the URIs specified in the SDRF file.\nAn OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the\nfollowing parameters will currently be overwritten by the ones specified in the SDRF:\n\n    * `fixed_mods`,\n    * `variable_mods`,\n    * `precursor_mass_tolerance`,\n    * `precursor_mass_tolerance_unit`,\n    * `fragment_mass_tolerance`,\n    * `fragment_mass_tolerance_unit`,\n    * `fragment_method`,\n    * `enzyme`\n  - by specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format (e.g. `/data/experiment{1,2,3}_rep*.mzML`). An experimental design should be provided with the `expdesign` parameter."
                 },
                 "outdir": {
                     "type": "string",
@@ -148,8 +148,7 @@
                     "default": "master",
                     "hidden": true,
                     "fa_icon": "fas fa-users-cog",
-                    "help_text": "Provide git commit id for custom Institutional configs hosted at `nf-core/configs`. This was implemented for reproducibility purposes. Default: `master`.\n\n```bash\n## Download and use config file with following git commit id\n--custom_config_version d52db660777c4bf36546ddb188ec530c3ada1b96\n```",
-                    "fa_icon": "fas fa-users-cog"
+                    "help_text": "Provide git commit id for custom Institutional configs hosted at `nf-core/configs`. This was implemented for reproducibility purposes. Default: `master`.\n\n```bash\n## Download and use config file with following git commit id\n--custom_config_version d52db660777c4bf36546ddb188ec530c3ada1b96\n```"
                 },
                 "custom_config_base": {
                     "type": "string",
@@ -188,15 +187,9 @@
         "main_parameters__sdrf_": {
             "title": "Main parameters (SDRF)",
             "type": "object",
-            "description": "The input to the pipeline can be specified in two **mutually exclusive** ways:\nHere by using a path or URI to a PRIDE Sample to Data Relation Format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see [here](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) for examples). Alternatively, you can use the [TSV options](#main_parameters__tsv_)",
+            "description": "In case your input was an SDRF files, the following optional parameters can be set.",
             "default": "",
             "properties": {
-                "sdrf": {
-                    "type": "string",
-                    "description": "The URI or path to the SDRF file",
-                    "fa_icon": "fas fa-vials",
-                    "help_text": "The URI or path to the SDRF file. Input files will be downloaded and cached from the URIs specified in the SDRF file.\nAn OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the\nfollowing parameters will currently be overwritten by the ones specified in the SDRF:\n\n* `fixed_mods`,\n* `variable_mods`,\n* `precursor_mass_tolerance`,\n* `precursor_mass_tolerance_unit`,\n* `fragment_mass_tolerance`,\n* `fragment_mass_tolerance_unit`,\n* `fragment_method`,\n* `enzyme`"
-                },
                 "root_folder": {
                     "type": "string",
                     "description": "Root folder in which the spectrum files specified in the SDRF are searched",
@@ -212,21 +205,16 @@
             },
             "fa_icon": "far fa-chart-bar"
         },
-        "main_parameters__tsv_": {
-            "title": "Main parameters (TSV)",
+        "main_parameters__spectra_files_": {
+            "title": "Main parameters (spectra files)",
             "type": "object",
-            "description": "The input to the pipeline can be specified in two **mutually exclusive** ways:\nHere by specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format and a manual OpenMS-style experimental design file. Alternatively, you can use the [SDRF options](#main_parameters__sdrf_)",
+            "description": "In case your input was a globbing pattern to spectrum files in Thermo RAW or mzML format you can specify a manual OpenMS-style experimental design file here.",
             "default": "",
             "properties": {
                 "expdesign": {
                     "type": "string",
+                    "description": "A tab-separated experimental design file in OpenMS' own format (TODO link). All input files need to be present as a row with exactly the same names. If no design is given, unrelated, unfractionated runs are assumed.",
                     "fa_icon": "fas fa-file-csv"
-                },
-                "spectra": {
-                    "type": "string",
-                    "description": "Location of mzML or Thermo RAW files",
-                    "fa_icon": "fas fa-copy",
-                    "help_text": "Use this to specify the location of your input mzML or Thermo RAW files:\n\n```bash\n--spectra 'path/to/data/*.mzML'\n```\n\nor\n\n```bash\n--spectra 'path/to/data/*.raw'\n```\n\nPlease note the following requirements:\n\n1. The path must be enclosed in quotes\n2. The path must have at least one `*` wildcard character"
                 }
             },
             "fa_icon": "far fa-chart-bar"
@@ -244,7 +232,7 @@
                     "help_text": "Since the database is not included in an SDRF, this parameter always needs to be given to specify the input protein database\nwhen you run the pipeline. Remember to include contaminants (and decoys if not added in the pipeline with \\-\\-add-decoys)\n\n```bash\n--database '[path to Fasta protein database]'\n```"
                 },
                 "add_decoys": {
-                    "type": "string",
+                    "type": "boolean",
                     "description": "Generate and append decoys to the given protein database",
                     "fa_icon": "fas fa-coins",
                     "help_text": "If decoys were not yet included in the input database, they have to be appended by OpenMS DecoyGenerator by adding this flag (TODO allow specifying type).\nDefault: pseudo-reverse peptides"
@@ -343,7 +331,11 @@
                     "type": "string",
                     "description": "Precursor mass tolerance unit used for database search. Possible values are 'ppm' (default) and 'Da'.",
                     "default": "ppm",
-                    "fa_icon": "fas fa-sliders-h"
+                    "fa_icon": "fas fa-sliders-h",
+                    "enum": [
+                        "Da",
+                        "ppm"
+                    ]
                 },
                 "fragment_mass_tolerance": {
                     "type": "number",
@@ -357,7 +349,11 @@
                     "description": "Fragment mass tolerance unit used for database search. Possible values are 'ppm' (default) and 'Da'.",
                     "default": "Da",
                     "fa_icon": "fas fa-list-ol",
-                    "help_text": "Caution: for Comet we are estimating the `fragment_bin_tolerance` parameter based on this automatically."
+                    "help_text": "Caution: for Comet we are estimating the `fragment_bin_tolerance` parameter based on this automatically.",
+                    "enum": [
+                        "Da",
+                        "ppm"
+                    ]
                 },
                 "fixed_mods": {
                     "type": "string",
@@ -451,7 +447,7 @@
             "default": "",
             "properties": {
                 "enable_mod_localization": {
-                    "type": "string",
+                    "type": "boolean",
                     "description": "Turn the mechanism on.",
                     "fa_icon": "fas fa-toggle-on"
                 },
@@ -494,13 +490,21 @@
                     "type": "string",
                     "description": "Do not fail if there are some unmatched peptides. Only activate as last resort, if you know that the rest of your settings are fine!",
                     "default": "false",
-                    "fa_icon": "far fa-check-square"
+                    "fa_icon": "far fa-check-square",
+                    "enum": [
+                        "false",
+                        "true"
+                    ]
                 },
                 "IL_equivalent": {
                     "type": "string",
                     "description": "Should isoleucine and leucine be treated interchangeably when mapping search engine hits to the database? Default: true",
                     "default": "true",
-                    "fa_icon": "far fa-check-square"
+                    "fa_icon": "far fa-check-square",
+                    "enum": [
+                        "true",
+                        "false"
+                    ]
                 }
             },
             "fa_icon": "fas fa-project-diagram"
@@ -514,7 +518,12 @@
                 "posterior_probabilities": {
                     "type": "string",
                     "description": "How to calculate posterior probabilities for PSMs:\n\n* 'percolator' = Re-score based on PSM-feature-based SVM and transform distance\n    to hyperplane for posteriors\n* 'fit_distributions' = Fit positive and negative distributions to scores\n    (similar to PeptideProphet)",
-                    "fa_icon": "fas fa-list-ol"
+                    "fa_icon": "fas fa-list-ol",
+                    "default": "percolator",
+                    "enum": [
+                        "percolator",
+                        "fit_distributions"
+                    ]
                 },
                 "psm_pep_fdr_cutoff": {
                     "type": "number",
@@ -540,7 +549,11 @@
                     "type": "string",
                     "description": "Calculate FDR on PSM ('psm-level-fdrs') or peptide level ('peptide-level-fdrs')?",
                     "default": "peptide-level-fdrs",
-                    "fa_icon": "fas fa-list-ol"
+                    "fa_icon": "fas fa-list-ol",
+                    "enum": [
+                        "peptide-level-fdrs",
+                        "psm-level-fdrs"
+                    ]
                 },
                 "train_FDR": {
                     "type": "number",
@@ -585,7 +598,13 @@
                     "type": "string",
                     "description": "How to handle outliers during fitting:\n\n* ignore_iqr_outliers (default): ignore outliers outside of `3*IQR` from Q1/Q3 for fitting\n* set_iqr_to_closest_valid: set IQR-based outliers to the last valid value for fitting\n* ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)\n* none: do nothing",
                     "default": "none",
-                    "fa_icon": "fas fa-list-ol"
+                    "fa_icon": "fas fa-list-ol",
+                    "enum": [
+                        "none",
+                        "ignore_iqr_outliers",
+                        "set_iqr_to_closest_valid",
+                        "ignore_extreme_percentiles"
+                    ]
                 }
             },
             "fa_icon": "far fa-star-half"
@@ -623,8 +642,8 @@
             },
             "fa_icon": "fas fa-code-branch"
         },
-        "protein_inference": {
-            "title": "Protein inference",
+        "protein_inference_": {
+            "title": "Protein inference ",
             "type": "object",
             "description": "To group proteins, calculate scores on the protein (group) level and to potentially modify associations from peptides to proteins.",
             "default": "",
@@ -634,7 +653,11 @@
                     "description": "The inference method to use. 'aggregation' (default) or 'bayesian'.",
                     "default": "aggregation",
                     "fa_icon": "fas fa-list-ol",
-                    "help_text": "Infer proteins through:\n\n* 'aggregation'  = aggregates all peptide scores across a protein (by calculating the maximum) (default)\n* 'bayesian'     = computes a posterior probability for every protein based on a Bayesian network (i.e. using Epifany)\n* ('percolator' not yet supported)"
+                    "help_text": "Infer proteins through:\n\n* 'aggregation'  =  aggregates all peptide scores across a protein (by calculating the maximum) (default)\n* 'bayesian'        =  compute a posterior probability for every protein based on a Bayesian network (i.e. using Epifany)\n* ('percolator' not yet supported)\n\n**Note:** If protein grouping is performed also depends on the `protein_quant` parameter (i.e. if peptides have to be unique or unique to a group only)",
+                    "enum": [
+                        "aggregation",
+                        "bayesian"
+                    ]
                 },
                 "protein_level_fdr_cutoff": {
                     "type": "number",
@@ -671,7 +694,8 @@
                         "feature_intensity",
                         "spectral_counting"
                     ],
-                    "fa_icon": "fas fa-list-ol"
+                    "fa_icon": "fas fa-list-ol",
+                    "hidden": true
                 },
                 "mass_recalibration": {
                     "type": "boolean",
@@ -758,7 +782,7 @@
             "$ref": "#/definitions/main_parameters__sdrf_"
         },
         {
-            "$ref": "#/definitions/main_parameters__tsv_"
+            "$ref": "#/definitions/main_parameters__spectra_files_"
         },
         {
             "$ref": "#/definitions/protein_database"
@@ -788,7 +812,7 @@
             "$ref": "#/definitions/consensus_id"
         },
         {
-            "$ref": "#/definitions/protein_inference"
+            "$ref": "#/definitions/protein_inference_"
         },
         {
             "$ref": "#/definitions/protein_quantification"

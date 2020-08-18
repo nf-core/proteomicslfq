@@ -20,13 +20,14 @@ def helpMessage() {
     nextflow run nf-core/proteomicslfq --spectra '*.mzML' --database '*.fasta' -profile docker
 
     Main arguments:
-      Either:
-      --sdrf                        Path to PRIDE Sample to data relation format file
+      --input                       Path/URI to PRIDE Sample to data relation format file (SDRF) OR path to input spectra as mzML or Thermo Raw
+      
+      For SDRF:                     
       --root_folder                 (Optional) If given, looks for the filenames in the SDRF in this folder, locally
       --local_input_type            (Optional) If given and 'root_folder' was specified, it overwrites the filetype in the SDRF for local lookup and matches only the basename.
-      Or:
-      --spectra                     Path to input spectra as mzML or Thermo Raw
-      --expdesign                   Path to optional experimental design file (if not given, it assumes unfractionated, unrelated samples)
+      
+      For mzML/raw files:
+      --expdesign                   (Optional) Path to an experimental design file (if not given, it assumes unfractionated, unrelated samples)
 
       And:
       --database                    Path to input protein database as fasta
@@ -192,11 +193,20 @@ if (workflow.profile.contains('awsbatch')) {
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 ch_output_docs_images = file("$baseDir/docs/images/", checkIfExists: true)
 
-
-// Validate inputs
-if (!(params.spectra || params.sdrf) || (params.spectra && params.sdrf))
+// Validate input
+if (isCollectionOrArray(params.input))
 {
-  log.error "EITHER spectra data OR SDRF needs to be provided. Make sure you have used either of those options."; exit 1
+  tocheck = params.input[0]
+} else {
+  tocheck = params.input
+}
+
+if (tocheck.toLowerCase().endsWith("sdrf")) {
+  params.sdrf = params.input
+} else if (tocheck.toLowerCase().endsWith("mzml") || tocheck.toLowerCase().endsWith("raw")) {
+  params.spectra = params.input
+} else {
+  log.error "EITHER spectra data (mzML/raw) OR an SDRF needs to be provided as input."; exit 1
 }
 
 params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
@@ -1373,4 +1383,8 @@ def checkHostname() {
 // Check file extension
 def hasExtension(it, extension) {
     it.toString().toLowerCase().endsWith(extension.toLowerCase())
+}
+
+boolean isCollectionOrArray(object) {    
+    [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
 }
