@@ -194,13 +194,13 @@ ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 ch_output_docs_images = file("$baseDir/docs/images/", checkIfExists: true)
 
 
-params.sdrf = ""
-params.spectra = ""
+params.sdrf = []
+params.spectra = []
 
 // Validate input
-if (params.input.toLowerCase().endsWith("sdrf")) {
+if (params.input[0].toLowerCase().endsWith("sdrf")) {
   params.sdrf = params.input
-} else if (params.input.toLowerCase().endsWith("mzml") || params.input.toLowerCase().endsWith("raw")) {
+} else if (params.input[0].toLowerCase().endsWith("mzml") || params.input[0].toLowerCase().endsWith("raw")) {
   params.spectra = params.input
 } else {
   log.error "EITHER spectra data (mzML/raw) OR an SDRF needs to be provided as input."; exit 1
