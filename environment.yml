@@ -1,7 +1,6 @@
 # You can use this file to create a conda environment for this pipeline:
 #   conda env create -f environment.yml
 name: nf-core-proteomicslfq-1.0dev
-
 channels:
   - openms
   - conda-forge
@@ -14,7 +13,7 @@ dependencies:
   - bioconda::comet-ms
   - bioconda::luciphor2
   - bioconda::percolator
-  - bioconda::bioconductor-msstats=3.20.0 # will include R
+  - bioconda::bioconductor-msstats=3.20.1 # will include R
   - bioconda::sdrf-pipelines=0.0.9 # for SDRF conversion
   - conda-forge::r-ptxqc=1.0.5 # for QC reports
   - conda-forge::xorg-libxt=1.2.0 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
@@ -22,6 +21,6 @@ dependencies:
   - conda-forge::openjdk=8.* # pin java to 8 for MSGF (otherwise it somehow chooses 11)
   - conda-forge::python=3.8.1
   - conda-forge::markdown=3.2.1
-  - conda-forge::pymdown-extensions=6.0
+  - conda-forge::pymdown-extensions=7.1
   - conda-forge::pygments=2.5.2
 
