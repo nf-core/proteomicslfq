@@ -201,10 +201,10 @@ if (isCollectionOrArray(params.input))
   tocheck = params.input
 }
 
-if (tocheck.toLowerCase().endsWith("sdrf")) {
-  params.sdrf = params.input
+if (tocheck.toLowerCase().endsWith("sdrf") || tocheck.toLowerCase().endsWith("tsv")) {
+  sdrf_file = params.input
 } else if (tocheck.toLowerCase().endsWith("mzml") || tocheck.toLowerCase().endsWith("raw")) {
-  params.spectra = params.input
+  spectra_files = params.input
 } else {
   log.error "EITHER spectra data (mzML/raw) OR an SDRF needs to be provided as input."; exit 1
 }
@@ -219,9 +219,9 @@ params.outdir = params.outdir ?: { log.warn "No output directory provided. Will 
  //Filename        FixedModifications      VariableModifications   Label   PrecursorMassTolerance  PrecursorMassToleranceUnit      FragmentMassTolerance   DissociationMethod      Enzyme
 
 
-if (!params.sdrf)
+if (!sdrf_file)
 {
-  ch_spectra = Channel.fromPath(params.spectra, checkIfExists: true)
+  ch_spectra = Channel.fromPath(spectra_files, checkIfExists: true)
   ch_spectra
   .multiMap{ it -> id = it.toString().md5()
                     comet_settings: msgf_settings: tuple(id,
@@ -244,7 +244,7 @@ if (!params.sdrf)
 }
 else
 {
-  ch_sdrf = Channel.fromPath(params.sdrf, checkIfExists: true)
+  ch_sdrf = Channel.fromPath(sdrf_file, checkIfExists: true)
   /*
    * STEP 0 - SDRF parsing
    */
@@ -260,7 +260,7 @@ else
        file "openms.tsv" into ch_sdrf_config_file
 
       when:
-        params.sdrf
+        sdrf_file
 
       script:
        """
