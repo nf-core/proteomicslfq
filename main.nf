@@ -201,6 +201,8 @@ if (isCollectionOrArray(params.input))
   tocheck = params.input
 }
 
+sdrf_file = null
+
 if (tocheck.toLowerCase().endsWith("sdrf") || tocheck.toLowerCase().endsWith("tsv")) {
   sdrf_file = params.input
 } else if (tocheck.toLowerCase().endsWith("mzml") || tocheck.toLowerCase().endsWith("raw")) {
