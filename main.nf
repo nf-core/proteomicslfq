@@ -89,9 +89,9 @@ def helpMessage() {
       --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
       --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
       --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
-      --generic-feature-set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
+      --generic_feature_set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
                                     features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
-      --subset-max-train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
+      --subset_max_train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
                                     PSMs. Recommended when analyzing huge numbers (>1 million) of PSMs. When set to 0, all PSMs are used for training as normal.
       --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude
 
@@ -583,18 +583,18 @@ process search_engine_comet {
        // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
        // and uses Comet's defaults for bin size, in case unsupported unit "ppm" was given.
        if (frag_tol.toDouble() < 50) {
-         bin_tol = "0.03"
+         bin_tol = "0.015"
          bin_offset = "0.0"
          inst = params.instrument ?: "high_res"
        } else {
-         bin_tol = "1.0005"
+         bin_tol = "0.50025"
          bin_offset = "0.4"
          inst = params.instrument ?: "low_res"
        }
        log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
          " instrument and set the fragment_bin_tolerance to " + bin_tol
      } else {
-       bin_tol = frag_tol
+       bin_tol = frag_tol.toDouble() / 2.0
        bin_offset = frag_tol.toDouble() < 0.1 ? "0.0" : "0.4"
        if (!params.instrument)
        {
@@ -603,13 +603,26 @@ process search_engine_comet {
          inst = params.instrument
        }
      }
+
+     // for consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF
+     // TODO find another solution. In ProteomicsLFQ we re-run PeptideIndexer (remove??) and if we
+     // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the 
+     // XTandem specific rules.
+     if (params.search_engines.contains("msgf"))
+     {
+        if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+        else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+        else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+        else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+        else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     }
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}_comet.idXML \\
                    -threads ${task.cpus} \\
                    -database "${database}" \\
                    -instrument ${inst} \\
-                   -allowed_missed_cleavages ${params.allowed_missed_cleavages} \\
+                   -missed_cleavages ${params.allowed_missed_cleavages} \\
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
                    -enzyme "${enzyme}" \\
@@ -619,7 +632,7 @@ process search_engine_comet {
                    -max_variable_mods_in_peptide ${params.max_mods} \\
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
-                   -fragment_bin_tolerance ${bin_tol} \\
+                   -fragment_mass_tolerance ${bin_tol} \\
                    -fragment_bin_offset ${bin_offset} \\
                    -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_comet.log
@@ -643,6 +656,15 @@ process index_peptides {
     script:
      def il = params.IL_equivalent ? '-IL_equivalent' : ''
      def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
+     // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying.
+     if (params.search_engines.contains("msgf"))
+     {
+        if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+        else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+        else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+        else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+        else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     }
      """
      PeptideIndexer -in ${id_file} \\
                     -out ${id_file.baseName}_idx.idXML \\
@@ -699,12 +721,13 @@ process percolator {
     cpus { check_max( 3, 'cpus' ) }
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
 
     input:
      tuple mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491"), val("pep") into id_files_perc, id_files_perc_consID
+     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491") into id_files_perc, id_files_perc_consID
      file "*.log"
 
     when:
@@ -726,9 +749,9 @@ process percolator {
                           -in ${id_file} \\
                           -out ${id_file.baseName}_perc.idXML \\
                           -threads ${task.cpus} \\
-                          -subset-max-train ${params.subset_max_train} \\
-                          -decoy-pattern ${params.decoy_affix} \\
-                          -post-processing-tdc \\
+                          -subset_max_train ${params.subset_max_train} \\
+                          -decoy_pattern ${params.decoy_affix} \\
+                          -post_processing_tdc \\
                           -score_type pep \\
                           > ${id_file.baseName}_percolator.log
       """
@@ -777,12 +800,13 @@ process idpep {
     // I think Eigen optimization is multi-threaded, so leave threads open
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
 
     input:
      tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP_FDR.mix(id_files_idx_ForIDPEP_noFDR)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score"), val("Posterior Error Probability") into id_files_idpep, id_files_idpep_consID
+     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score") into id_files_idpep, id_files_idpep_consID
      file "*.log"
 
     when:
@@ -793,7 +817,7 @@ process idpep {
      IDPosteriorErrorProbability    -in ${id_file} \\
                                     -out ${id_file.baseName}_idpep.idXML \\
                                     -fit_algorithm:outlier_handling ${params.outlier_handling} \\
-				                            -threads ${task.cpus} \\
+                                    -threads ${task.cpus} \\
                                     > ${id_file.baseName}_idpep.log
      """
 }
@@ -810,10 +834,10 @@ process idscoreswitcher_to_qval {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), val(qval_score), val(pep_score) from id_files_idpep.mix(id_files_perc)
+     tuple mzml_id, file(id_file), val(qval_score) from id_files_idpep.mix(id_files_perc)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_switched.idXML"), val(pep_score) into id_files_noConsID_qval
+     tuple mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_noConsID_qval
      file "*.log"
 
     when:
@@ -839,21 +863,20 @@ process consensusid {
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/consensus_ids", mode: 'copy', pattern: '*.idXML'
 
     // we can drop qval_score in this branch since we have to recalculate FDR anyway
     input:
-     tuple mzml_id, file(id_files_from_ses), val(qval_score), val(pep_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
+     tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
 
     output:
-     tuple mzml_id, file("${mzml_id}_consensus.idXML"), val(pep_score_first) into consensusids
+     tuple mzml_id, file("${mzml_id}_consensus.idXML") into consensusids
      file "*.log"
 
     when:
      params.search_engines.split(",").size() > 1
 
     script:
-     // pep scores have to be the same. Otherwise the tool fails anyway.
-     pep_score_first = pep_score[0]
      """
      ConsensusID -in ${id_files_from_ses} \\
                         -out ${mzml_id}_consensus.idXML \\
@@ -876,10 +899,10 @@ process fdr_consensusid {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     tuple mzml_id, file(id_file), val(pep_score) from consensusids
+     tuple mzml_id, file(id_file) from consensusids
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_fdr.idXML"), val(pep_score) into consensusids_fdr
+     tuple mzml_id, file("${id_file.baseName}_fdr.idXML") into consensusids_fdr
      file "*.log"
 
     when:
@@ -907,10 +930,10 @@ process idfilter {
     publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
 
     input:
-     tuple mzml_id, file(id_file), val(pep_score) from id_files_noConsID_qval.mix(consensusids_fdr)
+     tuple mzml_id, file(id_file) from id_files_noConsID_qval.mix(consensusids_fdr)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_filter.idXML"), val(pep_score) into id_filtered, id_filtered_luciphor
+     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into id_filtered, id_filtered_luciphor
      file "*.log"
 
     script:
@@ -936,7 +959,7 @@ process idscoreswitcher_for_luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), val(pep_score) from id_filtered_luciphor
+     tuple mzml_id, file(id_file) from id_filtered_luciphor
 
     output:
      tuple mzml_id, file("${id_file.baseName}_pep.idXML") into id_filtered_luciphor_pep
@@ -951,7 +974,7 @@ process idscoreswitcher_for_luciphor {
                         -out ${id_file.baseName}_pep.idXML \\
                         -threads ${task.cpus} \\
                         -old_score "q-value" \\
-                        -new_score "${pep_score}_score" \\
+                        -new_score "Posterior Error Probability_score" \\
                         -new_score_type "Posterior Error Probability" \\
                         -new_score_orientation lower_better \\
                         > ${id_file.baseName}_switch_pep_for_luciphor.log
@@ -992,7 +1015,7 @@ process luciphor {
                         ${dec_losses} \\
                         -max_charge_state ${params.max_precursor_charge} \\
                         -max_peptide_length ${params.max_peptide_length} \\
-                        -debug ${params.localization_debug} \\
+                        -debug ${params.luciphor_debug} \\
                         > ${id_file.baseName}_luciphor.log
      """
                      //        -fragment_mass_tolerance ${} \\
