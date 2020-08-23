@@ -3,6 +3,9 @@ name: nf-core AWS full size tests
 # It runs the -profile 'test_full' on AWS batch
 
 on:
+  push:
+    branches:
+      - awstest
   release:
     types: [published]
 
