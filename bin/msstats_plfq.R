@@ -153,8 +153,7 @@ print ("WTH")
 		return(DF)
 	}
   print ("WTH")
-	test.MSstats$ComparisonResult %>% group_by(Label) %>% do(writeComparisonToCSV(as.data.frame(.)))  
-print ("WTH")
+	test.MSstats$ComparisonResult %>% group_by(Label) %>% do(writeComparisonToCSV(as.data.frame(.)))
 	#for (comp in rownames(contrast_mat))
 	#{
 	#  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
