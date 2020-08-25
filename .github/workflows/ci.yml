@@ -80,7 +80,7 @@ jobs:
         if: always()
         name: Upload results
         with:
-          name: results
+          name: ${{ env.TEST_PROFILE }}_results
           path: ${{ env.TEST_PROFILE }}_results
       - uses: actions/upload-artifact@v1
         if: always()
