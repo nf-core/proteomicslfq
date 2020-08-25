@@ -63,7 +63,7 @@ jobs:
           sudo mv nextflow /usr/local/bin/
       - name: Run pipeline with test data
         run: |
-          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile $TEST_PROFILE,docker
+          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile $TEST_PROFILE,docker --outdir ${TEST_PROFILE}_results
       - name: Gather failed logs
         if: failure() || cancelled()
         run: |
@@ -80,8 +80,8 @@ jobs:
         if: always()
         name: Upload results
         with:
-          name: results
-          path: results
+          name: ${{ env.TEST_PROFILE }}_results
+          path: ${{ env.TEST_PROFILE }}_results
       - uses: actions/upload-artifact@v1
         if: always()
         name: Upload log
