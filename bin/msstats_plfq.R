@@ -108,7 +108,7 @@ if (length(lvls) == 1)
   test.MSstats$Volcano = test.MSstats$ComparisonResult[!is.na(test.MSstats$ComparisonResult$pvalue),]
   groupComparisonPlots(data=test.MSstats$Volcano, type="VolcanoPlot",
                        width=12, height=12,dot.size = 2,ylimUp = 7)
-  
+
   # Otherwise it fails since the behaviour is undefined
   if (nrow(contrast_mat) > 1)
   {

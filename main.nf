@@ -1105,8 +1105,8 @@ process msstats {
      // The generation of the PDFs from MSstats are very unstable, especially with auto-contrasts.
      // And users can easily fix anything based on the csv and the included script -> make optional
      file "*.pdf" optional true
+     file "*.mzTab" optional true
      file "*.csv"
-     file "*.mzTab"
      file "*.log"
 
     script:
