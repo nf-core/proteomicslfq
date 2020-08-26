@@ -718,9 +718,8 @@ process percolator {
     //TODO Actually it heavily depends on the subset_max_train option and the number of IDs
     // would be cool to get an estimate by parsing the number of IDs from previous tools.
     label 'process_medium'
-    //TODO The current percolator version only supports up to 3-fold CV so the following might make sense now
-    // but in the next version it will have nested CV
-    cpus { check_max( 3, 'cpus' ) }
+    //Since percolator 3.5 it allows for 27 parallel tasks
+    cpus { check_max( 27, 'cpus' ) }
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
