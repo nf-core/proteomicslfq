@@ -1099,17 +1099,19 @@ process msstats {
 
     input:
      file csv from out_msstats
+     file mztab from out_mztab
 
     output:
      // The generation of the PDFs from MSstats are very unstable, especially with auto-contrasts.
      // And users can easily fix anything based on the csv and the included script -> make optional
      file "*.pdf" optional true
      file "*.csv"
+     file "*.mzTab"
      file "*.log"
 
     script:
      """
-     msstats_plfq.R ${csv} > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
+     msstats_plfq.R ${csv} ${mztab} > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
      """
 }
 
