@@ -1050,7 +1050,7 @@ process proteomicslfq {
      file fasta from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
-     file "out.mzTab" into out_mzTab
+     file "out.mzTab" into out_mztab_plfq, out_mztab_msstats
      file "out.consensusXML" into out_consensusXML
      file "out.csv" into out_msstats
      file "debug_mergedIDs.idXML" optional true
@@ -1099,7 +1099,7 @@ process msstats {
 
     input:
      file csv from out_msstats
-     file mztab from out_mztab
+     file mztab from out_mztab_msstats
 
     output:
      // The generation of the PDFs from MSstats are very unstable, especially with auto-contrasts.
@@ -1129,7 +1129,7 @@ process ptxqc {
      params.enable_qc
 
     input:
-     file mzTab from out_mzTab
+     file mzTab from out_mztab_plfq
 
     output:
      file "*.html"
