@@ -718,9 +718,8 @@ process percolator {
     //TODO Actually it heavily depends on the subset_max_train option and the number of IDs
     // would be cool to get an estimate by parsing the number of IDs from previous tools.
     label 'process_medium'
-    //TODO The current percolator version only supports up to 3-fold CV so the following might make sense now
-    // but in the next version it will have nested CV
-    cpus { check_max( 3, 'cpus' ) }
+    //Since percolator 3.5 it allows for 27 parallel tasks
+    cpus { check_max( 27, 'cpus' ) }
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
@@ -1130,7 +1129,7 @@ process ptxqc {
      file mzTab from out_mzTab
 
     output:
-     file "*.html"
+     file "*.html" into ch_ptxqc_report
      file "*.yaml"
      file "*.Rmd"
      file "*.pdf"
@@ -1289,6 +1288,20 @@ workflow.onComplete {
     email_fields['summary']['Nextflow Build'] = workflow.nextflow.build
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
+    // On success try attach the multiqc report
+    def mqc_report = null
+    try {
+        if (workflow.success) {
+            mqc_report = ch_ptxqc_report.getVal()
+            if (mqc_report.getClass() == ArrayList) {
+                log.warn "[nf-core/proteomicslfq] Found multiple reports from process 'ptxqc', will use only one"
+                mqc_report = mqc_report[0]
+            }
+        }
+    } catch (all) {
+        log.warn "[nf-core/proteomicslfq] Could not attach PTXQC report to summary email"
+    }
+
     // Check if we are only sending emails on failure
     email_address = params.email
     if (!params.email && params.email_on_fail && !workflow.success) {
@@ -1405,11 +1418,17 @@ def checkHostname() {
     }
 }
 
+
+//--------------------------------------------------------------- //
+//---------------------- Utility functions  --------------------- //
+//--------------------------------------------------------------- //
+
 // Check file extension
 def hasExtension(it, extension) {
     it.toString().toLowerCase().endsWith(extension.toLowerCase())
 }
 
+// Check class of an Object for "List" type
 boolean isCollectionOrArray(object) {    
     [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
 }
