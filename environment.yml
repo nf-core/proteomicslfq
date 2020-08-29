@@ -6,7 +6,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  # TODO fix versions for release (and also for develop, as soon as we have official nightly conda packages, with e.g. a date as version)
+  # TODO fix versions for release (and for dev: add a date to nightlies as version?)
   - openms::openms=2.6.0pre # nightly version of 2.6
   - bioconda::thermorawfileparser=1.2.3
   - bioconda::msgf_plus=2020.08.05
