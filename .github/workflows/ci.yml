@@ -21,12 +21,12 @@ jobs:
       matrix:
         # Nextflow versions: check pipeline minimum and current latest
         nxf_ver: ['20.01.0', '']
-        test_profile: ['test', 'test_localize']
+        test_profile: ['test', 'test_localize', 'test_speccount']
     steps:
       - uses: actions/checkout@v2
       - name: Determine tower usage
         shell: bash
-        run: echo "::set-env name=TOWER::`[ -z "$TOWER_ACCESS_TOKEN" ] && echo '' || echo '-with-tower'`" 
+        run: echo "::set-env name=TOWER::`[ -z "$TOWER_ACCESS_TOKEN" ] && echo '' || echo '-with-tower'`"
         id: tower_usage
       - name: Extract branch name
         if: github.event_name == 'push'
@@ -37,7 +37,7 @@ jobs:
           ref=${ref#"refs/"}
           ref=${ref//\//-}
           echo "::set-env name=RUN_NAME::$ref"
-        id: extract_branch 
+        id: extract_branch
       - name: Extract PR number
         if: github.event_name == 'pull_request'
         shell: bash
