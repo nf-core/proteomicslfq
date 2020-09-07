@@ -700,8 +700,7 @@
                         "feature_intensity",
                         "spectral_counting"
                     ],
-                    "fa_icon": "fas fa-list-ol",
-                    "hidden": true
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "mass_recalibration": {
                     "type": "boolean",
