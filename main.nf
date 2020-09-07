@@ -1095,7 +1095,7 @@ process msstats {
     publishDir "${params.outdir}/msstats", mode: 'copy'
 
     when:
-     !params.skip_post_msstats
+     !params.skip_post_msstats && params.quantification_method == "feature_intensity"
 
     input:
      file csv from out_msstats
