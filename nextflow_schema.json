@@ -694,7 +694,7 @@
                 },
                 "quantification_method": {
                     "type": "string",
-                    "description": "Currently UNSUPPORTED in this workflow. Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs (spectral_counting).",
+                    "description": "Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs (spectral_counting).",
                     "default": "feature_intensity",
                     "enum": [
                         "feature_intensity",
