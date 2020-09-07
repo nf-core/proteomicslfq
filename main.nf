@@ -21,11 +21,11 @@ def helpMessage() {
 
     Main arguments:
       --input                       Path/URI to PRIDE Sample to data relation format file (SDRF) OR path to input spectra as mzML or Thermo Raw
-      
-      For SDRF:                     
+
+      For SDRF:
       --root_folder                 (Optional) If given, looks for the filenames in the SDRF in this folder, locally
       --local_input_type            (Optional) If given and 'root_folder' was specified, it overwrites the filetype in the SDRF for local lookup and matches only the basename.
-      
+
       For mzML/raw files:
       --expdesign                   (Optional) Path to an experimental design file (if not given, it assumes unfractionated, unrelated samples)
 
@@ -121,6 +121,7 @@ def helpMessage() {
       --protein_level_fdr_cutoff    Protein level FDR cutoff (this affects and chooses the peptides used for quantification)
 
       Quantification:
+      --quantification_method       Quantification method supported by proteomicslfq ('feature_intensity' or 'spectral_counting', default: 'feature_intensity')
       --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
                                     increased memory consumption). (default: false) TODO must specify true or false
       --targeted_only               Only ID based quantification. (default: true) TODO must specify true or false
@@ -608,7 +609,7 @@ process search_engine_comet {
 
      // for consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF
      // TODO find another solution. In ProteomicsLFQ we re-run PeptideIndexer (remove??) and if we
-     // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the 
+     // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the
      // XTandem specific rules.
      if (params.search_engines.contains("msgf"))
      {
@@ -1431,6 +1432,6 @@ def hasExtension(it, extension) {
 }
 
 // Check class of an Object for "List" type
-boolean isCollectionOrArray(object) {    
+boolean isCollectionOrArray(object) {
     [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
 }
