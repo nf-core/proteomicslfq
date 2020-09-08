@@ -1062,44 +1062,25 @@ process proteomicslfq {
      file "*.log"
 
     script:
-     if(params.quantification_method == "spectral_counting")
-         """
-         ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
-                    -ids ${(id_files as List).join(' ')} \\
-                    -design ${expdes} \\
-                    -fasta ${fasta} \\
-                    -protein_inference ${params.protein_inference} \\
-                    -quantification_method ${params.quantification_method} \\
-                    -targeted_only ${params.targeted_only} \\
-                    -mass_recalibration ${params.mass_recalibration} \\
-                    -transfer_ids ${params.transfer_ids} \\
-                    -protein_quantification ${params.protein_quant} \\
-                    -out out.mzTab \\
-                    -threads ${task.cpus} \\
-                    -out_cxml out.consensusXML \\
-                    -proteinFDR ${params.protein_level_fdr_cutoff} \\
-                    -debug ${params.inf_quant_debug} \\
-                    > proteomicslfq.log
-         """
-     else
-         """
-         ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
-                    -ids ${(id_files as List).join(' ')} \\
-                    -design ${expdes} \\
-                    -fasta ${fasta} \\
-                    -protein_inference ${params.protein_inference} \\
-                    -quantification_method ${params.quantification_method} \\
-                    -targeted_only ${params.targeted_only} \\
-                    -mass_recalibration ${params.mass_recalibration} \\
-                    -transfer_ids ${params.transfer_ids} \\
-                    -protein_quantification ${params.protein_quant} \\
-                    -out out.mzTab \\
-                    -threads ${task.cpus} \\
-                    -out_msstats out.csv \\
-                    -out_cxml out.consensusXML \\
-                    -proteinFDR ${params.protein_level_fdr_cutoff} \\
-                    -debug ${params.inf_quant_debug} \\
-                    > proteomicslfq.log
+     def msstats_present = params.quantification_method == "feature_intensity" ? '-out_msstats out.csv' : ''
+     """
+     ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
+                   -ids ${(id_files as List).join(' ')} \\
+                   -design ${expdes} \\
+                   -fasta ${fasta} \\
+                   -protein_inference ${params.protein_inference} \\
+                   -quantification_method ${params.quantification_method} \\
+                   -targeted_only ${params.targeted_only} \\
+                   -mass_recalibration ${params.mass_recalibration} \\
+                   -transfer_ids ${params.transfer_ids} \\
+                   -protein_quantification ${params.protein_quant} \\
+                   -out out.mzTab \\
+                   -threads ${task.cpus} \\
+                   ${msstats_present} \\
+                   -out_cxml out.consensusXML \\
+                   -proteinFDR ${params.protein_level_fdr_cutoff} \\
+                   -debug ${params.inf_quant_debug} \\
+                   > proteomicslfq.log
          """
 
 }
