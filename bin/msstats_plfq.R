@@ -103,23 +103,23 @@ if (length(lvls) == 1)
   write.csv(test.MSstats$ComparisonResult, "msstats_results.csv")
   
   groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
-                       width=12, height=12,dot.size = 2,ylimUp = 7)
+                       width=12, height=12,dot.size = 2)
   
   test.MSstats$Volcano = test.MSstats$ComparisonResult[!is.na(test.MSstats$ComparisonResult$pvalue),]
   groupComparisonPlots(data=test.MSstats$Volcano, type="VolcanoPlot",
-                       width=12, height=12,dot.size = 2,ylimUp = 7)
+                       width=12, height=12,dot.size = 2)
 
   # Otherwise it fails since the behaviour is undefined
   if (nrow(contrast_mat) > 1)
   {
     groupComparisonPlots(data=test.MSstats$ComparisonResult, type="Heatmap",
-                         width=12, height=12,dot.size = 2,ylimUp = 7)
+                         width=12, height=12,dot.size = 2)
   }
   
   #for (comp in rownames(contrast_mat))
   #{
   #  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
-  #                       width=12, height=12,dot.size = 2,ylimUp = 7, sig=1)#,
+  #                       width=12, height=12,dot.size = 2, sig=1)#,
   #                       which.Comparison = comp,
   #                       address=F)
   #  # try to plot all comparisons
