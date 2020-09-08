@@ -1052,7 +1052,7 @@ process proteomicslfq {
     output:
      file "out.mzTab" into out_mztab_plfq, out_mztab_msstats
      file "out.consensusXML" into out_consensusXML
-     file "out.csv" into out_msstats
+     file "out.csv" optional true into out_msstats
      file "debug_mergedIDs.idXML" optional true
      file "debug_mergedIDs_inference.idXML" optional true
      file "debug_mergedIDsGreedyResolved.idXML" optional true
