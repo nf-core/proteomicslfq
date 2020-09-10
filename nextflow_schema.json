@@ -694,14 +694,13 @@
                 },
                 "quantification_method": {
                     "type": "string",
-                    "description": "Currently UNSUPPORTED in this workflow. Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs (spectral_counting).",
+                    "description": "Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs ('spectral_counting'). WARNING: 'spectral_counting' is not compatible with our MSstats step yet. MSstats will therefore be disabled automatically with that choice.",
                     "default": "feature_intensity",
                     "enum": [
                         "feature_intensity",
                         "spectral_counting"
                     ],
-                    "fa_icon": "fas fa-list-ol",
-                    "hidden": true
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "mass_recalibration": {
                     "type": "boolean",
