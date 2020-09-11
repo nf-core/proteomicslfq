@@ -21,11 +21,11 @@ def helpMessage() {
 
     Main arguments:
       --input                       Path/URI to PRIDE Sample to data relation format file (SDRF) OR path to input spectra as mzML or Thermo Raw
-      
-      For SDRF:                     
+
+      For SDRF:
       --root_folder                 (Optional) If given, looks for the filenames in the SDRF in this folder, locally
       --local_input_type            (Optional) If given and 'root_folder' was specified, it overwrites the filetype in the SDRF for local lookup and matches only the basename.
-      
+
       For mzML/raw files:
       --expdesign                   (Optional) Path to an experimental design file (if not given, it assumes unfractionated, unrelated samples)
 
@@ -121,6 +121,7 @@ def helpMessage() {
       --protein_level_fdr_cutoff    Protein level FDR cutoff (this affects and chooses the peptides used for quantification)
 
       Quantification:
+      --quantification_method       Quantification method supported by proteomicslfq ('feature_intensity' or 'spectral_counting', default: 'feature_intensity')
       --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
                                     increased memory consumption). (default: false) TODO must specify true or false
       --targeted_only               Only ID based quantification. (default: true) TODO must specify true or false
@@ -608,7 +609,7 @@ process search_engine_comet {
 
      // for consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF
      // TODO find another solution. In ProteomicsLFQ we re-run PeptideIndexer (remove??) and if we
-     // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the 
+     // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the
      // XTandem specific rules.
      if (params.search_engines.contains("msgf"))
      {
@@ -1052,7 +1053,7 @@ process proteomicslfq {
     output:
      file "out.mzTab" into out_mztab_plfq, out_mztab_msstats
      file "out.consensusXML" into out_consensusXML
-     file "out.csv" into out_msstats
+     file "out.csv" optional true into out_msstats
      file "debug_mergedIDs.idXML" optional true
      file "debug_mergedIDs_inference.idXML" optional true
      file "debug_mergedIDsGreedyResolved.idXML" optional true
@@ -1062,25 +1063,27 @@ process proteomicslfq {
      file "*.log"
 
     script:
+     def msstats_present = params.quantification_method == "feature_intensity" ? '-out_msstats out.csv' : ''
      """
      ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
-                    -ids ${(id_files as List).join(' ')} \\
-                    -design ${expdes} \\
-                    -fasta ${fasta} \\
-                    -protein_inference ${params.protein_inference} \\
-                    -quantification_method ${params.quantification_method} \\
-                    -targeted_only ${params.targeted_only} \\
-                    -mass_recalibration ${params.mass_recalibration} \\
-                    -transfer_ids ${params.transfer_ids} \\
-                    -protein_quantification ${params.protein_quant} \\
-                    -out out.mzTab \\
-                    -threads ${task.cpus} \\
-                    -out_msstats out.csv \\
-                    -out_cxml out.consensusXML \\
-                    -proteinFDR ${params.protein_level_fdr_cutoff} \\
-                    -debug ${params.inf_quant_debug} \\
-                    > proteomicslfq.log
-     """
+                   -ids ${(id_files as List).join(' ')} \\
+                   -design ${expdes} \\
+                   -fasta ${fasta} \\
+                   -protein_inference ${params.protein_inference} \\
+                   -quantification_method ${params.quantification_method} \\
+                   -targeted_only ${params.targeted_only} \\
+                   -mass_recalibration ${params.mass_recalibration} \\
+                   -transfer_ids ${params.transfer_ids} \\
+                   -protein_quantification ${params.protein_quant} \\
+                   -out out.mzTab \\
+                   -threads ${task.cpus} \\
+                   ${msstats_present} \\
+                   -out_cxml out.consensusXML \\
+                   -proteinFDR ${params.protein_level_fdr_cutoff} \\
+                   -debug ${params.inf_quant_debug} \\
+                   > proteomicslfq.log
+         """
+
 }
 
 
@@ -1095,7 +1098,7 @@ process msstats {
     publishDir "${params.outdir}/msstats", mode: 'copy'
 
     when:
-     !params.skip_post_msstats
+     !params.skip_post_msstats && params.quantification_method == "feature_intensity"
 
     input:
      file csv from out_msstats
@@ -1432,6 +1435,6 @@ def hasExtension(it, extension) {
 }
 
 // Check class of an Object for "List" type
-boolean isCollectionOrArray(object) {    
+boolean isCollectionOrArray(object) {
     [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
 }
