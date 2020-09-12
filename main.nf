@@ -1147,6 +1147,10 @@ process ptxqc {
      """
 }
 
+if (!params.enable_qc)
+{
+  ch_ptxqc_report = Channel.empty()
+}
 
 
 //--------------------------------------------------------------- //
@@ -1297,12 +1301,15 @@ workflow.onComplete {
     // On success try attach the multiqc report
     def mqc_report = ""
     try {
-        if (workflow.success) {
+        if (workflow.success && ch_ptxqc_report.println()) {
             mqc_report = ch_ptxqc_report.getVal()
             if (mqc_report.getClass() == ArrayList) {
                 log.warn "[nf-core/proteomicslfq] Found multiple reports from process 'ptxqc', will use only one"
                 mqc_report = mqc_report[0]
             }
+        }
+        else {
+          mqc_report = ""
         }
     } catch (all) {
         log.warn "[nf-core/proteomicslfq] Could not attach PTXQC report to summary email"
