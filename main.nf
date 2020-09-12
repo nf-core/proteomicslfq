@@ -1028,7 +1028,7 @@ process luciphor {
 // Join mzmls and ids by UID specified per mzml file in the beginning.
 // ID files can come directly from the Percolator branch, IDPEP branch or
 // after optional processing with Luciphor
-mzmls_plfq
+mzmls_plfq.mix(mzmls_plfq_picked)
   .join(plfq_in_id.mix(plfq_in_id_luciphor))
   .multiMap{ it ->
       mzmls: it[1]
@@ -1295,7 +1295,7 @@ workflow.onComplete {
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
     // On success try attach the multiqc report
-    def mqc_report = null
+    def mqc_report = ""
     try {
         if (workflow.success) {
             mqc_report = ch_ptxqc_report.getVal()
@@ -1341,7 +1341,7 @@ workflow.onComplete {
         } catch (all) {
             // Catch failures and try with plaintext
             def mail_cmd = [ 'mail', '-s', subject, '--content-type=text/html', email_address ]
-            if ( mqc_report.size() <= params.max_multiqc_email_size.toBytes() ) {
+            if ( mqc != "" && mqc_report.size() <= params.max_multiqc_email_size.toBytes() ) {
               mail_cmd += [ '-A', mqc_report ]
             }
             mail_cmd.execute() << email_html
