@@ -22,10 +22,10 @@ A rough visualization follows:
 
 ![proteomicslfq workflow](./images/proteomicslfq.svg)
 
-## Output
+## Output structure
 
 Output is by default written to the $NXF_WORKSPACE/results folder.
-The output consists of the following folders:
+The output consists of the following folders (follow the links for a more detailed description):
 
 results
 
@@ -51,6 +51,7 @@ results
   * [report\_vX.X.X\_out\_${hash}.html](#ptxqc-report)
   * [report\_vX.X.X\_out\_${hash}.pdf](#ptxqc-report)
 
+## Output description
 ### Nextflow pipeline info
 
 Information about the execution and structure of the pipeline. If run with the corresponding nextflow parameters,
