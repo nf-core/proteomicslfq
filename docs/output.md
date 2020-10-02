@@ -17,6 +17,9 @@ and processes data using the following steps:
 1. PSM/Peptide-level FDR filtering
 1. Protein inference and labelfree quantification based on MS1 feature detection, alignment and integration with OpenMS' ProteomicsLFQ
 
+A rough visualization follows:
+![proteomicslfq workflow](./images/proteomicslfq.svg)
+
 ## Output
 
 Output is by default written to the $NXF_WORKSPACE/results folder. You can change that with TODO
