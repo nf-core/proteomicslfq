@@ -9,44 +9,47 @@ and processes data using the following steps:
 
 1. (optional) Conversion of spectra data to indexedMzML: Using ThermoRawFileParser if Thermo Raw or using OpenMS' FileConverter if just an index is missing
 1. (optional) Decoy database generation for the provided DB (fasta) with OpenMS
-1. Database search with either MSGF+ or Comet through OpenMS adapters
-1. Re-mapping potentially identified peptides to the database for consistency and error-checking (using OpenMS' PeptideIndexer)
-1. (Intermediate score switching steps to use appropriate scores for the next step)
+1. Database search with either MSGF+ and/or Comet through OpenMS adapters
+1. Re-mapping potentially identified peptides to the input database for consistency and error-checking (using OpenMS' PeptideIndexer)
 1. PSM rescoring using PSMFeatureExtractor and Percolator or a PeptideProphet-like distribution fitting approach in OpenMS
-1. (Intermediate score switching steps to use appropriate scores for the next step)
-1. PSM/Peptide-level FDR filtering
-1. Protein inference and labelfree quantification based on MS1 feature detection, alignment and integration with OpenMS' ProteomicsLFQ
+1. If multiple search engines were chosen, the results are combined with OpenMS' ConsensusID
+1. If multiple search engines were chosen, a combined FDR is calculated
+1. Single run PSM/Peptide-level FDR filtering
+1. If localization of modifications was requested, Luciphor2 is applied via the OpenMS adapter
+1. Protein inference and labelfree quantification based on spectral counting or MS1 feature detection, alignment and integration with OpenMS' ProteomicsLFQ. Performs an additional experiment-wide FDR filter on protein (and if requested peptide/PSM-level).
 
 A rough visualization follows:
+
 ![proteomicslfq workflow](./images/proteomicslfq.svg)
 
 ## Output
 
-Output is by default written to the $NXF_WORKSPACE/results folder. You can change that with TODO
+Output is by default written to the $NXF_WORKSPACE/results folder.
 The output consists of the following folders:
 
 results
 
 * ids
-  * [${infile}\*.idXML](#identifications)
-* logs
-  * ...
+  * [\*.idXML](#identifications)
+* logs (extended log files for all steps)
+  * \*.log
 * msstats
   * [ComparisonPlot.pdf](#msstats-plots)
   * [VolcanoPlot.pdf](#msstats-plots)
   * [Heatmap.pdf](#msstats-plots)
   * [msstats\_results.csv](#msstats-table)
-* pipeline\_info
+  * [msstats_out.mzTab](#msstats-mztab)
+* pipeline\_info (general nextflow infos)
   * [...](#nextflow-pipeline-info)
 * proteomics\_lfq
   * [debug\_\*.idXML](#debug-output)
   * [out.consensusXML](#consenusxml)
   * [out.csv](#msstats-ready-quantity-table)
   * [out.mzTab](#mztab)
-* ptxqc
-  * [report\_v1.0.2\_out.yaml](#ptxqc-yaml-config)
-  * [report\_v1.0.2\_out\_${hash}.html](#ptxqc-report)
-  * [report\_v1.0.2\_out\_${hash}.pdf](#ptxqc-report)
+* ptxqc (quality control)
+  * [report\_vX.X.X\_out.yaml](#ptxqc-yaml-config)
+  * [report\_vX.X.X\_out\_${hash}.html](#ptxqc-report)
+  * [report\_vX.X.X\_out\_${hash}.pdf](#ptxqc-report)
 
 ### Nextflow pipeline info
 
@@ -85,22 +88,26 @@ The `msstats` folder contains MSstats' post-processed (e.g. imputation, outlier 
 measures of significance for different tested contrasts of the given experimental design. It also includes basic plots of these results.
 The results will only be available if there was more than one condition.
 
+#### MSstats mzTab
+
+The mzTab from the proteomics_lfq folder with replaced normalized and imputed quantities from MSstats. Might contain less quantities since
+MSstats filters proteins with too many missing values.
+
 #### MSstats table
 
-See MSstats vignette.
+See [MSstats vignette](https://www.bioconductor.org/packages/release/bioc/vignettes/MSstats/inst/doc/MSstats.html).
 
 #### MSstats plots
 
-See MSstats vignette for Heatmap, VolcanoPlot and ComparisonPlot (per protein).
+See [MSstats vignette](https://www.bioconductor.org/packages/release/bioc/vignettes/MSstats/inst/doc/MSstats.html) for groupComparisonPlots (Heatmap, VolcanoPlot and ComparisonPlot (per protein)).
 
 ### PTXQC output
 
-If activated, the `ptxqc` folder will contain the report of the PTXQC R package based on the mzTab output of proteomicsLFQ.
-TODO link
+If activated, the `ptxqc` folder will contain the report of the [PTXQC R package](https://cran.r-project.org/web/packages/PTXQC/index.html) based on the mzTab output of proteomicsLFQ.
 
 #### PTXQC report
 
-See PTXQC vignette. In the report itself the calculated and visualized QC metrics are actually quite extensively described already.
+See [PTXQC vignette](https://cran.r-project.org/web/packages/PTXQC/index.html). In the report itself the calculated and visualized QC metrics are actually quite extensively described already.
 
 #### PTXQC yaml config
 
