@@ -9,9 +9,7 @@ Please use the pre-filled template to save time.
 However, don't be put off by this template - other more general issues and suggestions are welcome!
 Contributions to the code are even more welcome ;)
 
-> If you need help using or modifying nf-core/proteomicslfq then the best place to ask is on the pipeline channel on [Slack](https://nf-co.re/join/slack/).
-
-
+> If you need help using or modifying nf-core/proteomicslfq then the best place to ask is on the nf-core Slack [#proteomicslfq](https://nfcore.slack.com/channels/proteomicslfq) channel ([join our Slack here](https://nf-co.re/join/slack)).
 
 ## Contribution workflow
 
@@ -33,7 +31,8 @@ Typically, pull-requests are only fully reviewed when these tests are passing, t
 There are typically two types of tests that run:
 
 ### Lint Tests
-The nf-core has a [set of guidelines](https://nf-co.re/developers/guidelines) which all pipelines must adhere to.
+
+`nf-core` has a [set of guidelines](https://nf-co.re/developers/guidelines) which all pipelines must adhere to.
 To enforce these and ensure that all pipelines stay in sync, we have developed a helper tool which runs checks on the pipeline code. This is in the [nf-core/tools repository](https://github.com/nf-core/tools) and once installed can be run locally with the `nf-core lint <pipeline-directory>` command.
 
 If any failures or warnings are encountered, please follow the listed URL for more documentation.
@@ -47,11 +46,12 @@ These tests are run both with the latest available version of `Nextflow` and als
 
 ## Patch
 
-: warning: Only in the unlikely and regretful event of a release happening with a bug.
+:warning: Only in the unlikely and regretful event of a release happening with a bug.
 
 * On your own fork, make a new branch `patch` based on `upstream/master`.
 * Fix the bug, and bump version (X.Y.Z+1).
 * A PR should be made on `master` from patch to directly this particular bug.
 
 ## Getting help
-For further information/help, please consult the [nf-core/proteomicslfq documentation](https://github.com/nf-core/proteomicslfq#documentation) and don't hesitate to get in touch on the [nf-core/proteomicslfq pipeline channel](https://nfcore.slack.com/channels/nf-core/proteomicslfq) on [Slack](https://nf-co.re/join/slack/).
+
+For further information/help, please consult the [nf-core/proteomicslfq documentation](https://nf-co.re/proteomicslfq/docs) and don't hesitate to get in touch on the nf-core Slack [#proteomicslfq](https://nfcore.slack.com/channels/proteomicslfq) channel ([join our Slack here](https://nf-co.re/join/slack)).
