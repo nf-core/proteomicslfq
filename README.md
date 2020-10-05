@@ -30,8 +30,6 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
 4. Start running your own analysis!
 
-    <!-- TODO nf-core: Update the example "typical command" below used to run the pipeline -->
-
     ```bash
     nextflow run nf-core/proteomicslfq \
       -profile <docker/singularity/conda/institute> \
@@ -47,7 +45,7 @@ See [usage docs](https://nf-co.re/proteomicslfq/usage) for all of the available 
 
 The nf-core/proteomicslfq pipeline comes with documentation about the pipeline which you can read at [https://nf-co.re/proteomicslfq](https://nf-co.re/proteomicslfq) or partly find in the [`docs/` directory](docs).
 
-<!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
+It performs conversion to indexed mzML, database search (with multiple search engines), re-scoring (with e.g. Percolator), merging, FDR filtering, modification localization with Luciphor2 (e.g. phospho-sites), protein inference and grouping as well as label-free quantification by either spectral counting or feature-based alignment and integration. Downstream processing includes statistical post-processing with MSstats and quality control with PTXQC. For more info, see the [output docs](docs/output.md).
 
 ## Credits
 
@@ -61,8 +59,7 @@ For further information or help, don't hesitate to get in touch on the [Slack `#
 
 ## Citation
 
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
-<!-- If you use  nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+If you use  nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX)
 
 You can cite the `nf-core` publication as follows:
 
