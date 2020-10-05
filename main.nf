@@ -581,27 +581,30 @@ process search_engine_comet {
      file "*.log"
 
     //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
+    //Note: OpenMS CometAdapter will double the number that is passed to fragment_mass_tolerance to "convert"
+    // it to a fragment_bin_tolerance
     script:
      if (frag_tol_unit == "ppm") {
        // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
-       // and uses Comet's defaults for bin size, in case unsupported unit "ppm" was given.
+       // and uses Comet's defaults for bin size (i.e. by passing 0.5*default to the Adapter), in case unsupported unit "ppm" was given.
        if (frag_tol.toDouble() < 50) {
-         bin_tol = "0.015"
-         bin_offset = "0.0"
+         bin_tol = 0.015
+         bin_offset = 0.0
          inst = params.instrument ?: "high_res"
        } else {
-         bin_tol = "0.50025"
-         bin_offset = "0.4"
+         bin_tol = 0.50025
+         bin_offset = 0.4
          inst = params.instrument ?: "low_res"
        }
        log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
          " instrument and set the fragment_bin_tolerance to " + bin_tol
      } else {
-       bin_tol = frag_tol.toDouble() / 2.0
-       bin_offset = frag_tol.toDouble() < 0.1 ? "0.0" : "0.4"
+       //TODO expose the fragment_bin_offset parameter of comet
+       bin_tol = frag_tol.toDouble()
+       bin_offset = bin_tol <= 0.05 ? 0.0 : 0.4
        if (!params.instrument)
        {
-         inst = frag_tol.toDouble() < 0.1 ? "high_res" : "low_res"
+         inst = bin_tol <= 0.05 ? "high_res" : "low_res"
        } else {
          inst = params.instrument
        }
