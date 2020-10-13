@@ -7,7 +7,7 @@
 The most simple command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/proteomicslfq --spectra '*.mzML' --database '*.fasta' -profile docker
+nextflow run nf-core/proteomicslfq --input '*.mzML' --database '*.fasta' -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.

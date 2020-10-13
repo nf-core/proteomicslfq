@@ -67,7 +67,7 @@ results
 ### Identifications
 
 Intermediate output for the PSM/peptide-level filtered identifications per raw/mzML file in OpenMS'
-internal [idXML](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/IdXML_1_5.xsd) format. TODO link to schema.
+internal [idXML](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/IdXML_1_5.xsd) format.
 
 ### ProteomicsLFQ main output
 
