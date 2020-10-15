@@ -716,9 +716,14 @@
                     "fa_icon": "far fa-check-square"
                 },
                 "transfer_ids": {
-                    "type": "boolean",
-                    "description": "Transfer IDs over aligned samples to increase the number of quantifiable features (WARNING: increased memory consumption). (default: 'false')",
-                    "fa_icon": "far fa-check-square"
+                    "type": "string",
+                    "description": "How to transfer IDs over aligned samples to increase the number of quantifiable features (WARNING: increased memory consumption). 'mean' uses the mean of the retention times of the identified and matched features to look for unidentified features in the rest of the maps [if at least 50% of the aligned maps had the same identification]. 'false' does nothing. (default: 'false')",
+                    "default": "false",
+                    "enum": [
+                        "false",
+                        "mean"
+                    ],
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "targeted_only": {
                     "type": "boolean",
