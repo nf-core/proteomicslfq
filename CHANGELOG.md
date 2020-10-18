@@ -24,7 +24,7 @@ The initial version of the pipeline features the following steps:
 
 ### `Known issues`
 
-If you experience nextflow running forever after a failed step, try settings errorStrategy = terminate. See https://github.com/nextflow-io/nextflow/issues/1457
+If you experience nextflow running forever after a failed step, try settings errorStrategy = terminate. See the corresponding [nextflow issue](https://github.com/nextflow-io/nextflow/issues/1457).
 
 ### `Fixed`
 
