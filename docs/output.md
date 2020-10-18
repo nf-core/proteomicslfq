@@ -1,41 +1,121 @@
 # nf-core/proteomicslfq: Output
 
-This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
-
-<!-- TODO nf-core: Write this documentation describing your workflow's output -->
+This document describes the output produced by the pipeline.
 
 ## Pipeline overview
+
 The pipeline is built using [Nextflow](https://www.nextflow.io/)
 and processes data using the following steps:
 
-* [FastQC](#fastqc) - read quality control
-* [MultiQC](#multiqc) - aggregate report, describing results of the whole pipeline
+1. (optional) Conversion of spectra data to indexedMzML: Using ThermoRawFileParser if Thermo Raw or using OpenMS' FileConverter if just an index is missing
+1. (optional) Decoy database generation for the provided DB (fasta) with OpenMS
+1. Database search with either MSGF+ and/or Comet through OpenMS adapters
+1. Re-mapping potentially identified peptides to the input database for consistency and error-checking (using OpenMS' PeptideIndexer)
+1. PSM rescoring using PSMFeatureExtractor and Percolator or a PeptideProphet-like distribution fitting approach in OpenMS
+1. If multiple search engines were chosen, the results are combined with OpenMS' ConsensusID
+1. If multiple search engines were chosen, a combined FDR is calculated
+1. Single run PSM/Peptide-level FDR filtering
+1. If localization of modifications was requested, Luciphor2 is applied via the OpenMS adapter
+1. Protein inference and labelfree quantification based on spectral counting or MS1 feature detection, alignment and integration with OpenMS' ProteomicsLFQ. Performs an additional experiment-wide FDR filter on protein (and if requested peptide/PSM-level).
 
-## FastQC
-[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
+A rough visualization follows:
 
-For further reading and documentation see the [FastQC help](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
+![proteomicslfq workflow](./images/proteomicslfq.svg)
 
-> **NB:** The FastQC plots displayed in the MultiQC report shows _untrimmed_ reads. They may contain adapter sequence and potentially regions with low quality. To see how your reads look after trimming, look at the FastQC reports in the `trim_galore` directory.
+## Output structure
 
-**Output directory: `results/fastqc`**
+Output is by default written to the $NXF_WORKSPACE/results folder.
+The output consists of the following folders (follow the links for a more detailed description):
 
-* `sample_fastqc.html`
-  * FastQC report, containing quality metrics for your untrimmed raw fastq files
-* `zips/sample_fastqc.zip`
-  * zip file containing the FastQC report, tab-delimited data file and plot images
+results
 
+* ids
+  * [\*.idXML](#identifications)
+* logs (extended log files for all steps)
+  * \*.log
+* msstats
+  * [ComparisonPlot.pdf](#msstats-plots)
+  * [VolcanoPlot.pdf](#msstats-plots)
+  * [Heatmap.pdf](#msstats-plots)
+  * [msstats\_results.csv](#msstats-table)
+  * [msstats_out.mzTab](#msstats-mztab)
+* pipeline\_info (general nextflow infos)
+  * [...](#nextflow-pipeline-info)
+* proteomics\_lfq
+  * [debug\_\*.idXML](#debug-output)
+  * [out.consensusXML](#consenusxml)
+  * [out.csv](#msstats-ready-quantity-table)
+  * [out.mzTab](#mztab)
+* ptxqc (quality control)
+  * [report\_vX.X.X\_out.yaml](#ptxqc-yaml-config)
+  * [report\_vX.X.X\_out\_${hash}.html](#ptxqc-report)
+  * [report\_vX.X.X\_out\_${hash}.pdf](#ptxqc-report)
 
-## MultiQC
-[MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
+## Output description
 
-The pipeline has special steps which allow the software versions used to be reported in the MultiQC output for future traceability.
+### Nextflow pipeline info
 
-**Output directory: `results/multiqc`**
+[Nextflow](https://www.nextflow.io/docs/latest/tracing.html) provides excellent functionality for generating various reports relevant to the running and execution of the pipeline. This will allow you to troubleshoot errors with the running of the pipeline, and also provide you with other information such as launch commands, run times and resource usage.
 
-* `Project_multiqc_report.html`
-  * MultiQC report - a standalone HTML file that can be viewed in your web browser
-* `Project_multiqc_data/`
-  * Directory containing parsed statistics from the different tools used in the pipeline
+**Output files:**
 
-For more information about how to use MultiQC reports, see http://multiqc.info
+* `pipeline_info/`
+  * Reports generated by Nextflow: `execution_report.html`, `execution_timeline.html`, `execution_trace.txt` and `pipeline_dag.dot`/`pipeline_dag.svg`.
+  * Reports generated by the pipeline: `pipeline_report.html`, `pipeline_report.txt` and `software_versions.csv`.
+  * Documentation for interpretation of results in HTML format: `results_description.html`.
+
+### Identifications
+
+Intermediate output for the PSM/peptide-level filtered identifications per raw/mzML file in OpenMS'
+internal [idXML](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/IdXML_1_5.xsd) format.
+
+### ProteomicsLFQ main output
+
+The `proteomics_lfq` folder contains the output of the pipeline without any statistical postprocessing.
+It is available in three different formats:
+
+#### ConsensusXML
+
+A [consensusXML](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHEMAS/ConsensusXML_1_7.xsd) file as the closest representation of the internal data
+structures generated by OpenMS. Helpful for debugging and downstream processing with OpenMS tools.
+
+#### MSstats-ready quantity table
+
+A simple tsv file ready to be read by the OpenMStoMSstats function of the MSstats R package. It should hold
+the same quantities as the consensusXML but rearranged in a "long" table format with additional information
+about the experimental design used by MSstats.
+
+#### mzTab
+
+A complete [mzTab](https://github.com/HUPO-PSI/mzTab) file ready for submission to [PRIDE](https://www.ebi.ac.uk/pride/).
+
+### MSstats output
+
+The `msstats` folder contains [MSstats](https://github.com/MeenaChoi/MSstats)' post-processed (e.g. imputation, outlier removal) quantities and statistical
+measures of significance for different tested contrasts of the given experimental design. It also includes basic plots of these results.
+The results will only be available if there was more than one condition.
+
+#### MSstats mzTab
+
+The [mzTab](https://github.com/HUPO-PSI/mzTab) from the proteomics_lfq folder with replaced normalized and imputed quantities from MSstats. This might contain less quantities since MSstats filters proteins with too many missing values.
+
+#### MSstats table
+
+See [MSstats vignette](https://www.bioconductor.org/packages/release/bioc/vignettes/MSstats/inst/doc/MSstats.html).
+
+#### MSstats plots
+
+See [MSstats vignette](https://www.bioconductor.org/packages/release/bioc/vignettes/MSstats/inst/doc/MSstats.html) for groupComparisonPlots (Heatmap, VolcanoPlot and ComparisonPlot (per protein)).
+
+### PTXQC output
+
+If activated, the `ptxqc` folder will contain the report of the [PTXQC R package](https://cran.r-project.org/web/packages/PTXQC/index.html) based on the mzTab output of proteomicsLFQ.
+
+#### PTXQC report
+
+See [PTXQC vignette](https://cran.r-project.org/web/packages/PTXQC/index.html). In the report itself the calculated and visualized QC metrics are actually quite extensively described already.
+
+#### PTXQC yaml config
+
+The default yaml config used to configure the structure of the QC report. In case you need to restructure, please edit this file and
+re-run PTXQC manually.
