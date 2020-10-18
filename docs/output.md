@@ -72,7 +72,7 @@ internal [idXML](https://github.com/OpenMS/OpenMS/blob/develop/share/OpenMS/SCHE
 ### ProteomicsLFQ main output
 
 The `proteomics_lfq` folder contains the output of the pipeline without any statistical postprocessing.
-And is avaible in three different formats.
+It is available in three different formats:
 
 #### ConsensusXML
 

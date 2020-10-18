@@ -702,7 +702,7 @@
                 },
                 "quantification_method": {
                     "type": "string",
-                    "description": "Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs ('spectral_counting'). WARNING: 'spectral_counting' is not compatible with our MSstats step yet. MSstats will therefore be disabled automatically with that choice.",
+                    "description": "Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs ('spectral_counting'). **WARNING:** 'spectral_counting' is not compatible with our MSstats step yet. MSstats will therefore be disabled automatically with that choice.",
                     "default": "feature_intensity",
                     "enum": [
                         "feature_intensity",
@@ -717,7 +717,7 @@
                 },
                 "transfer_ids": {
                     "type": "string",
-                    "description": "How to transfer IDs over aligned samples to increase the number of quantifiable features (WARNING: increased memory consumption). 'mean' uses the mean of the retention times of the identified and matched features to look for unidentified features in the rest of the maps [if at least 50% of the aligned maps had the same identification]. 'false' does nothing. (default: 'false')",
+                    "description": "Tries a targeted requantification in files where an ID is missing, based on aggregate properties (i.e. RT) of the features in other aligned files (e.g. 'mean' of RT). (**WARNING:** increased memory consumption and runtime). 'false' turns this feature off. (default: 'false')",
                     "default": "false",
                     "enum": [
                         "false",
@@ -727,7 +727,7 @@
                 },
                 "targeted_only": {
                     "type": "boolean",
-                    "description": "Only looks for quantifiable features at locations with an identified spectrum. Set to false to include unidentified features so they can be linked to identified ones (=match between runs)",
+                    "description": "Only looks for quantifiable features at locations with an identified spectrum. Set to false to include unidentified features so they can be linked and matched to identified ones (= match between runs). (default: 'true')",
                     "default": true,
                     "fa_icon": "far fa-check-square"
                 },
