@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.0.0 - Lovely Logan [17.10.2020]
+## v1.0.0 - Lovely Logan [18.10.2020]
 
 Initial release of nf-core/proteomicslfq, created with the [nf-core](https://nf-co.re/) template.
 
@@ -21,6 +21,10 @@ The initial version of the pipeline features the following steps:
     - Single run PSM/Peptide-level FDR filtering
     - If localization of modifications was requested, Luciphor2 is applied via the OpenMS adapter
     - Protein inference and labelfree quantification based on spectral counting or MS1 feature detection, alignment and integration with OpenMS' ProteomicsLFQ. Performs an additional experiment-wide FDR filter on protein level (and if requested peptide/PSM level).
+
+### `Known issues`
+
+If you experience nextflow running forever after a failed step, try settings errorStrategy = terminate. See https://github.com/nextflow-io/nextflow/issues/1457
 
 ### `Fixed`
 

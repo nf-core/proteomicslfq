@@ -503,10 +503,10 @@ process search_engine_msgf {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // ------------- WARNING: THIS IS A HACK. IT JUST DOES NOT WORK IF THIS PROCESS IS RETRIED -----------------------------
+    // ------------- WARNING: If you experience nextflow running forever after a failure, set the following ----------------
     // ---------------------------------------------------------------------------------------------------------------------
-    // I actually dont know, where else this would be needed.
-    errorStrategy 'terminate'
+    // This is probably true for other processes as well. See https://github.com/nextflow-io/nextflow/issues/1457
+    // errorStrategy 'terminate'
 
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.mix(mzmls_msgf_picked).join(ch_sdrf_config.msgf_settings))
@@ -566,10 +566,11 @@ process search_engine_comet {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     // ---------------------------------------------------------------------------------------------------------------------
-    // ------------- WARNING: THIS IS A HACK. IT JUST DOES NOT WORK IF THIS PROCESS IS RETRIED -----------------------------
+    // ------------- WARNING: If you experience nextflow running forever after a failure, set the following ----------------
     // ---------------------------------------------------------------------------------------------------------------------
-    // I actually dont know, where else this would be needed.
-    errorStrategy 'terminate'
+    // This is probably true for other processes as well. See https://github.com/nextflow-io/nextflow/issues/1457
+    //errorStrategy 'terminate'
+    
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
