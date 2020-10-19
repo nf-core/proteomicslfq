@@ -51,12 +51,12 @@ jobs:
             environment.yml
       - name: Build new docker image
         if: env.GIT_DIFF
-        run: docker build --no-cache . -t nfcore/proteomicslfq:1.0.0
+        run: docker build --no-cache . -t nfcore/proteomicslfq:dev
       - name: Pull docker image
         if: ${{ !env.GIT_DIFF }}
         run: |
           docker pull nfcore/proteomicslfq:dev
-          docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:1.0.0
+          docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
       - name: Install Nextflow
         run: |
           wget -qO- get.nextflow.io | bash
