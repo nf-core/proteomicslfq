@@ -1,26 +1,15 @@
 # You can use this file to create a conda environment for this pipeline:
 #   conda env create -f environment.yml
-name: nf-core-proteomicslfq-1.0dev
+name: nf-core-proteomicslfq-1.0.0
 channels:
-  - bgruening
   - conda-forge
   - bioconda
+  - defaults
 dependencies:
-  # TODO fix versions for release
-  - bgruening::openms
-  - bioconda::thermorawfileparser
-  - bioconda::msgf_plus
-  - bioconda::comet-ms
-  - bioconda::luciphor2
-  - bioconda::percolator
-  - bioconda::bioconductor-msstats=3.20.1 # will include R
-  - bioconda::sdrf-pipelines=0.0.9 # for SDRF conversion
-  - conda-forge::r-ptxqc=1.0.5 # for QC reports
-  - conda-forge::xorg-libxt=1.2.0 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
-  - conda-forge::fonts-conda-ecosystem=1 # for the fonts in QC reports
-  - conda-forge::openjdk=8.* # pin java to 8 for MSGF (otherwise it somehow chooses 11)
-  - conda-forge::python=3.8.1
-  - conda-forge::markdown=3.2.1
-  - conda-forge::pymdown-extensions=7.1
+  - conda-forge::python=3.7.3
+  - conda-forge::markdown=3.1.1
+  - conda-forge::pymdown-extensions=6.0
   - conda-forge::pygments=2.5.2
-
+  # TODO nf-core: Add required software dependencies here
+  - bioconda::fastqc=0.11.8
+  - bioconda::multiqc=1.7
