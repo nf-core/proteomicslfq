@@ -1,0 +1,88 @@
+---
+title: "MSstats Interactive"
+author: "pfeuffer"
+date: "21 4 2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+msstats <- read.csv("/Users/pfeuffer/Downloads/msstats 3/msstats_results.csv", row.names = 1)
+
+library(ggplot2)
+library(plotly)
+library(stringr)
+library(marray) # for mapalette in the heatmap of MSstats
+library(gplots) # for heatmap.2
+
+cleanupPlotlyLegend <- function(myplot) 
+{
+  for (i in 1:length(myplot$x$data)){
+    if (!is.null(myplot$x$data[[i]]$name)){
+        myplot$x$data[[i]]$name =  gsub("\\(","",str_split(myplot$x$data[[i]]$name,",")[[1]][1])
+    }
+  }
+  return(myplot)
+}
+```
+
+This R Markdown document is a test for interactive MSstats analsis.
+
+
+```{r msstats, echo=FALSE, message=FALSE}
+source('./GroupComparisonPlots.R')
+
+inputPanel(
+  selectInput("comparison_msstats", label = "Comparison:",
+              choices = levels(msstats$Label), selected = 1),
+  sliderInput("sig_adjust", label = "p-value cutoff:",
+              min = 0.001, max = 0.1, value = 0.05, step = 0.01)
+)
+
+fluidRow(
+  column(6, 
+    renderPlotly({
+      cleanupPlotlyLegend(
+        ggplotly(
+          groupComparisonPlots(msstats,"VolcanoPlot",ProteinName = F,address = F, which.Comparison = input$comparison_msstats, sig = input$sig_adjust)
+        ) %>%
+        layout(legend = list(
+              orientation = "h",
+              x = 0,
+              y = -0.35,
+              font=list(
+                  family="sans-serif",
+                  size=10,
+                  color="black"
+              )
+        ))
+      ) %>%
+      toWebGL() %>%
+      event_register("plotly_selecting")
+    })
+  ),
+  column(6, 
+    renderPlot({
+      d <- event_data("plotly_selecting")
+      if (is.null(d)) {
+        groupComparisonPlots(msstats,"Heatmap",ProteinName = F,address = F, sig = input$sig_adjust)
+      } else {
+        msstats %>%
+        subset( Protein %in% d$customdata) %>%
+        groupComparisonPlots("Heatmap",ProteinName = F,address = F, sig = input$sig_adjust)
+      }
+    })
+  )
+)
+
+  
+  # DEBUG
+  #renderPrint({
+  #  event_data("plotly_selecting")
+  #})
+  
+
+
+```

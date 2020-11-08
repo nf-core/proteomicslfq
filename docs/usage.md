@@ -76,6 +76,10 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 * `test`
   * A profile with a complete configuration for automated testing
   * Includes links to test data so needs no other parameters
+* `test_full`
+  * A profile with a complete configuration for automated testing on AWS
+  * Includes links to test data on GitHub and PRIDE and therefore doesn't need additional parameters
+  * Warning: Downloads roughly 9GB of raw data from PRIDE and analyzes
 
 ### `-resume`
 
