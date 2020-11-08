@@ -1,6 +1,5 @@
 name: nf-core CI
-# This workflow is triggered on pushes and PRs to the repository.
-# It runs the pipeline with the minimal test dataset to check that it completes without any syntax errors
+# This workflow runs the pipeline with the minimal test dataset to check that it completes without any syntax errors
 on:
   push:
     branches:
@@ -11,12 +10,13 @@ on:
 
 jobs:
   test:
+    name: Run workflow tests
+    # Only run on push if this is the nf-core dev branch (merged PRs)
+    if: ${{ github.event_name != 'push' || (github.event_name == 'push' && github.repository == 'nf-core/proteomicslfq') }}
+    runs-on: ubuntu-latest
     env:
       NXF_VER: ${{ matrix.nxf_ver }}
       NXF_ANSI_LOG: false
-      TOWER_ACCESS_TOKEN: ${{ secrets.NONAWS_TOWER_ACCESS_TOKEN }}
-      TEST_PROFILE: ${{ matrix.test_profile }}
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         # Nextflow versions: check pipeline minimum and current latest
@@ -49,14 +49,17 @@ jobs:
           PREFIX_FILTER: |
             Dockerfile
             environment.yml
+
       - name: Build new docker image
         if: env.GIT_DIFF
-        run: docker build --no-cache . -t nfcore/proteomicslfq:1.0.0
+        run: docker build --no-cache . -t nfcore/proteomicslfq:dev
+
       - name: Pull docker image
         if: ${{ !env.GIT_DIFF }}
         run: |
           docker pull nfcore/proteomicslfq:dev
-          docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:1.0.0
+          docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
+
       - name: Install Nextflow
         run: |
           wget -qO- get.nextflow.io | bash
@@ -104,19 +107,9 @@ jobs:
       - name: Check out pipeline code
         uses: actions/checkout@v2
 
-      - name: Build new docker image
-        run: docker build --no-cache . -t nfcore/proteomicslfq:latest
-
-      - name: Push Docker image to DockerHub (dev)
-        if: ${{ github.event_name == 'push' }}
+      - name: Run pipeline with test data
+        # TODO nf-core: You can customise CI pipeline run tests as required
+        # For example: adding multiple test runs with different parameters
+        # Remember that you can parallelise this by using strategy.matrix
         run: |
-          echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-          docker tag nfcore/proteomicslfq:latest nfcore/proteomicslfq:dev
-          docker push nfcore/proteomicslfq:dev
-      - name: Push Docker image to DockerHub (release)
-        if: ${{ github.event_name == 'release' }}
-        run: |
-          echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-          docker push nfcore/proteomicslfq:latest
-          docker tag nfcore/proteomicslfq:latest nfcore/proteomicslfq:${{ github.ref }}
-          docker push nfcore/proteomicslfq:${{ github.ref }}
+          nextflow run ${GITHUB_WORKSPACE} -profile test,docker

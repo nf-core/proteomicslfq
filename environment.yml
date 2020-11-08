@@ -5,6 +5,7 @@ channels:
   - openms
   - conda-forge
   - bioconda
+  - defaults
 dependencies:
   - bioconda::openms=2.6.0
   - bioconda::openms-thirdparty=2.6.0
