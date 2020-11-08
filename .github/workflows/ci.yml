@@ -17,6 +17,8 @@ jobs:
     env:
       NXF_VER: ${{ matrix.nxf_ver }}
       NXF_ANSI_LOG: false
+      TOWER_ACCESS_TOKEN: ${{ secrets.NONAWS_TOWER_ACCESS_TOKEN }}
+      TEST_PROFILE: ${{ matrix.test_profile }}
     strategy:
       matrix:
         # Nextflow versions: check pipeline minimum and current latest
@@ -107,9 +109,19 @@ jobs:
       - name: Check out pipeline code
         uses: actions/checkout@v2
 
-      - name: Run pipeline with test data
-        # TODO nf-core: You can customise CI pipeline run tests as required
-        # For example: adding multiple test runs with different parameters
-        # Remember that you can parallelise this by using strategy.matrix
+      - name: Build new docker image
+        run: docker build --no-cache . -t nfcore/proteomicslfq:latest
+
+      - name: Push Docker image to DockerHub (dev)
+        if: ${{ github.event_name == 'push' }}
         run: |
-          nextflow run ${GITHUB_WORKSPACE} -profile test,docker
+          echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker tag nfcore/proteomicslfq:latest nfcore/proteomicslfq:dev
+          docker push nfcore/proteomicslfq:dev
+      - name: Push Docker image to DockerHub (release)
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker push nfcore/proteomicslfq:latest
+          docker tag nfcore/proteomicslfq:latest nfcore/proteomicslfq:${{ github.ref }}
+          docker push nfcore/proteomicslfq:${{ github.ref }}
