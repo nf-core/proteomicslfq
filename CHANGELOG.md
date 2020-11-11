@@ -9,9 +9,9 @@ Patch update, mainly for documentation fixes.
 
 ### `Added`
 
-- Speed improvements and multithreading of proteomicslfq process
-- Option for tree-guided map alignment
-- Link to description of the OpenMS experimental design format in the parameter usage docs.
+* Speed improvements and multithreading of proteomicslfq process
+* Option for tree-guided map alignment
+* Link to description of the OpenMS experimental design format in the parameter usage docs.
 
 ### `Known issues`
 
