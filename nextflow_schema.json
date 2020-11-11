@@ -731,6 +731,16 @@
                     "default": true,
                     "fa_icon": "far fa-check-square"
                 },
+                "alignment_order": {
+                    "type": "string",
+                    "description": "The order in which maps are aligned. Star = all vs. the reference with most IDs (default). TreeGuided = an alignment tree is calculated first based on similarity measures of the IDs in the maps.",
+                    "default": "star",
+                    "enum": [
+                        "star",
+                        "treeguided"
+                    ],
+                    "fa_icon": "far fa-list-ol"
+                },
                 "inf_quant_debug": {
                     "type": "integer",
                     "description": "Debug level when running the re-scoring. Logs become more verbose and at '>666' potentially very large temporary files are kept.",
