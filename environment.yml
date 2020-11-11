@@ -1,10 +1,11 @@
 # You can use this file to create a conda environment for this pipeline:
 #   conda env create -f environment.yml
-name: nf-core-proteomicslfq-1.0.0
+name: nf-core-proteomicslfq-1.1.0dev
 channels:
   - openms
   - conda-forge
   - bioconda
+  - defaults
 dependencies:
   - bioconda::openms=2.6.0
   - bioconda::openms-thirdparty=2.6.0

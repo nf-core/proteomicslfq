@@ -18,12 +18,12 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
 1. Install [`nextflow`](https://nf-co.re/usage/installation)
 
-2. Install either [`Docker`](https://docs.docker.com/engine/installation/) or [`Singularity`](https://www.sylabs.io/guides/3.0/user-guide/) for full pipeline reproducibility _(please only use [`Conda`](https://conda.io/miniconda.html) as a last resort; see [docs](https://nf-co.re/usage/configuration#basic-configuration-profiles))_
+2. Install any of [`Docker`](https://docs.docker.com/engine/installation/), [`Singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`Podman`](https://podman.io/) for full pipeline reproducibility _(please only use [`Conda`](https://conda.io/miniconda.html) as a last resort; see [docs](https://nf-co.re/usage/configuration#basic-configuration-profiles))_
 
 3. Download the pipeline and test it on a minimal dataset with a single command:
 
     ```bash
-    nextflow run nf-core/proteomicslfq -profile test,<docker/singularity/conda/institute>
+    nextflow run nf-core/proteomicslfq -profile test,<docker/singularity/podman/conda/institute>
     ```
 
     > Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
@@ -32,7 +32,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
     ```bash
     nextflow run nf-core/proteomicslfq \
-      -profile <docker/singularity/conda/institute> \
+      -profile <docker/singularity/podman/conda/institute> \
       --input '*.mzml' \
       --database 'myProteinDB.fasta' \
       --expdesign 'myDesign.tsv'
@@ -43,7 +43,7 @@ See [usage docs](https://nf-co.re/proteomicslfq/usage) for all of the available 
 
 ## Documentation
 
-The nf-core/proteomicslfq pipeline comes with documentation about the pipeline which you can read at [https://nf-co.re/proteomicslfq](https://nf-co.re/proteomicslfq) or partly find in the [`docs/` directory](docs).
+The nf-core/proteomicslfq pipeline comes with documentation about the pipeline: [usage](https://nf-co.re/proteomicslfq/usage) and [output](https://nf-co.re/proteomicslfq/output).
 
 It performs conversion to indexed mzML, database search (with multiple search engines), re-scoring (with e.g. Percolator), merging, FDR filtering, modification localization with Luciphor2 (e.g. phospho-sites), protein inference and grouping as well as label-free quantification by either spectral counting or feature-based alignment and integration. Downstream processing includes statistical post-processing with MSstats and quality control with PTXQC. For more info, see the [output docs](docs/output.md).
 
