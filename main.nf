@@ -128,7 +128,9 @@ def helpMessage() {
       --targeted_only               Only ID based quantification. (default: true) TODO must specify true or false
       --mass_recalibration          Recalibrates masses to correct for instrument biases. (default: false) TODO must specify true
                                     or false
-
+      --alignment_order             The order in which maps are aligned. Star = all vs. the reference with most IDs (default). TreeGuided = an alignment
+                                    tree is calculated first based on similarity measures of the IDs in the maps.
+      
       //TODO the following need to be passed still
       --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
                                     If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
@@ -1081,6 +1083,7 @@ process proteomicslfq {
                    -mass_recalibration ${params.mass_recalibration} \\
                    -transfer_ids ${params.transfer_ids} \\
                    -protein_quantification ${params.protein_quant} \\
+                   -alignment_order ${params.alignment_order} \\
                    -out out.mzTab \\
                    -threads ${task.cpus} \\
                    ${msstats_present} \\
