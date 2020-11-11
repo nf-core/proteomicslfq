@@ -1,6 +1,14 @@
 # nf-core/proteomicslfq: Output
 
-This document describes the output produced by the pipeline.
+## :warning: Please read this documentation on the nf-core website: [https://nf-co.re/proteomicslfq/output](https://nf-co.re/proteomicslfq/output)
+
+> _Documentation of pipeline parameters is generated automatically from the pipeline schema and can no longer be found in markdown files._
+
+## Introduction
+
+This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
+
+The directories listed below will be created in the results directory after the pipeline has finished. All paths are relative to the top-level results directory.
 
 ## Pipeline overview
 
