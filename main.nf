@@ -315,8 +315,6 @@ if (params.expdesign)
     label 'process_very_low'
     label 'process_single_thread'
 
-    echo true
-
     input:
      path (design) from ch_expdesign_pre
 
