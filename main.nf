@@ -312,7 +312,25 @@ if (params.expdesign)
 {
     Channel
         .fromPath(params.expdesign)
-        .set { ch_expdesign }
+        .set { ch_expdesign_pre }
+
+    process expdesign_raw2mzml {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    input:
+     path (design) from ch_expdesign_pre
+
+    output:
+     file("expdesign.tsv") into ch_expdesign
+
+    script:
+    """
+      sed 's/.raw\\t/.mzML\\t/I' $design > expdesign.tsv
+    """
+
+    }
 }
 
 ch_sdrf_config.mzmls
