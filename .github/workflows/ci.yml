@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Determine tower usage
         shell: bash
-        run: $( [ -z "$TOWER_ACCESS_TOKEN" ] && echo 'TOWER=' || echo 'TOWER=-with-tower' ) >> $GITHUB_ENV
+        run: echo $( [ -z "$TOWER_ACCESS_TOKEN" ] && echo 'TOWER=' || echo 'TOWER=-with-tower' ) >> $GITHUB_ENV
         id: tower_usage
       - name: Extract branch name
         if: github.event_name == 'push'
