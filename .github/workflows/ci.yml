@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Determine tower usage
         shell: bash
-        run: echo "::set-env name=TOWER::`[ -z "$TOWER_ACCESS_TOKEN" ] && echo '' || echo '-with-tower'`"
+        run: $( [ -z "$TOWER_ACCESS_TOKEN" ] && echo 'TOWER=' || echo 'TOWER=-with-tower' ) >> $GITHUB_ENV
         id: tower_usage
       - name: Extract branch name
         if: github.event_name == 'push'
@@ -38,12 +38,12 @@ jobs:
           ref=${ref#"refs/heads/"}
           ref=${ref#"refs/"}
           ref=${ref//\//-}
-          echo "::set-env name=RUN_NAME::$ref"
+          echo "RUN_NAME=$ref" >> $GITHUB_ENV
         id: extract_branch
       - name: Extract PR number
         if: github.event_name == 'pull_request'
         shell: bash
-        run: echo "::set-env name=RUN_NAME::PR`jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH"`"
+        run: echo "RUN_NAME=PR$(jq --raw-output .pull_request.number $GITHUB_EVENT_PATH)" >> $GITHUB_ENV
         id: extract_pr
       - name: Check if Dockerfile or Conda environment changed
         uses: technote-space/get-diff-action@v1
