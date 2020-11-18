@@ -53,11 +53,11 @@ jobs:
             environment.yml
 
       - name: Build new docker image
-        if: env.GIT_DIFF
+        if: env.MATCHED_FILES
         run: docker build --no-cache . -t nfcore/proteomicslfq:dev
 
       - name: Pull docker image
-        if: ${{ !env.GIT_DIFF }}
+        if: ${{ !env.MATCHED_FILES }}
         run: |
           docker pull nfcore/proteomicslfq:dev
           docker tag nfcore/proteomicslfq:dev nfcore/proteomicslfq:dev
