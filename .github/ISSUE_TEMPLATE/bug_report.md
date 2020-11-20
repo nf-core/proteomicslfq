@@ -1,10 +1,15 @@
+---
+name: Bug report
+about: Report something that is broken or incorrect
+labels: bug
+---
+
 <!--
 # nf-core/proteomicslfq bug report
 
 Hi there!
 
 Thanks for telling us about a problem with the pipeline.
-
 Please delete this text and anything that's not relevant from the template below:
 -->
 
@@ -15,6 +20,8 @@ Please delete this text and anything that's not relevant from the template below
 ## Steps to reproduce
 
 Steps to reproduce the behaviour:
+1. Command line: `nextflow run ...`
+2. See error: _Please provide your error message_
 
 1. Command line: <!-- [e.g. `nextflow run ...`] -->
 2. See error: <!-- [Please provide your error message] -->
