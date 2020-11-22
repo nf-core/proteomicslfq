@@ -99,7 +99,7 @@ Whilst these default requirements will hopefully work for most people with most 
 
 ```nextflow
 process {
-  withName: star {
+  withName: proteomicslfq {
     memory = 32.GB
   }
 }
