@@ -226,7 +226,7 @@ if (!sdrf_file)
 {
   ch_spectra = Channel.fromPath(spectra_files, checkIfExists: true)
   ch_spectra
-  .multiMap{ it -> id = it.toString().md5()
+  .multiMap{ it -> id = file(it).name.take(file(it).name.lastIndexOf('.'))
                     comet_settings: msgf_settings: tuple(id,
                                     params.fixed_mods,
                                     params.variable_mods,
@@ -276,7 +276,7 @@ else
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
-  .multiMap{ row -> id = row.toString().md5()
+  .multiMap{ row -> id = file(row[0].toString()).name.take(file(row[0].toString()).name.lastIndexOf('.'))
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
                                     row[3],
