@@ -485,17 +485,6 @@ process openms_peakpicker {
      """
 }
 
-if (params.enzyme == "unspecific cleavage")
-{
-  params.num_enzyme_termini == "none"
-}
-
-pepidx_num_enzyme_termini = params.num_enzyme_termini
-if (params.num_enzyme_termini == "fully")
-{
-  pepidx_num_enzyme_termini = "full"
-}
-
 process search_engine_msgf {
 
     label 'process_medium'
@@ -527,6 +516,13 @@ process search_engine_msgf {
       else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+      
+      if (params.enzyme == "unspecific cleavage")
+      {
+        msgf_num_enzyme_termini = "non"
+      } else {
+        msgf_num_enzyme_termini = params.num_enzyme_termini
+      }
 
       if ((frag_tol.toDouble() < 50 && frag_tol_unit == "ppm") || (frag_tol.toDouble() < 0.1 && frag_tol_unit == "Da"))
       {
@@ -548,7 +544,7 @@ process search_engine_msgf {
                      -min_peptide_length ${params.min_peptide_length} \\
                      -max_peptide_length ${params.max_peptide_length} \\
                      -enzyme "${enzyme}" \\
-                     -tryptic ${params.num_enzyme_termini} \\
+                     -tryptic ${msgf_num_enzyme_termini} \\
                      -precursor_mass_tolerance ${prec_tol} \\
                      -precursor_error_units ${prec_tol_unit} \\
                      -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
@@ -672,6 +668,17 @@ process index_peptides {
         else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
         else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
         else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     }
+     pepidx_num_enzyme_termini = params.num_enzyme_termini
+
+     if (params.enzyme == "unspecific cleavage")
+     {
+       pepidx_num_enzyme_termini = "none"
+     } else {
+       if (params.num_enzyme_termini == "fully")
+       {
+         pepidx_num_enzyme_termini = "full"
+       }
      }
      """
      PeptideIndexer -in ${id_file} \\
