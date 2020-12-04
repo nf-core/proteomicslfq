@@ -41,6 +41,20 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 See [usage docs](https://nf-co.re/proteomicslfq/usage) for all of the available options when running the pipeline. Or configure the pipeline via
 [nf-core launch](https://nf-co.re/launch) from the web or the command line.
 
+## Pipeline Summary
+
+By default, the pipeline currently performs the following:
+
+* Conversion to indexed mzML
+* Peptide database search (with multiple search engines)
+* Re-scoring (with e.g. Percolator)
+* Merging with ConsensusID
+* FDR filtering
+* Modification localization with Luciphor2 (e.g. phospho-sites)
+* Protein inference and grouping
+* Label-free relative quantification by either spectral counting or feature-based alignment and integration
+* Downstream processing includes statistical post-processing with MSstats and quality control with PTXQC
+
 ## Documentation
 
 The nf-core/proteomicslfq pipeline comes with documentation about the pipeline: [usage](https://nf-co.re/proteomicslfq/usage) and [output](https://nf-co.re/proteomicslfq/output).
@@ -57,7 +71,7 @@ If you would like to contribute to this pipeline, please see the [contributing g
 
 For further information or help, don't hesitate to get in touch on the [Slack `#proteomicslfq` channel](https://nfcore.slack.com/channels/proteomicslfq) (you can join with [this invite](https://nf-co.re/join/slack)).
 
-## Citation
+## Citations
 
 If you use  nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.4106005](https://doi.org/10.5281/zenodo.4106005)
 
@@ -70,4 +84,5 @@ You can cite the `nf-core` publication as follows:
 > _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).
 > ReadCube: [Full Access Link](https://rdcu.be/b1GjZ)
 
-An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
+In addition, references of tools and data used in this pipeline
+can be found in the [`CITATIONS.md`](CITATIONS.md) file.
