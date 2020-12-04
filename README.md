@@ -55,7 +55,6 @@ By default, the pipeline currently performs the following:
 * Label-free relative quantification by either spectral counting or feature-based alignment and integration
 * Downstream processing includes statistical post-processing with MSstats and quality control with PTXQC
 
-
 ## Documentation
 
 The nf-core/proteomicslfq pipeline comes with documentation about the pipeline: [usage](https://nf-co.re/proteomicslfq/usage) and [output](https://nf-co.re/proteomicslfq/output).
