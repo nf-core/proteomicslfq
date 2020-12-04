@@ -6,14 +6,12 @@
 
 ## Introduction
 
-<!-- TODO nf-core: Add documentation about anything specific to running your pipeline. For general topics, please point to (and add to) the main nf-core website. -->
-
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/proteomicslfq --input '*_R{1,2}.fastq.gz' -profile docker
+nextflow run nf-core/proteomicslfq --input '*.mzML' --database '*.fasta' -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -78,6 +76,10 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 * `test`
   * A profile with a complete configuration for automated testing
   * Includes links to test data so needs no other parameters
+* `test_full`
+  * A profile with a complete configuration for automated testing on AWS
+  * Includes links to test data on GitHub and PRIDE and therefore doesn't need additional parameters
+  * Warning: Downloads roughly 9GB of raw data from PRIDE and analyzes
 
 ### `-resume`
 
@@ -97,7 +99,7 @@ Whilst these default requirements will hopefully work for most people with most 
 
 ```nextflow
 process {
-  withName: star {
+  withName: proteomicslfq {
     memory = 32.GB
   }
 }

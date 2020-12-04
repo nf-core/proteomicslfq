@@ -12,9 +12,6 @@
 
 ## Introduction
 
-<!-- TODO nf-core: Write a 1-2 sentence summary of what data the pipeline is for and what it does -->
-**nf-core/proteomicslfq** is a bioinformatics best-practise analysis pipeline for
-
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker containers making installation trivial and results highly reproducible.
 
 ## Quick Start
@@ -33,37 +30,41 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
 4. Start running your own analysis!
 
-    <!-- TODO nf-core: Update the example "typical command" below used to run the pipeline -->
-
     ```bash
-    nextflow run nf-core/proteomicslfq -profile <docker/singularity/podman/conda/institute> --input '*_R{1,2}.fastq.gz' --genome GRCh37
+    nextflow run nf-core/proteomicslfq \
+      -profile <docker/singularity/podman/conda/institute> \
+      --input '*.mzml' \
+      --database 'myProteinDB.fasta' \
+      --expdesign 'myDesign.tsv'
     ```
 
-See [usage docs](https://nf-co.re/proteomicslfq/usage) for all of the available options when running the pipeline.
+See [usage docs](https://nf-co.re/proteomicslfq/usage) for all of the available options when running the pipeline. Or configure the pipeline via
+[nf-core launch](https://nf-co.re/launch) from the web or the command line.
 
 ## Pipeline Summary
 
 By default, the pipeline currently performs the following:
 
-<!-- TODO nf-core: Fill in short bullet-pointed list of default steps of pipeline -->
+* Conversion to indexed mzML
+* Peptide database search (with multiple search engines)
+* Re-scoring (with e.g. Percolator)
+* Merging with ConsensusID
+* FDR filtering
+* Modification localization with Luciphor2 (e.g. phospho-sites)
+* Protein inference and grouping
+* Label-free relative quantification by either spectral counting or feature-based alignment and integration
+* Downstream processing includes statistical post-processing with MSstats and quality control with PTXQC
 
-* Sequencing quality control (`FastQC`)
-* Overall pipeline run summaries (`MultiQC`)
 
 ## Documentation
 
 The nf-core/proteomicslfq pipeline comes with documentation about the pipeline: [usage](https://nf-co.re/proteomicslfq/usage) and [output](https://nf-co.re/proteomicslfq/output).
 
-<!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
+It performs conversion to indexed mzML, database search (with multiple search engines), re-scoring (with e.g. Percolator), merging, FDR filtering, modification localization with Luciphor2 (e.g. phospho-sites), protein inference and grouping as well as label-free quantification by either spectral counting or feature-based alignment and integration. Downstream processing includes statistical post-processing with MSstats and quality control with PTXQC. For more info, see the [output docs](docs/output.md).
 
 ## Credits
 
 nf-core/proteomicslfq was originally written by Julianus Pfeuffer, Lukas Heumos, Leon Bichmann, Timo Sachsenberg, Yasset Perez-Riverol.
-
-We thank the following people for their extensive assistance in the development
-of this pipeline:
-
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
 
 ## Contributions and Support
 
@@ -73,8 +74,7 @@ For further information or help, don't hesitate to get in touch on the [Slack `#
 
 ## Citations
 
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
-<!-- If you use  nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+If you use  nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.4106005](https://doi.org/10.5281/zenodo.4106005)
 
 You can cite the `nf-core` publication as follows:
 
@@ -85,6 +85,5 @@ You can cite the `nf-core` publication as follows:
 > _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).
 > ReadCube: [Full Access Link](https://rdcu.be/b1GjZ)
 
-In addition, references of tools and data used in this pipeline are as follows:
-
-<!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
+In addition, references of tools and data used in this pipeline
+can be found in the [`CITATIONS.md`](CITATIONS.md) file.

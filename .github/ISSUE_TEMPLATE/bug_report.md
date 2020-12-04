@@ -27,6 +27,8 @@ I have checked the following places for your error:
 ## Steps to reproduce
 
 Steps to reproduce the behaviour:
+1. Command line: `nextflow run ...`
+2. See error: _Please provide your error message_
 
 1. Command line: <!-- [e.g. `nextflow run ...`] -->
 2. See error: <!-- [Please provide your error message] -->
