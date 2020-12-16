@@ -1083,6 +1083,7 @@ process proteomicslfq {
      file "out.mzTab" into out_mztab_plfq, out_mztab_msstats
      file "out.consensusXML" into out_consensusXML
      file "out.csv" optional true into out_msstats
+     file "out.tsv" optional true into out_triqler
      file "debug_mergedIDs.idXML" optional true
      file "debug_mergedIDs_inference.idXML" optional true
      file "debug_mergedIDsGreedyResolved.idXML" optional true
@@ -1093,6 +1094,7 @@ process proteomicslfq {
 
     script:
      def msstats_present = params.quantification_method == "feature_intensity" ? '-out_msstats out.csv' : ''
+     def triqler_present = params.quantification_method == "feature_intensity" ? '-out_triqler out.tsv' : ''
      """
      ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
                    -ids ${(id_files as List).join(' ')} \\
@@ -1108,6 +1110,7 @@ process proteomicslfq {
                    -out out.mzTab \\
                    -threads ${task.cpus} \\
                    ${msstats_present} \\
+		   ${triqler_present} \\
                    -out_cxml out.consensusXML \\
                    -proteinFDR ${params.protein_level_fdr_cutoff} \\
                    -debug ${params.inf_quant_debug} \\
