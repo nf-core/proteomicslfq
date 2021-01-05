@@ -11,7 +11,9 @@ Patch update, mainly for documentation fixes.
 
 * Speed improvements and multithreading of proteomicslfq process
 * Option for tree-guided map alignment
-* Link to description of the OpenMS experimental design format in the parameter usage docs.
+* Link to description of the OpenMS experimental design format in the parameter usage docs
+* Output for post-processing with Triqler including an option to quantify decoys
+* Refinement of alignment and linking tolerances across runs
 
 ### `Known issues`
 
