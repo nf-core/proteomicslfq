@@ -126,6 +126,7 @@ def helpMessage() {
                                     or false
       --alignment_order             The order in which maps are aligned. Star = all vs. the reference with most IDs (default). TreeGuided = an alignment
                                     tree is calculated first based on similarity measures of the IDs in the maps.
+      --quantify_decoys             Also quantify decoys? (Usually only needed for Triqler post-processing output with '--add_triqler_output')
       
       //TODO the following need to be passed still
       --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
@@ -137,12 +138,13 @@ def helpMessage() {
                                     "strictly_unique_peptides" = use peptides mapping to a unique single protein only
                                     "shared_peptides" = use shared peptides only for its best group (by inference score)
 
-    Statistical post-processing:
+    Statistical post-processing (currently only for feature-based quant.):
       --skip_post_msstats           Skip MSstats for statistical post-processing?
       --ref_condition               Instead of all pairwise contrasts, uses the given condition number (corresponding to your experimental design) as a reference and
                                     creates pairwise contrasts against it (TODO fully implement)
       --contrasts                   Specify a set of contrasts in a semicolon seperated list of R-compatible contrasts with the
                                     condition numbers as variables (e.g. "1-2;1-3;2-3"). Overwrites "--reference" (TODO fully implement)
+      --add_triqler_output          Also create an output in Triqler's format for an alternative manual post-processing with that tool
 
     Quality control:
       --ptxqc_report_layout         Specify a yaml file for the report layout (see PTXQC documentation) (TODO fully implement)
@@ -1094,7 +1096,8 @@ process proteomicslfq {
 
     script:
      def msstats_present = params.quantification_method == "feature_intensity" ? '-out_msstats out_msstats.csv' : ''
-     def triqler_present = params.quantification_method == "feature_intensity" ? '-out_triqler out_triqler.tsv' : ''
+     def triqler_present = (params.quantification_method == "feature_intensity") && (params.add_triqler_output) ? '-out_triqler out_triqler.tsv' : ''
+     def decoys_present = (params.quantify_decoys || ((params.quantification_method == "feature_intensity") && params.add_triqler_output)) ? '-PeptideQuantification:quantify_decoys' : ''
      """
      ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
                    -ids ${(id_files as List).join(' ')} \\
@@ -1110,7 +1113,8 @@ process proteomicslfq {
                    -out out.mzTab \\
                    -threads ${task.cpus} \\
                    ${msstats_present} \\
-		   ${triqler_present} \\
+                   ${triqler_present} \\
+                   ${decoys_present} \\
                    -out_cxml out.consensusXML \\
                    -proteinFDR ${params.protein_level_fdr_cutoff} \\
                    -debug ${params.inf_quant_debug} \\

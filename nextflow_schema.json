@@ -741,6 +741,12 @@
                     ],
                     "fa_icon": "far fa-list-ol"
                 },
+                "quantify_decoys": {
+                    "type": "boolean",
+                    "description": "Also quantify decoys? (Usually only needed for Triqler post-processing output with `--add_triqler_output`, where it is auto-enabled)",
+                    "default": false,
+                    "fa_icon": "far fa-check-square"
+                },
                 "inf_quant_debug": {
                     "type": "integer",
                     "description": "Debug level when running the re-scoring. Logs become more verbose and at '>666' potentially very large temporary files are kept.",
@@ -752,12 +758,12 @@
         "statistical_post_processing": {
             "title": "Statistical post-processing",
             "type": "object",
-            "description": "",
-            "default": "Parameters for the R script using MSstats for statistical post processing and quantification visualization.",
+            "description": "Parameters for statistical post processing and quantification visualization. Currently only possible with `quantification_method = feature_based`.",
+            "default": "",
             "properties": {
                 "skip_post_msstats": {
                     "type": "boolean",
-                    "description": "Skip MSstats for statistical post-processing?",
+                    "description": "Skip the MSstats Rscripts for automated statistical post-processing?",
                     "fa_icon": "fas fa-forward"
                 },
                 "ref_condition": {
@@ -769,6 +775,12 @@
                     "type": "string",
                     "description": "Allows full control over contrasts by specifying a set of contrasts in a semicolon seperated list of R-compatible contrasts with the condition names/numbers as variables (e.g. `1-2;1-3;2-3`). Overwrites '--ref_condition' (TODO not yet fully implemented)",
                     "fa_icon": "fas fa-font"
+                },
+                "add_triqler_output": {
+                    "type": "boolean",
+                    "description": "Also create an output in Triqler's format for an alternative manual post-processing with that tool",
+                    "default": false,
+                    "fa_icon": "far fa-check-square"
                 }
             },
             "fa_icon": "fab fa-r-project"
