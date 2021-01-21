@@ -70,6 +70,8 @@ def helpMessage() {
     Peptide Re-indexing:
       --IL_equivalent               Should isoleucine and leucine be treated interchangeably? Default: true
       --allow_unmatched             Ignore unmatched peptides (Default: false; only activate if you double-checked all other settings)
+      --unmatched_action            Action to be taken if peptide sequences cannot be matched to any protein: 1) raise an error; 2) warn
+                                    (unmatched PepHits will miss target/decoy annotation with downstream problems); 3) remove the hit. (default: 'error' valid: 'error', 'warn', 'remove')
 
     PSM Rescoring:
       --posterior_probabilities     How to calculate posterior probabilities for PSMs:
@@ -127,7 +129,7 @@ def helpMessage() {
       --alignment_order             The order in which maps are aligned. Star = all vs. the reference with most IDs (default). TreeGuided = an alignment
                                     tree is calculated first based on similarity measures of the IDs in the maps.
       --quantify_decoys             Also quantify decoys? (Usually only needed for Triqler post-processing output with '--add_triqler_output')
-      
+
       //TODO the following need to be passed still
       --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
                                     If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
@@ -536,7 +538,7 @@ process search_engine_msgf {
       else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
-      
+
       if (params.enzyme == "unspecific cleavage")
       {
         msgf_num_enzyme_termini = "non"
@@ -586,7 +588,7 @@ process search_engine_comet {
     // ---------------------------------------------------------------------------------------------------------------------
     // This is probably true for other processes as well. See https://github.com/nextflow-io/nextflow/issues/1457
     //errorStrategy 'terminate'
-    
+
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
@@ -680,6 +682,7 @@ process index_peptides {
     script:
      def il = params.IL_equivalent ? '-IL_equivalent' : ''
      def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
+     def unmatch_action = (params.unmatched_action == 'warn') ? 'warn': 'error'
      // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying.
      if (params.search_engines.contains("msgf"))
      {
@@ -709,6 +712,7 @@ process index_peptides {
                     -enzyme:specificity ${pepidx_num_enzyme_termini} \\
                     ${il} \\
                     ${allow_um} \\
+                    ${unmatch_action} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
