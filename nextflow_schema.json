@@ -519,7 +519,8 @@
                         "error",
                         "warn",
                         "remove"
-                    ]
+                    ],
+                    "hidden": true
                 },
                 "IL_equivalent": {
                     "type": "string",
