@@ -682,7 +682,8 @@ process index_peptides {
     script:
      def il = params.IL_equivalent ? '-IL_equivalent' : ''
      def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
-     def unmatch_action = (params.unmatched_action == 'warn') ? 'warn': 'error'
+     def unmatch_action = params.unmatched_action
+
      // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying.
      if (params.search_engines.contains("msgf"))
      {
@@ -712,7 +713,7 @@ process index_peptides {
                     -enzyme:specificity ${pepidx_num_enzyme_termini} \\
                     ${il} \\
                     ${allow_um} \\
-                    ${unmatch_action} \\
+                    -unmatched_action ${unmatch_action} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
