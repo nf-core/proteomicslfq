@@ -563,7 +563,7 @@ process search_engine_msgf {
                      -max_precursor_charge ${params.max_precursor_charge} \\
                      -min_peptide_length ${params.min_peptide_length} \\
                      -max_peptide_length ${params.max_peptide_length} \\
-		     -max_missed_cleavages ${params.allowed_missed_cleavages} \\
+                     -max_missed_cleavages ${params.allowed_missed_cleavages} \\
                      -enzyme "${enzyme}" \\
                      -tryptic ${msgf_num_enzyme_termini} \\
                      -precursor_mass_tolerance ${prec_tol} \\
