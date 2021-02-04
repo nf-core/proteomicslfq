@@ -538,7 +538,7 @@ process search_engine_msgf {
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
       
-      if (enzyme.toLower() == "unspecific cleavage")
+      if (enzyme.toLowerCase() == "unspecific cleavage")
       {
         msgf_num_enzyme_termini = "non"
       } else {
@@ -695,7 +695,7 @@ process index_peptides {
      }
      pepidx_num_enzyme_termini = params.num_enzyme_termini
 
-     if (enzyme.toLower() == "unspecific cleavage")
+     if (enzyme.toLowerCase() == "unspecific cleavage")
      {
        pepidx_num_enzyme_termini = "none"
      } else {
