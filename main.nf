@@ -531,13 +531,14 @@ process search_engine_msgf {
      file "*.log"
 
     script:
+      // MSGF+ does not support post-cutting rules. We auto-switch to the equivalent enzymes
       if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
       else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
       else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
       
-      if (params.enzyme == "unspecific cleavage")
+      if (enzyme.toLowerCase() == "unspecific cleavage")
       {
         msgf_num_enzyme_termini = "non"
       } else {
@@ -627,18 +628,20 @@ process search_engine_comet {
        }
      }
 
-     // for consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF
+     // For consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF (if enabled)
      // TODO find another solution. In ProteomicsLFQ we re-run PeptideIndexer (remove??) and if we
      // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the
      // XTandem specific rules.
-     if (params.search_engines.contains("msgf"))
-     {
-        if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
-        else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
-        else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
-        else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
-        else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
-     }
+     // TODO the following code depends on https://github.com/OpenMS/OpenMS/issues/5149 since those enzymes are no default comet enzymes
+     //  for now, we have to make sure that PeptideIndexer uses the loosest cutting rules.
+     //if (params.search_engines.contains("msgf"))
+     //{
+     //   if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+     //   else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+     //   else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+     //   else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+     //   else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     //}
      """
      CometAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}_comet.idXML \\
@@ -680,7 +683,8 @@ process index_peptides {
     script:
      def il = params.IL_equivalent ? '-IL_equivalent' : ''
      def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
-     // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying.
+     // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying. But the auto-detection code in
+     //  PeptideIndexer probably does not handle the combination through ConsensusID yet.
      if (params.search_engines.contains("msgf"))
      {
         if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
@@ -691,7 +695,7 @@ process index_peptides {
      }
      pepidx_num_enzyme_termini = params.num_enzyme_termini
 
-     if (params.enzyme == "unspecific cleavage")
+     if (enzyme.toLowerCase() == "unspecific cleavage")
      {
        pepidx_num_enzyme_termini = "none"
      } else {
