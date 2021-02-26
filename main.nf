@@ -275,10 +275,19 @@ else
        """
   }
 
+  Set enzymes = []
+  Set files = []
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
   .multiMap{ row -> id = file(row[0].toString()).name.take(file(row[0].toString()).name.lastIndexOf('.'))
+                    enzymes += row[10]
+                    if (files.grep{it == row[0]})
+                    {
+                      log.error "Currently only one search engine setting per file is supported for the whole experiment."
+                      exit 1
+                    }
+                    files += row[0]
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
                                     row[3],
@@ -300,6 +309,15 @@ else
                                         row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
                                         row[1]))}
   .set{ch_sdrf_config}
+
+  // In theory the pipeline runs if params.add_decoys is not set (where we would need to generate multiple databases)
+  // but then, since you can only set one database, it would not make much sense.
+  if (enzymes.size() != 1)
+  {
+    log.error "Currently only one enzyme is supported for the whole experiment."
+    exit 1
+  }
+
 }
 
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
@@ -451,6 +469,10 @@ process generate_decoy_database {
                  -out ${mydatabase.baseName}_decoy.fasta \\
                  -decoy_string ${params.decoy_affix} \\
                  -decoy_string_position ${params.affix_type} \\
+                 -method ${params.decoy_method} \\
+                 -shuffle_max_attempts ${params.shuffle_max_attempts} \\
+                 -shuffle_sequence_identity_threshold ${params.shuffle_sequence_identity_threshold} \\
+                 -enzyme ${enzymes[0]} \\
                  > ${mydatabase.baseName}_decoy_database.log
      """
 }
