@@ -279,7 +279,7 @@ else
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
   .multiMap{ row -> id = file(row[0].toString()).name.take(file(row[0].toString()).name.lastIndexOf('.'))
-                    comet_settings: msgf_settings: tuple(id,
+                    comet_settings: msgf_settings: xtandem_settings: tuple(id,
                                     row[2],
                                     row[3],
                                     row[4],
