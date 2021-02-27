@@ -599,7 +599,7 @@ process search_engine_xtandem {
      file "*.log"
 
     script:
-     xtandem_semi = (${params.num_enzyme_termini} == "semi") ? "-semi_cleavage" : ""
+     xtandem_semi = ${params.num_enzyme_termini} == "semi" ?: "-semi_cleavage"
      """
      XTandemAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}_xtandem.idXML \\
@@ -611,10 +611,8 @@ process search_engine_xtandem {
                    ${xtandem_semi}  \\
                    -enzyme "${enzyme}" \\
                    -max_precursor_charge ${params.max_precursor_charge} \\
-                   -precursor_charge ${params.min_precursor_charge}:${params.max_precursor_charge} \\
                    -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                    -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
-                   -max_variable_mods_in_peptide ${params.max_mods} \\
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
                    -fragment_mass_tolerance ${frag_tol} \\
