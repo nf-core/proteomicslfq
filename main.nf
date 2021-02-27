@@ -605,9 +605,7 @@ process search_engine_xtandem {
                    -out ${mzml_file.baseName}_xtandem.idXML \\
                    -threads ${task.cpus} \\
                    -database "${database}" \\
-                   -instrument ${inst} \\
                    -missed_cleavages ${params.allowed_missed_cleavages} \\
-                   -num_hits ${params.num_hits} \\
                    ${xtandem_semi}  \\
                    -enzyme "${enzyme}" \\
                    -max_precursor_charge ${params.max_precursor_charge} \\
@@ -616,7 +614,7 @@ process search_engine_xtandem {
                    -precursor_mass_tolerance ${prec_tol} \\
                    -precursor_error_units ${prec_tol_unit} \\
                    -fragment_mass_tolerance ${frag_tol} \\
-                   -fragment__error_units ${frag_tol_unit} \\
+                   -fragment_error_units ${frag_tol_unit} \\
                    -debug ${params.db_debug} \\
                    > ${mzml_file.baseName}_xtandem.log
      """
