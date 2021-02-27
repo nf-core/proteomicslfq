@@ -246,6 +246,7 @@ if (!sdrf_file)
                                     params.fragment_method)
                     mzmls: tuple(id,it)}
   .set{ch_sdrf_config}
+  Set enzymes = [params.enzyme]
 }
 else
 {
@@ -280,14 +281,21 @@ else
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
-  .multiMap{ row -> id = file(row[0].toString()).name.take(file(row[0].toString()).name.lastIndexOf('.'))
+  .multiMap{ row -> filestr = row[0].toString()
+                    id = file(filestr).name.take(file(filestr).name.lastIndexOf('.'))
                     enzymes += row[10]
-                    if (files.grep{it == row[0]})
+                    if (enzymes.size() > 1)
                     {
-                      log.error "Currently only one search engine setting per file is supported for the whole experiment."
+                      log.error "Currently only one enzyme is supported for the whole experiment. Specified was '${enzymes}'. Check or split your SDRF."
                       exit 1
                     }
-                    files += row[0]
+                    log.info filestr
+                    if (filestr in files)
+                    {
+                      log.error "Currently only one search engine setting per file is supported for the whole experiment. ${filestr} has multiple entries in your SDRF. Maybe you have a labelled experiment? Otherwise, consider splitting your SDRF in multiple experiments."
+                      exit 1
+                    }
+                    files += filestr
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
                                     row[3],
@@ -310,14 +318,6 @@ else
                                         row[1]))}
   .set{ch_sdrf_config}
 
-  // In theory the pipeline runs if params.add_decoys is not set (where we would need to generate multiple databases)
-  // but then, since you can only set one database, it would not make much sense.
-  if (enzymes.size() != 1)
-  {
-    log.error "Currently only one enzyme is supported for the whole experiment."
-    exit 1
-  }
-
 }
 
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
@@ -330,6 +330,7 @@ if (params.expdesign)
         .fromPath(params.expdesign)
         .set { ch_expdesign_pre }
 
+    // Fixing file endings only necessary if the experimental design is user-specified
     process expdesign_raw2mzml {
 
     label 'process_very_low'
