@@ -606,6 +606,7 @@ process search_engine_xtandem {
                    -threads ${task.cpus} \\
                    -database "${database}" \\
                    -missed_cleavages ${params.allowed_missed_cleavages} \\
+                   -xtandem_executable "xtandem" \\
                    ${xtandem_semi}  \\
                    -enzyme "${enzyme}" \\
                    -max_precursor_charge ${params.max_precursor_charge} \\
