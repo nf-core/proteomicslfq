@@ -599,7 +599,7 @@ process search_engine_xtandem {
      file "*.log"
 
     script:
-     xtandem_semi = ${params.num_enzyme_termini} == "semi" ? "-semi_cleavage" : ""
+     xtandem_semi = params.num_enzyme_termini == "semi" ? "-semi_cleavage" : ""
      """
      XTandemAdapter  -in ${mzml_file} \\
                    -out ${mzml_file.baseName}_xtandem.idXML \\
