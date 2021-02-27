@@ -381,8 +381,10 @@ process raw_file_conversion {
      tuple mzml_id, file("*.mzML") into mzmls_converted
 
     script:
+     // XTandem cannot process zlib compressed spectra, therefore deactivate it during conversion
+     zlib = params.search_engines.contains("xtandem") ? "-z" : ""
      """
-     ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
+     ThermoRawFileParser.sh ${zlib} -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
      """
 }
 
