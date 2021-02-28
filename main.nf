@@ -9,164 +9,19 @@
 ----------------------------------------------------------------------------------------
 */
 
-def helpMessage() {
-    log.info nfcoreHeader()
-    log.info"""
 
-    Usage:
+////////////////////////////////////////////////////
+/* --               PRINT HELP                 -- */
+////////////////////////////////////////////////////
 
-    The typical command for running the pipeline is as follows:
-
-    nextflow run nf-core/proteomicslfq --input '*_R{1,2}.fastq.gz' -profile docker
-
-    Main arguments:
-      --input [file]                Path/URI to PRIDE Sample to data relation format file (SDRF) OR path to input spectra as mzML or Thermo Raw
-
-      For SDRF:
-      --root_folder [str]           (Optional) If given, looks for the filenames in the SDRF in this folder, locally
-      --local_input_type [str       (Optional) If given and 'root_folder' was specified, it overwrites the filetype in the SDRF for local lookup and matches only the basename.
-
-      For mzML/raw files:
-      --expdesign [file]            (Optional) Path to an experimental design file (if not given, it assumes unfractionated, unrelated samples)
-
-    Decoy database:
-      --add_decoys                  Add decoys to the given fasta
-      --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
-      --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)
-
-    Database Search:
-      --search_engines               Which search engine: "comet" (default) or "msgf"
-      --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
-      --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default:
-                                         'fully' valid: 'semi', 'fully')
-      --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
-      --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
-      --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
-      --enable_mod_localization     Enable localization scoring with Luciphor
-      --mod_localization            Specify the var. modifications whose localizations should be rescored with the luciphor algorithm
-      --precursor_mass_tolerance    Mass tolerance of precursor mass (default: 5)
-      --precursor_mass_tolerance_unit Da or ppm (default: ppm)
-      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol) (default: 0.03)
-      --fragment_mass_tolerance_unit Da or ppm (default: Da)
-      --allowed_missed_cleavages    Allowed missed cleavages (default: 2)
-      --min_precursor_charge        Minimum precursor ion charge (default: 2)
-      --max_precursor_charge        Maximum precursor ion charge (default: 4)
-      --min_peptide_length          Minimum peptide length to consider (default: 6)
-      --max_peptide_length          Maximum peptide length to consider (default: 40)
-      --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
-      --protocol                    Used labeling or enrichment protocol (if any)
-      --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let them determine from the spectrum metadata)
-      --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
-      --db_debug                    Debug level during database search
-
-      //TODO probably also still some options missing. Try to consolidate them whenever the two search engines share them
-
-    Peak picking:
-      --openms_peakpicking          Use the OpenMS PeakPicker to ADDITIONALLY pick the spectra before the search. This is usually done
-                                    during conversion already. Only activate if something goes wrong.
-      --peakpicking_inmemory        Perform OpenMS peakpicking in-memory. Needs at least the size of the mzML file as RAM but is faster. default: false
-      --peakpicking_ms_levels       Which MS levels to pick. default: [] which means auto-convert all non-centroided
-
-    Peptide Re-indexing:
-      --IL_equivalent               Should isoleucine and leucine be treated interchangeably? Default: true
-      --allow_unmatched             Ignore unmatched peptides (Default: false; only activate if you double-checked all other settings)
-
-    PSM Rescoring:
-      --posterior_probabilities     How to calculate posterior probabilities for PSMs:
-                                    "percolator" = Re-score based on PSM-feature-based SVM and transform distance
-                                        to hyperplane for posteriors
-                                    "fit_distributions" = Fit positive and negative distributions to scores
-                                        (similar to PeptideProphet)
-      --rescoring_debug             Debug level during PSM rescoring
-      --psm_pep_fdr_cutoff          FDR cutoff on PSM level (or potential peptide level; see Percolator options) before going into
-                                    feature finding, map alignment and inference.
-
-      Percolator specific:
-      --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
-      --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
-      --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
-      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
-      --generic_feature_set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
-                                    features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
-      --subset_max_train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
-                                    PSMs. Recommended when analyzing huge numbers (>1 million) of PSMs. When set to 0, all PSMs are used for training as normal.
-      --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude
-
-      Distribution specific:
-      --outlier_handling            How to handle outliers during fitting:
-                                    - ignore_iqr_outliers (default): ignore outliers outside of 3*IQR from Q1/Q3 for fitting
-                                    - set_iqr_to_closest_valid: set IQR-based outliers to the last valid value for fitting
-                                    - ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)
-                                    - none: do nothing
-      --top_hits_only               Use only the top hits for fitting
-
-      //TODO add more options for rescoring part
-
-    ConsensusID:
-      --consensusid_algorithm       Choose method to combine probabilities from multiple search engines (if used). Valid: best, worst, average, rank, PEPMatrix, PEPIons (Default: best)
-      --min_consensus_support       Choose ratio of ADDITIONAL evidence for a peptide ID of a spectrum. Varies across methods. See documentation for further info. (Default: 0)
-      --consensusid_considered_top_hits Number of top hits per spectrum considered for consensus scoring. (Default: 0 = all)
-
-    Inference and Quantification:
-      --inf_quant_debug             Debug level during inference and quantification. (WARNING: Higher than 666 may produce a lot
-                                    of additional output files)
-      Inference:
-      --protein_inference           Infer proteins through:
-                                    "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum)
-                                    "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
-                                    ("percolator" not yet supported)
-      --protein_level_fdr_cutoff    Protein level FDR cutoff (this affects and chooses the peptides used for quantification)
-
-      Quantification:
-      --quantification_method       Quantification method supported by proteomicslfq ('feature_intensity' or 'spectral_counting', default: 'feature_intensity')
-      --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
-                                    increased memory consumption). (default: false) TODO must specify true or false
-      --targeted_only               Only ID based quantification. (default: true) TODO must specify true or false
-      --mass_recalibration          Recalibrates masses to correct for instrument biases. (default: false) TODO must specify true
-                                    or false
-      --alignment_order             The order in which maps are aligned. Star = all vs. the reference with most IDs (default). TreeGuided = an alignment
-                                    tree is calculated first based on similarity measures of the IDs in the maps.
-      --quantify_decoys             Also quantify decoys? (Usually only needed for Triqler post-processing output with '--add_triqler_output')
-      
-      //TODO the following need to be passed still
-      --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
-                                    If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
-                                    peptide will be reported.
-                                    (default: off = 1.0)
-      --protein_quantification      Quantify proteins based on:
-                                    "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
-                                    "strictly_unique_peptides" = use peptides mapping to a unique single protein only
-                                    "shared_peptides" = use shared peptides only for its best group (by inference score)
-
-    Statistical post-processing (currently only for feature-based quant.):
-      --skip_post_msstats           Skip MSstats for statistical post-processing?
-      --ref_condition               Instead of all pairwise contrasts, uses the given condition number (corresponding to your experimental design) as a reference and
-                                    creates pairwise contrasts against it (TODO fully implement)
-      --contrasts                   Specify a set of contrasts in a semicolon seperated list of R-compatible contrasts with the
-                                    condition numbers as variables (e.g. "1-2;1-3;2-3"). Overwrites "--reference" (TODO fully implement)
-      --add_triqler_output          Also create an output in Triqler's format for an alternative manual post-processing with that tool
-
-    Quality control:
-      --ptxqc_report_layout         Specify a yaml file for the report layout (see PTXQC documentation) (TODO fully implement)
-
-    Other options:
-      --outdir [file]                 The output directory where the results will be saved
-      --publish_dir_mode [str]        Mode for publishing results in the output directory. Available: symlink, rellink, link, copy, copyNoFollow, move (Default: copy)
-      --email [email]                 Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
-      --email_on_fail [email]         Same as --email, except only send mail if the workflow is not successful
-      --max_multiqc_email_size [str]  Threshold size for MultiQC report to be attached in notification email. If file generated by pipeline exceeds the threshold, it will not be attached (Default: 25MB)
-      -name [str]                     Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
-
-    AWSBatch options:
-      --awsqueue [str]                The AWSBatch JobQueue that needs to be set when running on AWSBatch
-      --awsregion [str]               The AWS Region for your AWS Batch job to run on
-      --awscli [str]                  Path to the AWS CLI tool
-    """.stripIndent()
-}
-
-// Show help message
+def json_schema = "$projectDir/nextflow_schema.json"
 if (params.help) {
-    helpMessage()
+    def command = "nextflow run nf-core/proteomicslfq \
+  -profile <docker/singularity/conda/podman/charliecloud/institute> \
+  --input '*.mzml' \
+  --database 'myProteinDB.fasta' \
+  --expdesign 'myDesign.tsv'"
+    log.info Schema.params_help(workflow, params, json_schema, command)
     exit 0
 }
 
