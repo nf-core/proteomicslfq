@@ -17,7 +17,7 @@
 def json_schema = "$projectDir/nextflow_schema.json"
 if (params.help) {
     def command = "nextflow run nf-core/proteomicslfq \
-  -profile <docker/singularity/conda/institute> \
+  -profile <docker/singularity/conda/podman/charliecloud/institute> \
   --input '*.mzml' \
   --database 'myProteinDB.fasta' \
   --expdesign 'myDesign.tsv'"
