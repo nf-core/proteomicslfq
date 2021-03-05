@@ -1014,7 +1014,7 @@ process msstats {
      msstats_plfq.R ${csv} \\
                     --mzTab ${mztab} \\
                     --contrasts "pairwise" \\
-                    --referenceCondition ${params.ref_condition} \\
+                    --referenceCondition "${params.ref_condition}" \\
                     ${remove_one_feat_prot} \\
                     --featureSubsetPerProtein ${params.msstats_feature_subset_protein} \\
                     --summaryMethod ${params.msstats_quant_summary_method} \\
