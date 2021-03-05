@@ -8,8 +8,9 @@ channels:
   - defaults
 dependencies:
   - openms::openms=2.7.0pre
-  - openms::openms-thirdparty=2.7.0pre # 20.12.2020
+  - openms::openms-thirdparty=2.7.0pre # 08.02.2021
   - bioconda::bioconductor-msstats=3.20.1 # will include R
+  - bioconda::sdrf-pipelines=0.0.14 # for SDRF conversion
   - bioconda::sdrf-pipelines=0.0.11 # for SDRF conversion
   - bioconda::thermorawfileparser=1.2.3
   - conda-forge::r-ptxqc=1.0.5 # for QC reports
