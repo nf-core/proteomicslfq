@@ -101,22 +101,8 @@ if (length(lvls) == 1)
   print (contrast_mat)
   #TODO allow for user specified contrasts
   test.MSstats <- groupComparison(contrast.matrix=contrast_mat, data=processed.quant)
-  
-  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
-                       width=12, height=12,dot.size = 2)
-  
-  test.MSstats$Volcano = test.MSstats$ComparisonResult[!is.na(test.MSstats$ComparisonResult$pvalue),]
-  groupComparisonPlots(data=test.MSstats$Volcano, type="VolcanoPlot",
-                       width=12, height=12,dot.size = 2)
-
-  # Otherwise it fails since the behaviour is undefined
-  if (nrow(contrast_mat) > 1)
-  {
-    groupComparisonPlots(data=test.MSstats$ComparisonResult, type="Heatmap",
-                         width=12, height=12,dot.size = 2)
-  }
-  
-  #for (comp in rownames(contrast_mat))
+    
+    #for (comp in rownames(contrast_mat))
   #{
   #  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
   #                       width=12, height=12,dot.size = 2, sig=1)#,
@@ -182,6 +168,20 @@ if (length(lvls) == 1)
 
   #write all comparisons into one CSV file
   write.table(test.MSstats$ComparisonResult, file=paste0(out_prefix,"_comparisons.csv"), quote=FALSE, sep='\t', row.names = FALSE)
+  
+  groupComparisonPlots(data=test.MSstats$ComparisonResult, type="ComparisonPlot",
+                       width=12, height=12,dot.size = 2)
+  
+  test.MSstats$Volcano = test.MSstats$ComparisonResult[!is.na(test.MSstats$ComparisonResult$pvalue),]
+  groupComparisonPlots(data=test.MSstats$Volcano, type="VolcanoPlot",
+                       width=12, height=12,dot.size = 2)
+
+  # Otherwise it fails since the behaviour is undefined
+  if (nrow(contrast_mat) > 1)
+  {
+    groupComparisonPlots(data=test.MSstats$ComparisonResult, type="Heatmap",
+                         width=12, height=12,dot.size = 2)
+  }
 }
 
 if (!is.na(mzTab_input))
