@@ -228,6 +228,7 @@ process raw_file_conversion {
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/mzMLs", mode: 'copy', pattern: '*.mzML'
 
     input:
      tuple mzml_id, path(rawfile) from branched_input.raw
