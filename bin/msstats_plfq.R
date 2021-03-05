@@ -63,8 +63,8 @@ if (length(lvls) == 1)
         for (j in (i+1):l)
         {
           comparison <- rep(0,l)
-          comparison[i] <- -1
-          comparison[j] <- 1
+          comparison[i] <- 1
+          comparison[j] <- -1
           contrast_mat[c,] <- comparison
           rownames(contrast_mat)[c] <- paste0(lvls[i],"-",lvls[j])
           c <- c+1
