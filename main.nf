@@ -569,7 +569,7 @@ process index_peptides {
                     -enzyme:specificity ${pepidx_num_enzyme_termini} \\
                     ${il} \\
                     ${allow_um} \\
-                    -unmatched_action ${unmatch_action} \\
+                    -unmatched_action ${params.unmatched_action} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
