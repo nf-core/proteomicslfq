@@ -19,4 +19,4 @@ dependencies:
   - conda-forge::pymdown-extensions=8.0.1
   - conda-forge::pygments=2.7.1
   - conda-forge::mono=5.14.0.177
-
+  - conda-forge::pandoc=2.11.4
