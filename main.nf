@@ -228,6 +228,7 @@ process raw_file_conversion {
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/mzMLs", mode: 'copy', pattern: '*.mzML'
 
     input:
      tuple mzml_id, path(rawfile) from branched_input.raw
@@ -392,7 +393,7 @@ process search_engine_msgf {
       else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
-      
+
       if (enzyme.toLowerCase() == "unspecific cleavage")
       {
         msgf_num_enzyme_termini = "non"
@@ -442,7 +443,7 @@ process search_engine_comet {
     // ---------------------------------------------------------------------------------------------------------------------
     // This is probably true for other processes as well. See https://github.com/nextflow-io/nextflow/issues/1457
     //errorStrategy 'terminate'
-    
+
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
@@ -568,6 +569,7 @@ process index_peptides {
                     -enzyme:specificity ${pepidx_num_enzyme_termini} \\
                     ${il} \\
                     ${allow_um} \\
+                    -unmatched_action ${params.unmatched_action} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
