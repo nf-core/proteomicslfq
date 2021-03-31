@@ -740,7 +740,7 @@
                 "mass_recalibration": {
                     "type": "string",
                     "description": "Recalibrates masses based on precursor mass deviations to correct for instrument biases. (default: 'false')",
-                    "default": "false"
+                    "default": "false",
                     "enum": [
                         "true",
                         "false"
