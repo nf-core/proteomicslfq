@@ -13,10 +13,14 @@ log.info Headers.nf_core(workflow, params.monochrome_logs)
 
 ////////////////////////////////////////////////////
 /* --               PRINT HELP                 -- */
-////////////////////////////////////////////////////+
+////////////////////////////////////////////////////
 def json_schema = "$projectDir/nextflow_schema.json"
 if (params.help) {
-    def command = "nextflow run nf-core/proteomicslfq --input '*_R{1,2}.fastq.gz' -profile docker"
+    def command = "nextflow run nf-core/proteomicslfq \
+  -profile <docker/singularity/conda/podman/charliecloud/institute> \
+  --input '*.mzml' \
+  --database 'myProteinDB.fasta' \
+  --expdesign 'myDesign.tsv'"
     log.info NfcoreSchema.params_help(workflow, params, json_schema, command)
     exit 0
 }
@@ -28,25 +32,12 @@ if (params.validate_params) {
     NfcoreSchema.validateParameters(params, json_schema, log)
 }
 
-////////////////////////////////////////////////////
-/* --     Collect configuration parameters     -- */
-////////////////////////////////////////////////////
-
-// Check if genome exists in the config file
-if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-    exit 1, "The provided genome '${params.genome}' is not available in the iGenomes file. Currently the available genomes are ${params.genomes.keySet().join(', ')}"
+// Has the run name been specified by the user?
+// this has the bonus effect of catching both -name and --name
+custom_runName = params.name
+if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
+    custom_runName = workflow.runName
 }
-
-// TODO nf-core: Add any reference files that are needed
-// Configurable reference genomes
-//
-// NOTE - THIS IS NOT USED IN THIS PIPELINE, EXAMPLE ONLY
-// If you want to use the channel below in a process, define the following:
-//   input:
-//   file fasta from ch_fasta
-//
-params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-if (params.fasta) { ch_fasta = file(params.fasta, checkIfExists: true) }
 
 // Check AWS batch settings
 if (workflow.profile.contains('awsbatch')) {
@@ -60,34 +51,144 @@ if (workflow.profile.contains('awsbatch')) {
 }
 
 // Stage config files
-ch_multiqc_config = file("$projectDir/assets/multiqc_config.yaml", checkIfExists: true)
-ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
 ch_output_docs = file("$projectDir/docs/output.md", checkIfExists: true)
 ch_output_docs_images = file("$projectDir/docs/images/", checkIfExists: true)
+
+// Validate input
+if (isCollectionOrArray(params.input))
+{
+  tocheck = params.input[0]
+} else {
+  tocheck = params.input
+}
+
+sdrf_file = null
+
+if (tocheck.toLowerCase().endsWith("sdrf") || tocheck.toLowerCase().endsWith("tsv")) {
+  sdrf_file = params.input
+} else if (tocheck.toLowerCase().endsWith("mzml") || tocheck.toLowerCase().endsWith("raw")) {
+  spectra_files = params.input
+} else {
+  log.error "EITHER spectra data (mzML/raw) OR an SDRF needs to be provided as input."; exit 1
+}
+
+params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
+params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
 /*
  * Create a channel for input read files
  */
-if (params.input_paths) {
-    if (params.single_end) {
-        Channel
-            .from(params.input_paths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, 'params.input_paths was empty - no input files supplied' }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    } else {
-        Channel
-            .from(params.input_paths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true), file(row[1][1], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, 'params.input_paths was empty - no input files supplied' }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    }
-} else {
-    Channel
-        .fromFilePairs(params.input, size: params.single_end ? 1 : 2)
-        .ifEmpty { exit 1, "Cannot find any reads matching: ${params.input}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --single_end on the command line." }
-        .into { ch_read_files_fastqc; ch_read_files_trimming }
+
+ //Filename        FixedModifications      VariableModifications   Label   PrecursorMassTolerance  PrecursorMassToleranceUnit      FragmentMassTolerance   DissociationMethod      Enzyme
+
+
+if (!sdrf_file)
+{
+  ch_spectra = Channel.fromPath(spectra_files, checkIfExists: true)
+  ch_spectra
+  .multiMap{ it -> id = file(it).name.take(file(it).name.lastIndexOf('.'))
+                    comet_settings: msgf_settings: tuple(id,
+                                    params.fixed_mods,
+                                    params.variable_mods,
+                                    "", //labelling modifications currently not supported
+                                    params.precursor_mass_tolerance,
+                                    params.precursor_mass_tolerance_unit,
+                                    params.fragment_mass_tolerance,
+                                    params.fragment_mass_tolerance_unit,
+                                    params.fragment_method,
+                                    params.enzyme)
+                    idx_settings: tuple(id,
+                                    params.enzyme)
+                    luciphor_settings:
+                                  tuple(id,
+                                    params.fragment_method)
+                    mzmls: tuple(id,it)}
+  .set{ch_sdrf_config}
 }
+else
+{
+  ch_sdrf = Channel.fromPath(sdrf_file, checkIfExists: true)
+  /*
+   * STEP 0 - SDRF parsing
+   */
+  process sdrf_parsing {
+
+      publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+      input:
+       file sdrf from ch_sdrf
+
+      output:
+       file "experimental_design.tsv" into ch_expdesign
+       file "openms.tsv" into ch_sdrf_config_file
+
+      when:
+        sdrf_file
+
+      script:
+       """
+       ## -t2 since the one-table format parser is broken in OpenMS2.5
+       ## -l for legacy behavior to always add sample columns
+       parse_sdrf convert-openms -t2 -l -s ${sdrf} > sdrf_parsing.log
+       """
+  }
+
+  //TODO use header and reference by col name instead of index
+  ch_sdrf_config_file
+  .splitCsv(skip: 1, sep: '\t')
+  .multiMap{ row -> id = file(row[0].toString()).name.take(file(row[0].toString()).name.lastIndexOf('.'))
+                    comet_settings: msgf_settings: tuple(id,
+                                    row[2],
+                                    row[3],
+                                    row[4],
+                                    row[5],
+                                    row[6],
+                                    row[7],
+                                    row[8],
+                                    row[9],
+                                    row[10])
+                    idx_settings: tuple(id,
+                                    row[10])
+                    luciphor_settings:
+                                  tuple(id,
+                                    row[9])
+                    mzmls: tuple(id, !params.root_folder ?
+                                    row[0] :
+                                    params.root_folder + "/" + (params.local_input_type ?
+                                        row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
+                                        row[1]))}
+  .set{ch_sdrf_config}
+}
+
+ch_db_for_decoy_creation = Channel.fromPath(params.database)
+
+// overwrite experimental design if given additionally to SDRF
+//TODO think about that
+if (params.expdesign)
+{
+    Channel
+        .fromPath(params.expdesign)
+        .set { ch_expdesign_pre }
+
+    process expdesign_raw2mzml {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    input:
+     path (design) from ch_expdesign_pre
+
+    output:
+     file("expdesign.tsv") into ch_expdesign
+
+    script:
+    """
+      sed 's/.raw\\t/.mzML\\t/I' $design > expdesign.tsv
+    """
+
+    }
+}
+
 
 ////////////////////////////////////////////////////
 /* --         PRINT PARAMETER SUMMARY          -- */
@@ -100,8 +201,6 @@ if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Run Name']         = workflow.runName
 // TODO nf-core: Report custom parameters here
 summary['Input']            = params.input
-summary['Fasta Ref']        = params.fasta
-summary['Data Type']        = params.single_end ? 'Single-End' : 'Paired-End'
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -122,7 +221,6 @@ summary['Config Files'] = workflow.configFiles.join(', ')
 if (params.email || params.email_on_fail) {
     summary['E-mail Address']    = params.email
     summary['E-mail on failure'] = params.email_on_fail
-    summary['MultiQC maxsize']   = params.max_multiqc_email_size
 }
 
 // Check the hostnames against configured profiles
@@ -150,83 +248,906 @@ Channel.from(summary.collect{ [it.key, it.value] })
 process get_software_versions {
     publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode,
         saveAs: { filename ->
-                      if (filename.indexOf('.csv') > 0) filename
+                      if (filename.indexOf(".csv") > 0) filename
                       else null
-        }
+                }
 
     output:
     file 'software_versions_mqc.yaml' into ch_software_versions_yaml
-    file 'software_versions.csv'
+    file "software_versions.csv"
 
     script:
-    // TODO nf-core: Get all tools to print their version number here
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
-    multiqc --version > v_multiqc.txt
+    ThermoRawFileParser.sh --version &> v_thermorawfileparser.txt
+    echo \$(FileConverter 2>&1) > v_fileconverter.txt || true
+    echo \$(DecoyDatabase 2>&1) > v_decoydatabase.txt || true
+    echo \$(MSGFPlusAdapter 2>&1) > v_msgfplusadapter.txt || true
+    echo \$(msgf_plus 2>&1) > v_msgfplus.txt || true
+    echo \$(CometAdapter 2>&1) > v_cometadapter.txt || true
+    echo \$(comet 2>&1) > v_comet.txt || true
+    echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
+    echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
+    echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
+    percolator -h &> v_percolator.txt
+    echo \$(IDFilter 2>&1) > v_idfilter.txt || true
+    echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
+    echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
+    echo \$(IDPosteriorErrorProbability 2>&1) > v_idposteriorerrorprobability.txt || true
+    echo \$(ProteomicsLFQ 2>&1) > v_proteomicslfq.txt || true
+    echo $workflow.manifest.version &> v_msstats_plfq.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
 
+ch_sdrf_config.mzmls
+.branch {
+        raw: hasExtension(it[1], 'raw')
+        mzML: hasExtension(it[1], 'mzML')
+}
+.set {branched_input}
+
+
+//TODO we could also check for outdated mzML versions and try to update them
+branched_input.mzML
+.branch {
+    nonIndexedMzML: file(it[1]).withReader {
+                        f = it;
+                        1.upto(5) {
+                            if (f.readLine().contains("indexedmzML")) return false;
+                        }
+                        return true;
+                    }
+    inputIndexedMzML: file(it[1]).withReader {
+                        f = it;
+                        1.upto(5) {
+                            if (f.readLine().contains("indexedmzML")) return true;
+                        }
+                        return false;
+                    }
+}
+.set {branched_input_mzMLs}
+
+//Push raw files through process that does the conversion, everything else directly to downstream Channel with mzMLs
+
+//This piece only runs on data that is a.) raw and b.) needs conversion
+//mzML files will be mixed after this step to provide output for downstream processing - allowing you to even specify mzMLs and RAW files in a mixed mode as input :-)
+
 /*
- * STEP 1 - FastQC
+ * STEP 0.1 - Raw file conversion
  */
-process fastqc {
-    tag "$name"
+process raw_file_conversion {
+
+    label 'process_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/mzMLs", mode: 'copy', pattern: '*.mzML'
+
+    input:
+     tuple mzml_id, path(rawfile) from branched_input.raw
+
+    output:
+     tuple mzml_id, file("*.mzML") into mzmls_converted
+
+    script:
+     """
+     ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
+     """
+}
+
+/*
+ * STEP 0.2 - MzML indexing
+ */
+process mzml_indexing {
+
+    label 'process_low'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, path(mzmlfile) from branched_input_mzMLs.nonIndexedMzML
+
+    output:
+     tuple mzml_id, file("out/*.mzML") into mzmls_indexed
+     file "*.log"
+
+    script:
+     """
+     mkdir out
+     FileConverter -in ${mzmlfile} -out out/${mzmlfile.baseName}.mzML > ${mzmlfile.baseName}_mzmlindexing.log
+     """
+}
+
+//Mix the converted raw data with the already supplied mzMLs and push these to the same channels as before
+
+if (params.openms_peakpicking)
+{
+  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).set{mzmls_pp}
+  (mzmls_comet, mzmls_msgf, mzmls_luciphor, mzmls_plfq) = [Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty()]
+}
+else
+{
+  branched_input_mzMLs.inputIndexedMzML.mix(mzmls_converted).mix(mzmls_indexed).into{mzmls_comet; mzmls_msgf; mzmls_luciphor; mzmls_plfq}
+  mzmls_pp = Channel.empty()
+}
+
+//Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
+(searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
+                    ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
+                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database) ] )
+
+//Add decoys if params.add_decoys is set appropriately
+process generate_decoy_database {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     file(mydatabase) from ch_db_for_decoy_creation
+
+    output:
+     file "${mydatabase.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
+     file "*.log"
+
+    when:
+     params.add_decoys
+
+    script:
+     """
+     DecoyDatabase  -in ${mydatabase} \\
+                 -out ${mydatabase.baseName}_decoy.fasta \\
+                 -decoy_string ${params.decoy_affix} \\
+                 -decoy_string_position ${params.affix_type} \\
+                 > ${mydatabase.baseName}_decoy_database.log
+     """
+}
+
+// Doesnt work yet. Maybe point the script to the workspace?
+// All the files should be there after collecting.
+//process generate_simple_exp_design_file {
+//    publishDir "${params.outdir}", mode: 'copy'
+//    input:
+//      val mymzmls from mzmls.collect()
+
+//    output:
+//        file "expdesign.tsv" into expdesign
+//    when:
+//        !params.expdesign
+
+//    script:
+//     strng = new File(mymzmls[0].toString()).getParentFile()
+//     """
+//       create_trivial_design.py ${strng} 1 > expdesign.tsv
+//     """
+//}
+
+process openms_peakpicker {
+
+    label 'process_low'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, path(mzml_file) from mzmls_pp
+
+    when:
+      params.openms_peakpicking
+
+    output:
+     tuple mzml_id, file("out/${mzml_file.baseName}.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
+     file "*.log"
+
+    script:
+     in_mem = params.peakpicking_inmemory ? "inmemory" : "lowmemory"
+     lvls = params.peakpicking_ms_levels ? "-algorithm:ms_levels ${params.peakpicking_ms_levels}" : ""
+     """
+     mkdir out
+     PeakPickerHiRes -in ${mzml_file} \\
+                     -out out/${mzml_file.baseName}.mzML \\
+                     -threads ${task.cpus} \\
+                     -debug ${params.pp_debug} \\
+                     -processOption ${in_mem} \\
+                     ${lvls} \\
+                     > ${mzml_file.baseName}_pp.log
+     """
+}
+
+process search_engine_msgf {
+
     label 'process_medium'
-    publishDir "${params.outdir}/fastqc", mode: params.publish_dir_mode,
-        saveAs: { filename ->
-                      filename.indexOf('.zip') > 0 ? "zips/$filename" : "$filename"
-        }
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ------------- WARNING: If you experience nextflow running forever after a failure, set the following ----------------
+    // ---------------------------------------------------------------------------------------------------------------------
+    // This is probably true for other processes as well. See https://github.com/nextflow-io/nextflow/issues/1457
+    // errorStrategy 'terminate'
 
     input:
-    set val(name), file(reads) from ch_read_files_fastqc
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.mix(mzmls_msgf_picked).join(ch_sdrf_config.msgf_settings))
+
+     // This was another way of handling the combination
+     //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
+     //each file(mzml_file) from mzmls
+    when:
+      params.search_engines.contains("msgf")
 
     output:
-    file '*_fastqc.{zip,html}' into ch_fastqc_results
+     tuple mzml_id, file("${mzml_file.baseName}_msgf.idXML") into id_files_msgf
+     file "*.log"
 
     script:
-    """
-    fastqc --quiet --threads $task.cpus $reads
-    """
+      // MSGF+ does not support post-cutting rules. We auto-switch to the equivalent enzymes
+      if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+      else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+      else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+      else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+      else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+
+      if (enzyme.toLowerCase() == "unspecific cleavage")
+      {
+        msgf_num_enzyme_termini = "non"
+      } else {
+        msgf_num_enzyme_termini = params.num_enzyme_termini
+      }
+
+      if ((frag_tol.toDouble() < 50 && frag_tol_unit == "ppm") || (frag_tol.toDouble() < 0.1 && frag_tol_unit == "Da"))
+      {
+        inst = params.instrument ?: "high_res"
+      } else {
+        inst = params.instrument ?: "low_res"
+      }
+     """
+     MSGFPlusAdapter -in ${mzml_file} \\
+                     -out ${mzml_file.baseName}_msgf.idXML \\
+                     -threads ${task.cpus} \\
+                     -java_memory ${task.memory.toMega()} \\
+                     -database "${database}" \\
+                     -instrument ${inst} \\
+                     -protocol "${params.protocol}" \\
+                     -matches_per_spec ${params.num_hits} \\
+                     -min_precursor_charge ${params.min_precursor_charge} \\
+                     -max_precursor_charge ${params.max_precursor_charge} \\
+                     -min_peptide_length ${params.min_peptide_length} \\
+                     -max_peptide_length ${params.max_peptide_length} \\
+                     -max_missed_cleavages ${params.allowed_missed_cleavages} \\
+                     -enzyme "${enzyme}" \\
+                     -tryptic ${msgf_num_enzyme_termini} \\
+                     -precursor_mass_tolerance ${prec_tol} \\
+                     -precursor_error_units ${prec_tol_unit} \\
+                     -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                     -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                     -max_mods ${params.max_mods} \\
+                     -debug ${params.db_debug} \\
+                     > ${mzml_file.baseName}_msgf.log
+     """
+}
+
+process search_engine_comet {
+
+    label 'process_medium'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ------------- WARNING: If you experience nextflow running forever after a failure, set the following ----------------
+    // ---------------------------------------------------------------------------------------------------------------------
+    // This is probably true for other processes as well. See https://github.com/nextflow-io/nextflow/issues/1457
+    //errorStrategy 'terminate'
+
+    input:
+     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
+
+    when:
+      params.search_engines.contains("comet")
+
+    output:
+     tuple mzml_id, file("${mzml_file.baseName}_comet.idXML") into id_files_comet
+     file "*.log"
+
+    //TODO we currently ignore the activation_method param to leave the default "ALL" for max. compatibility
+    //Note: OpenMS CometAdapter will double the number that is passed to fragment_mass_tolerance to "convert"
+    // it to a fragment_bin_tolerance
+    script:
+     if (frag_tol_unit == "ppm") {
+       // Note: This uses an arbitrary rule to decide if it was hi-res or low-res
+       // and uses Comet's defaults for bin size (i.e. by passing 0.5*default to the Adapter), in case unsupported unit "ppm" was given.
+       if (frag_tol.toDouble() < 50) {
+         bin_tol = 0.015
+         bin_offset = 0.0
+         inst = params.instrument ?: "high_res"
+       } else {
+         bin_tol = 0.50025
+         bin_offset = 0.4
+         inst = params.instrument ?: "low_res"
+       }
+       log.warn "The chosen search engine Comet does not support ppm fragment tolerances. We guessed a " + inst +
+         " instrument and set the fragment_bin_tolerance to " + bin_tol
+     } else {
+       //TODO expose the fragment_bin_offset parameter of comet
+       bin_tol = frag_tol.toDouble()
+       bin_offset = bin_tol <= 0.05 ? 0.0 : 0.4
+       if (!params.instrument)
+       {
+         inst = bin_tol <= 0.05 ? "high_res" : "low_res"
+       } else {
+         inst = params.instrument
+       }
+     }
+
+     // For consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF (if enabled)
+     // TODO find another solution. In ProteomicsLFQ we re-run PeptideIndexer (remove??) and if we
+     // e.g. add XTandem, after running ConsensusID it will lose the auto-detection ability for the
+     // XTandem specific rules.
+     // TODO the following code depends on https://github.com/OpenMS/OpenMS/issues/5149 since those enzymes are no default comet enzymes
+     //  for now, we have to make sure that PeptideIndexer uses the loosest cutting rules.
+     //if (params.search_engines.contains("msgf"))
+     //{
+     //   if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+     //   else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+     //   else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+     //   else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+     //   else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     //}
+     """
+     CometAdapter  -in ${mzml_file} \\
+                   -out ${mzml_file.baseName}_comet.idXML \\
+                   -threads ${task.cpus} \\
+                   -database "${database}" \\
+                   -instrument ${inst} \\
+                   -missed_cleavages ${params.allowed_missed_cleavages} \\
+                   -num_hits ${params.num_hits} \\
+                   -num_enzyme_termini ${params.num_enzyme_termini} \\
+                   -enzyme "${enzyme}" \\
+                   -precursor_charge ${params.min_precursor_charge}:${params.max_precursor_charge} \\
+                   -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                   -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                   -max_variable_mods_in_peptide ${params.max_mods} \\
+                   -precursor_mass_tolerance ${prec_tol} \\
+                   -precursor_error_units ${prec_tol_unit} \\
+                   -fragment_mass_tolerance ${bin_tol} \\
+                   -fragment_bin_offset ${bin_offset} \\
+                   -debug ${params.db_debug} \\
+		   -force \\
+                   > ${mzml_file.baseName}_comet.log
+     """
+}
+
+
+process index_peptides {
+
+    label 'process_low'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(id_file), val(enzyme), file(database) from id_files_msgf.mix(id_files_comet).combine(ch_sdrf_config.idx_settings, by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
+     file "*.log"
+
+    script:
+     def il = params.IL_equivalent ? '-IL_equivalent' : ''
+     def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
+     // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying. But the auto-detection code in
+     //  PeptideIndexer probably does not handle the combination through ConsensusID yet.
+     if (params.search_engines.contains("msgf"))
+     {
+        if (enzyme == 'Trypsin') enzyme = 'Trypsin/P'
+        else if (enzyme == 'Arg-C') enzyme = 'Arg-C/P'
+        else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
+        else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
+        else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
+     }
+     pepidx_num_enzyme_termini = params.num_enzyme_termini
+
+     if (enzyme.toLowerCase() == "unspecific cleavage")
+     {
+       pepidx_num_enzyme_termini = "none"
+     } else {
+       if (params.num_enzyme_termini == "fully")
+       {
+         pepidx_num_enzyme_termini = "full"
+       }
+     }
+     """
+     PeptideIndexer -in ${id_file} \\
+                    -out ${id_file.baseName}_idx.idXML \\
+                    -threads ${task.cpus} \\
+                    -fasta ${database} \\
+                    -enzyme:name "${enzyme}" \\
+                    -enzyme:specificity ${pepidx_num_enzyme_termini} \\
+                    ${il} \\
+                    ${allow_um} \\
+                    -unmatched_action ${params.unmatched_action} \\
+                    > ${id_file.baseName}_index_peptides.log
+     """
+}
+
+
+// ---------------------------------------------------------------------
+// Branch a) Q-values and PEP from Percolator
+
+process extract_percolator_features {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(id_file) from id_files_idx_ForPerc
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_feat.idXML") into id_files_idx_feat
+     file "*.log"
+
+    when:
+     params.posterior_probabilities == "percolator"
+
+    script:
+     """
+     PSMFeatureExtractor -in ${id_file} \\
+                         -out ${id_file.baseName}_feat.idXML \\
+                         -threads ${task.cpus} \\
+                         > ${id_file.baseName}_extract_percolator_features.log
+     """
+}
+
+
+//Note: from here, we do not need any settings anymore. so we can skip adding the mzml_id to the channels
+//TODO find a way to run across all runs merged
+process percolator {
+
+    //TODO Actually it heavily depends on the subset_max_train option and the number of IDs
+    // would be cool to get an estimate by parsing the number of IDs from previous tools.
+    label 'process_medium'
+    //Since percolator 3.5 it allows for 27 parallel tasks
+    cpus { check_max( 27, 'cpus' ) }
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
+
+    input:
+     tuple mzml_id, file(id_file) from id_files_idx_feat
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491") into id_files_perc, id_files_perc_consID
+     file "*.log"
+
+    when:
+     params.posterior_probabilities == "percolator"
+
+    // NICE-TO-HAVE: the decoy-pattern is automatically detected from PeptideIndexer.
+    // Parse its output and put the correct one here.
+    script:
+      if (params.klammer && params.description_correct_features == 0) {
+          log.warn('Klammer was specified, but description of correct features was still 0. Please provide a description of correct features greater than 0.')
+          log.warn('Klammer will be implicitly off!')
+      }
+
+      // currently post-processing-tdc is always set since we do not support separate TD databases
+      """
+      ## Percolator does not have a threads parameter. Set it via OpenMP env variable,
+      ## to honor threads on clusters
+      OMP_NUM_THREADS=${task.cpus} PercolatorAdapter \\
+                          -in ${id_file} \\
+                          -out ${id_file.baseName}_perc.idXML \\
+                          -threads ${task.cpus} \\
+                          -subset_max_train ${params.subset_max_train} \\
+                          -decoy_pattern ${params.decoy_affix} \\
+                          -post_processing_tdc \\
+                          -score_type pep \\
+                          > ${id_file.baseName}_percolator.log
+      """
+}
+
+// ---------------------------------------------------------------------
+// Branch b) Q-values and PEP from OpenMS
+
+if(params.posterior_probabilities != "percolator" && params.search_engines.split(",").size() == 1)
+{
+  id_files_idx_ForIDPEP_noFDR = Channel.empty()
+}
+process fdr_idpep {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_fdr.idXML") into id_files_idx_ForIDPEP_FDR
+     file "*.log"
+
+    when:
+     params.posterior_probabilities != "percolator" && params.search_engines.split(",").size() == 1
+
+    script:
+     """
+     FalseDiscoveryRate -in ${id_file} \\
+                        -out ${id_file.baseName}_fdr.idXML \\
+                        -threads ${task.cpus} \\
+                        -protein false \\
+                        -algorithm:add_decoy_peptides \\
+                        -algorithm:add_decoy_proteins \\
+                        > ${id_file.baseName}_fdr.log
+     """
+}
+
+//idpep picks the best scores for each search engine automatically. No switching needed after FDR.
+process idpep {
+
+    label 'process_low'
+    // I think Eigen optimization is multi-threaded, so leave threads open
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/raw_ids", mode: 'copy', pattern: '*.idXML'
+
+    input:
+     tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP_FDR.mix(id_files_idx_ForIDPEP_noFDR)
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score") into id_files_idpep, id_files_idpep_consID
+     file "*.log"
+
+    when:
+     params.posterior_probabilities != "percolator"
+
+    script:
+     """
+     IDPosteriorErrorProbability    -in ${id_file} \\
+                                    -out ${id_file.baseName}_idpep.idXML \\
+                                    -fit_algorithm:outlier_handling ${params.outlier_handling} \\
+                                    -threads ${task.cpus} \\
+                                    > ${id_file.baseName}_idpep.log
+     """
+}
+
+// ---------------------------------------------------------------------
+// Main Branch
+
+//TODO this can be removed if we would add a "score_type" option to IDFilter that looks and filters for that score
+process idscoreswitcher_to_qval {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(id_file), val(qval_score) from id_files_idpep.mix(id_files_perc)
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_switched.idXML") into id_files_noConsID_qval
+     file "*.log"
+
+    when:
+     params.search_engines.split(",").size() == 1
+
+    script:
+     """
+     IDScoreSwitcher    -in ${id_file} \\
+                        -out ${id_file.baseName}_switched.idXML \\
+                        -threads ${task.cpus} \\
+                        -old_score "Posterior Error Probability" \\
+                        -new_score ${qval_score} \\
+                        -new_score_type q-value \\
+                        -new_score_orientation lower_better \\
+                        > ${id_file.baseName}_scoreswitcher_qval.log
+     """
+}
+
+process consensusid {
+
+    label 'process_medium'
+    //TODO could be easily parallelized
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/consensus_ids", mode: 'copy', pattern: '*.idXML'
+
+    // we can drop qval_score in this branch since we have to recalculate FDR anyway
+    input:
+     tuple mzml_id, file(id_files_from_ses), val(qval_score) from id_files_idpep_consID.mix(id_files_perc_consID).groupTuple(size: params.search_engines.split(",").size())
+
+    output:
+     tuple mzml_id, file("${mzml_id}_consensus.idXML") into consensusids
+     file "*.log"
+
+    when:
+     params.search_engines.split(",").size() > 1
+
+    script:
+     """
+     ConsensusID -in ${id_files_from_ses} \\
+                        -out ${mzml_id}_consensus.idXML \\
+                        -per_spectrum \\
+                        -threads ${task.cpus} \\
+                        -algorithm ${params.consensusid_algorithm} \\
+                        -filter:min_support ${params.min_consensus_support} \\
+                        -filter:considered_hits ${params.consensusid_considered_top_hits} \\
+                        > ${mzml_id}_consensusID.log
+     """
+
+}
+
+process fdr_consensusid {
+
+    label 'process_medium'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
+
+    input:
+     tuple mzml_id, file(id_file) from consensusids
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_fdr.idXML") into consensusids_fdr
+     file "*.log"
+
+    when:
+     params.search_engines.split(",").size() > 1
+
+    script:
+     """
+     FalseDiscoveryRate -in ${id_file} \\
+                        -out ${id_file.baseName}_fdr.idXML \\
+                        -threads ${task.cpus} \\
+                        -protein false \\
+                        -algorithm:add_decoy_peptides \\
+                        -algorithm:add_decoy_proteins \\
+                        > ${id_file.baseName}_fdr.log
+     """
+
+}
+
+process idfilter {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ids", mode: 'copy', pattern: '*.idXML'
+
+    input:
+     tuple mzml_id, file(id_file) from id_files_noConsID_qval.mix(consensusids_fdr)
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into id_filtered, id_filtered_luciphor
+     file "*.log"
+
+    script:
+     """
+     IDFilter -in ${id_file} \\
+                        -out ${id_file.baseName}_filter.idXML \\
+                        -threads ${task.cpus} \\
+                        -score:pep ${params.psm_pep_fdr_cutoff} \\
+                        > ${id_file.baseName}_idfilter.log
+     """
+}
+
+plfq_in_id = params.enable_mod_localization
+                    ? Channel.empty()
+                    : id_filtered
+
+// TODO make luciphor pick its own score so we can skip this step
+process idscoreswitcher_for_luciphor {
+
+    label 'process_very_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(id_file) from id_filtered_luciphor
+
+    output:
+     tuple mzml_id, file("${id_file.baseName}_pep.idXML") into id_filtered_luciphor_pep
+     file "*.log"
+
+    when:
+     params.enable_mod_localization
+
+    script:
+     """
+     IDScoreSwitcher    -in ${id_file} \\
+                        -out ${id_file.baseName}_pep.idXML \\
+                        -threads ${task.cpus} \\
+                        -old_score "q-value" \\
+                        -new_score "Posterior Error Probability_score" \\
+                        -new_score_type "Posterior Error Probability" \\
+                        -new_score_orientation lower_better \\
+                        > ${id_file.baseName}_switch_pep_for_luciphor.log
+
+     """
+}
+
+process luciphor {
+
+    label 'process_medium'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+
+    input:
+     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_filtered_luciphor_pep).join(ch_sdrf_config.luciphor_settings)
+
+    output:
+     set mzml_id, file("${id_file.baseName}_luciphor.idXML") into plfq_in_id_luciphor
+     file "*.log"
+
+    when:
+     params.enable_mod_localization
+
+    script:
+     def losses = params.luciphor_neutral_losses ? '-neutral_losses "${params.luciphor_neutral_losses}"' : ''
+     def dec_mass = params.luciphor_decoy_mass ? '-decoy_mass "${params.luciphor_decoy_mass}"' : ''
+     def dec_losses = params.luciphor_decoy_neutral_losses ? '-decoy_neutral_losses "${params.luciphor_decoy_neutral_losses}' : ''
+     """
+     LuciphorAdapter    -id ${id_file} \\
+                        -in ${mzml_file} \\
+                        -out ${id_file.baseName}_luciphor.idXML \\
+                        -threads ${task.cpus} \\
+                        -num_threads ${task.cpus} \\
+                        -target_modifications ${params.mod_localization.tokenize(',').collect { "'${it}'" }.join(" ") } \\
+                        -fragment_method ${frag_method} \\
+                        ${losses} \\
+                        ${dec_mass} \\
+                        ${dec_losses} \\
+                        -max_charge_state ${params.max_precursor_charge} \\
+                        -max_peptide_length ${params.max_peptide_length} \\
+                        -debug ${params.luciphor_debug} \\
+                        > ${id_file.baseName}_luciphor.log
+     """
+                     //        -fragment_mass_tolerance ${} \\
+                     //   -fragment_error_units ${} \\
+}
+
+// Join mzmls and ids by UID specified per mzml file in the beginning.
+// ID files can come directly from the Percolator branch, IDPEP branch or
+// after optional processing with Luciphor
+mzmls_plfq.mix(mzmls_plfq_picked)
+  .join(plfq_in_id.mix(plfq_in_id_luciphor))
+  .multiMap{ it ->
+      mzmls: it[1]
+      ids: it[2]
+  }
+  .set{ch_plfq}
+
+process proteomicslfq {
+
+    label 'process_high'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/proteomics_lfq", mode: 'copy'
+
+    ///.toSortedList({ a, b -> b.baseName <=> a.baseName })
+    input:
+     file(mzmls) from ch_plfq.mzmls.collect()
+     file(id_files) from ch_plfq.ids.collect()
+     file expdes from ch_expdesign
+     file fasta from plfq_in_db.mix(plfq_in_db_decoy)
+
+    output:
+     file "out.mzTab" into out_mztab_plfq, out_mztab_msstats
+     file "out.consensusXML" into out_consensusXML
+     file "out_msstats.csv" optional true into out_msstats
+     file "out_triqler.tsv" optional true into out_triqler
+     file "debug_mergedIDs.idXML" optional true
+     file "debug_mergedIDs_inference.idXML" optional true
+     file "debug_mergedIDsGreedyResolved.idXML" optional true
+     file "debug_mergedIDsGreedyResolvedFDR.idXML" optional true
+     file "debug_mergedIDsGreedyResolvedFDRFiltered.idXML" optional true
+     file "debug_mergedIDsFDRFilteredStrictlyUniqueResolved.idXML" optional true
+     file "*.log"
+
+    script:
+     def msstats_present = params.quantification_method == "feature_intensity" ? '-out_msstats out_msstats.csv' : ''
+     def triqler_present = (params.quantification_method == "feature_intensity") && (params.add_triqler_output) ? '-out_triqler out_triqler.tsv' : ''
+     def decoys_present = (params.quantify_decoys || ((params.quantification_method == "feature_intensity") && params.add_triqler_output)) ? '-PeptideQuantification:quantify_decoys' : ''
+     """
+     ProteomicsLFQ -in ${(mzmls as List).join(' ')} \\
+                   -ids ${(id_files as List).join(' ')} \\
+                   -design ${expdes} \\
+                   -fasta ${fasta} \\
+                   -protein_inference ${params.protein_inference} \\
+                   -quantification_method ${params.quantification_method} \\
+                   -targeted_only ${params.targeted_only} \\
+                   -mass_recalibration ${params.mass_recalibration} \\
+                   -transfer_ids ${params.transfer_ids} \\
+                   -protein_quantification ${params.protein_quant} \\
+                   -alignment_order ${params.alignment_order} \\
+                   -out out.mzTab \\
+                   -threads ${task.cpus} \\
+                   ${msstats_present} \\
+                   ${triqler_present} \\
+                   ${decoys_present} \\
+                   -out_cxml out.consensusXML \\
+                   -proteinFDR ${params.protein_level_fdr_cutoff} \\
+                   -debug ${params.inf_quant_debug} \\
+                   > proteomicslfq.log
+         """
+
+}
+
+
+// TODO the script supports a control condition as third argument
+// TODO the second argument can be "pairwise" or TODO later a user defined contrast string
+
+process msstats {
+
+    label 'process_medium'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/msstats", mode: 'copy'
+
+    when:
+     !params.skip_post_msstats && params.quantification_method == "feature_intensity"
+
+    input:
+     file csv from out_msstats
+     file mztab from out_mztab_msstats
+
+    output:
+     // The generation of the PDFs from MSstats are very unstable, especially with auto-contrasts.
+     // And users can easily fix anything based on the csv and the included script -> make optional
+     file "*.pdf" optional true
+     file "*.mzTab" optional true
+     file "*.csv"
+     file "*.log"
+
+    script:
+     """
+     msstats_plfq.R ${csv} ${mztab} > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
+     """
+}
+
+//TODO allow user config yml (as second arg to the script
+
+process ptxqc {
+
+    label 'process_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ptxqc", mode: 'copy'
+
+    when:
+     params.enable_qc
+
+    input:
+     file mzTab from out_mztab_plfq
+
+    output:
+     file "*.html" into ch_ptxqc_report
+     file "*.yaml"
+     file "*.Rmd"
+     file "*.pdf"
+     file "*.txt"
+
+    script:
+     """
+     ptxqc.R ${mzTab} > ptxqc.log
+     """
+}
+
+if (!params.enable_qc)
+{
+  ch_ptxqc_report = Channel.empty()
 }
 
 /*
- * STEP 2 - MultiQC
- */
-process multiqc {
-    publishDir "${params.outdir}/MultiQC", mode: params.publish_dir_mode
-
-    input:
-    file (multiqc_config) from ch_multiqc_config
-    file (mqc_custom_config) from ch_multiqc_custom_config.collect().ifEmpty([])
-    // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-    file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
-    file ('software_versions/*') from ch_software_versions_yaml.collect()
-    file workflow_summary from ch_workflow_summary.collectFile(name: "workflow_summary_mqc.yaml")
-
-    output:
-    file "*multiqc_report.html" into ch_multiqc_report
-    file "*_data"
-    file "multiqc_plots"
-
-    script:
-    rtitle = ''
-    rfilename = ''
-    if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
-        rtitle = "--title \"${workflow.runName}\""
-        rfilename = "--filename " + workflow.runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report"
-    }
-    custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
-    // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
-    """
-    multiqc -f $rtitle $rfilename $custom_config_file .
-    """
-}
-
-/*
- * STEP 3 - Output Description HTML
+ * Output Description HTML
  */
 process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode
@@ -277,19 +1198,21 @@ workflow.onComplete {
     email_fields['summary']['Nextflow Build'] = workflow.nextflow.build
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
-    // TODO nf-core: If not using MultiQC, strip out this code (including params.max_multiqc_email_size)
     // On success try attach the multiqc report
-    def mqc_report = null
+    def mqc_report = ""
     try {
-        if (workflow.success) {
-            mqc_report = ch_multiqc_report.getVal()
+        if (workflow.success && ch_ptxqc_report.println()) {
+            mqc_report = ch_ptxqc_report.getVal()
             if (mqc_report.getClass() == ArrayList) {
-                log.warn "[nf-core/proteomicslfq] Found multiple reports from process 'multiqc', will use only one"
+                log.warn "[nf-core/proteomicslfq] Found multiple reports from process 'ptxqc', will use only one"
                 mqc_report = mqc_report[0]
             }
         }
+        else {
+          mqc_report = ""
+        }
     } catch (all) {
-        log.warn "[nf-core/proteomicslfq] Could not attach MultiQC report to summary email"
+        log.warn "[nf-core/proteomicslfq] Could not attach PTXQC report to summary email"
     }
 
     // Check if we are only sending emails on failure
@@ -325,7 +1248,7 @@ workflow.onComplete {
         } catch (all) {
             // Catch failures and try with plaintext
             def mail_cmd = [ 'mail', '-s', subject, '--content-type=text/html', email_address ]
-            if ( mqc_report.size() <= params.max_multiqc_email_size.toBytes() ) {
+            if ( mqc != "" && mqc_report.size() <= params.max_multiqc_email_size.toBytes() ) {
               mail_cmd += [ '-A', mqc_report ]
             }
             mail_cmd.execute() << email_html
@@ -387,4 +1310,19 @@ def checkHostname() {
             }
         }
     }
+}
+
+
+//--------------------------------------------------------------- //
+//---------------------- Utility functions  --------------------- //
+//--------------------------------------------------------------- //
+
+// Check file extension
+def hasExtension(it, extension) {
+    it.toString().toLowerCase().endsWith(extension.toLowerCase())
+}
+
+// Check class of an Object for "List" type
+boolean isCollectionOrArray(object) {
+    [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
 }

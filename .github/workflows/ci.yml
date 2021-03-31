@@ -17,14 +17,35 @@ jobs:
     env:
       NXF_VER: ${{ matrix.nxf_ver }}
       NXF_ANSI_LOG: false
+      TOWER_ACCESS_TOKEN: ${{ secrets.NONAWS_TOWER_ACCESS_TOKEN }}
+      TEST_PROFILE: ${{ matrix.test_profile }}
     strategy:
       matrix:
         # Nextflow versions: check pipeline minimum and current latest
         nxf_ver: ['20.04.0', '21.03.0-edge']
+        test_profile: ['test', 'test_localize', 'test_speccount']
     steps:
       - name: Check out pipeline code
         uses: actions/checkout@v2
-
+      - name: Determine tower usage
+        shell: bash
+        run: echo $( [ -z "$TOWER_ACCESS_TOKEN" ] && echo 'TOWER=' || echo 'TOWER=-with-tower' ) >> $GITHUB_ENV
+        id: tower_usage
+      - name: Extract branch name
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          ref=`jq --raw-output .ref "$GITHUB_EVENT_PATH"`
+          ref=${ref#"refs/heads/"}
+          ref=${ref#"refs/"}
+          ref=${ref//\//-}
+          echo "RUN_NAME=$ref" >> $GITHUB_ENV
+        id: extract_branch
+      - name: Extract PR number
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: echo "RUN_NAME=PR$(jq --raw-output .pull_request.number $GITHUB_EVENT_PATH)" >> $GITHUB_ENV
+        id: extract_pr
       - name: Check if Dockerfile or Conda environment changed
         uses: technote-space/get-diff-action@v4
         with:
@@ -54,4 +75,28 @@ jobs:
         # For example: adding multiple test runs with different parameters
         # Remember that you can parallelise this by using strategy.matrix
         run: |
-          nextflow run ${GITHUB_WORKSPACE} -profile test,docker
+          nextflow run ${GITHUB_WORKSPACE} "$TOWER" -name "$RUN_NAME" -profile $TEST_PROFILE,docker --outdir ${TEST_PROFILE}_results
+      - name: Gather failed logs
+        if: failure() || cancelled()
+        run: |
+          mkdir failed_logs
+          failed=$(grep "FAILED" ${TEST_PROFILE}_results/pipeline_info/execution_trace.txt | cut -f 2)
+          while read -r line ; do cp $(ls work/${line}*/*.log) failed_logs/ | true ; done <<< "$failed"
+      - uses: actions/upload-artifact@v1
+        if: failure() || cancelled()
+        name: Upload failed logs
+        with:
+          name: failed_logs
+          path: failed_logs
+      - uses: actions/upload-artifact@v1
+        if: always()
+        name: Upload results
+        with:
+          name: ${{ env.TEST_PROFILE }}_results
+          path: ${{ env.TEST_PROFILE }}_results
+      - uses: actions/upload-artifact@v1
+        if: always()
+        name: Upload log
+        with:
+          name: nextflow.log
+          path: .nextflow.log
