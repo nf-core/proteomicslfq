@@ -738,13 +738,18 @@
                     "fa_icon": "fas fa-list-ol"
                 },
                 "mass_recalibration": {
-                    "type": "boolean",
+                    "type": "string",
                     "description": "Recalibrates masses based on precursor mass deviations to correct for instrument biases. (default: 'false')",
+                    "default": "false"
+                    "enum": [
+                        "true",
+                        "false"
+                    ],
                     "fa_icon": "far fa-check-square"
                 },
                 "transfer_ids": {
                     "type": "string",
-                    "description": "Tries a targeted requantification in files where an ID is missing, based on aggregate properties (i.e. RT) of the features in other aligned files (e.g. 'mean' of RT). (**WARNING:** increased memory consumption and runtime). 'false' turns this feature off. (default: 'false')",
+                    "description": "Tries a targeted requantification in files where an ID is missing, based on aggregate properties (i.e. RT) of the features in other aligned files (e.g. 'mean' of RT). (**WARNING:** increased memory consumption and runtime. Only useful with multiple fraction groups/samples). 'false' turns this feature off. (default: 'false')",
                     "default": "false",
                     "enum": [
                         "false",
@@ -753,9 +758,13 @@
                     "fa_icon": "fas fa-list-ol"
                 },
                 "targeted_only": {
-                    "type": "boolean",
+                    "type": "string",
                     "description": "Only looks for quantifiable features at locations with an identified spectrum. Set to false to include unidentified features so they can be linked and matched to identified ones (= match between runs). (default: 'true')",
-                    "default": true,
+                    "default": "true",
+                    "enum": [
+                        "true",
+                        "false"
+                    ],
                     "fa_icon": "far fa-check-square"
                 },
                 "alignment_order": {
