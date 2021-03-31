@@ -73,8 +73,7 @@ For further information or help, don't hesitate to get in touch on the [Slack `#
 
 ## Citations
 
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
-<!-- If you use  nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+If you use nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.4106005](https://doi.org/10.5281/zenodo.4106005)
 
 You can cite the `nf-core` publication as follows:
 
