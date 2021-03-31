@@ -510,6 +510,18 @@
                         "true"
                     ]
                 },
+                "unmatched_action": {
+                    "type": "string",
+                    "description": "Action to be taken if peptide sequences cannot be matched to any protein: 1) raise an error; 2) warn (unmatched PepHits will miss target/decoy annotation with downstream problems); 3) remove the hit. (default: 'error' valid: 'error', 'warn', 'remove')",
+                    "default": "error",
+                    "fa_icon": "fas fa-list-ol",
+                    "enum": [
+                        "error",
+                        "warn",
+                        "remove"
+                    ],
+                    "hidden": true
+                },
                 "IL_equivalent": {
                     "type": "string",
                     "description": "Should isoleucine and leucine be treated interchangeably when mapping search engine hits to the database? Default: true",

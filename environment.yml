@@ -9,10 +9,9 @@ channels:
 dependencies:
   - openms::openms=2.7.0pre
   - openms::openms-thirdparty=2.7.0pre # 08.02.2021
-  - bioconda::bioconductor-msstats=3.20.1 # will include R
-  - bioconda::sdrf-pipelines=0.0.13 # for SDRF conversion
-  - conda-forge::mono=5 #FIX mono to version 5, since softlink reading is broken with 6
-  - conda-forge::r-ptxqc=1.0.5 # for QC reports
+  - bioconda::bioconductor-msstats=3.22.1-1 # will include R
+  - bioconda::sdrf-pipelines=0.0.14 # for SDRF conversion
+  - conda-forge::r-ptxqc=1.0.9 # for QC reports
   - conda-forge::r-argparser=0.6 # for argparsing in our Rscripts
   - conda-forge::xorg-libxt=1.2.0 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
   - conda-forge::fonts-conda-ecosystem=1 # for the fonts in QC reports
@@ -20,4 +19,5 @@ dependencies:
   - conda-forge::markdown=3.2.2
   - conda-forge::pymdown-extensions=8.0.1
   - conda-forge::pygments=2.7.1
-
+  - conda-forge::mono=5.14.0.177 # had to downgrade because of errors with opening softlinks in TRFP
+  - conda-forge::pandoc=2.11.4 # had to downgrade because of errors with PTXQC (and its rmarkdown)
