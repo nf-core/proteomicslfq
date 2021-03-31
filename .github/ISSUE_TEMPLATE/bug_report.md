@@ -5,7 +5,7 @@ labels: bug
 ---
 
 <!--
-# nf-core/proteomicslfq bug report
+# {{ name }} bug report
 
 Hi there!
 
@@ -18,7 +18,7 @@ Please delete this text and anything that's not relevant from the template below
 I have checked the following places for your error:
 
 - [ ] [nf-core website: troubleshooting](https://nf-co.re/usage/troubleshooting)
-- [ ] [nf-core/proteomicslfq pipeline documentation](https://nf-co.re/nf-core/proteomicslfq/usage)
+- [ ] [{{ name }} pipeline documentation](https://nf-co.re/{{ name }}/usage)
 
 ## Description of the bug
 
@@ -27,8 +27,6 @@ I have checked the following places for your error:
 ## Steps to reproduce
 
 Steps to reproduce the behaviour:
-1. Command line: `nextflow run ...`
-2. See error: _Please provide your error message_
 
 1. Command line: <!-- [e.g. `nextflow run ...`] -->
 2. See error: <!-- [Please provide your error message] -->
@@ -59,7 +57,7 @@ Have you provided the following extra information/files:
 
 - Engine: <!-- [e.g. Conda, Docker, Singularity, Podman, Shifter or Charliecloud] -->
 - version: <!-- [e.g. 1.0.0] -->
-- Image tag: <!-- [e.g. nfcore/proteomicslfq:1.0.0] -->
+- Image tag: <!-- [e.g. {{ name_docker }}:1.0.0] -->
 
 ## Additional context
 
