@@ -27,8 +27,6 @@ I have checked the following places for your error:
 ## Steps to reproduce
 
 Steps to reproduce the behaviour:
-1. Command line: `nextflow run ...`
-2. See error: _Please provide your error message_
 
 1. Command line: <!-- [e.g. `nextflow run ...`] -->
 2. See error: <!-- [Please provide your error message] -->
@@ -57,7 +55,7 @@ Have you provided the following extra information/files:
 
 ## Container engine
 
-- Engine: <!-- [e.g. Conda, Docker, Singularity or Podman] -->
+- Engine: <!-- [e.g. Conda, Docker, Singularity, Podman, Shifter or Charliecloud] -->
 - version: <!-- [e.g. 1.0.0] -->
 - Image tag: <!-- [e.g. nfcore/proteomicslfq:1.0.0] -->
 

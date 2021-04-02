@@ -9,170 +9,34 @@
 ----------------------------------------------------------------------------------------
 */
 
-def helpMessage() {
-    log.info nfcoreHeader()
-    log.info"""
+log.info Headers.nf_core(workflow, params.monochrome_logs)
 
-    Usage:
-
-    The typical command for running the pipeline is as follows:
-
-    nextflow run nf-core/proteomicslfq --input '*_R{1,2}.fastq.gz' -profile docker
-
-    Main arguments:
-      --input [file]                Path/URI to PRIDE Sample to data relation format file (SDRF) OR path to input spectra as mzML or Thermo Raw
-
-      For SDRF:
-      --root_folder [str]           (Optional) If given, looks for the filenames in the SDRF in this folder, locally
-      --local_input_type [str       (Optional) If given and 'root_folder' was specified, it overwrites the filetype in the SDRF for local lookup and matches only the basename.
-
-      For mzML/raw files:
-      --expdesign [file]            (Optional) Path to an experimental design file (if not given, it assumes unfractionated, unrelated samples)
-
-    Decoy database:
-      --add_decoys                  Add decoys to the given fasta
-      --decoy_affix                 The decoy prefix or suffix used or to be used (default: DECOY_)
-      --affix_type                  Prefix (default) or suffix (WARNING: Percolator only supports prefices)
-
-    Database Search:
-      --search_engines               Which search engine: "comet" (default) or "msgf"
-      --enzyme                      Enzymatic cleavage (e.g. 'unspecific cleavage' or 'Trypsin' [default], see OpenMS enzymes)
-      --num_enzyme_termini          Specify the termini where the cleavage rule has to match (default:
-                                         'fully' valid: 'semi', 'fully')
-      --num_hits                    Number of peptide hits per spectrum (PSMs) in output file (default: '1')
-      --fixed_mods                  Fixed modifications ('Carbamidomethyl (C)', see OpenMS modifications)
-      --variable_mods               Variable modifications ('Oxidation (M)', see OpenMS modifications)
-      --enable_mod_localization     Enable localization scoring with Luciphor
-      --mod_localization            Specify the var. modifications whose localizations should be rescored with the luciphor algorithm
-      --precursor_mass_tolerance    Mass tolerance of precursor mass (default: 5)
-      --precursor_mass_tolerance_unit Da or ppm (default: ppm)
-      --fragment_mass_tolerance     Mass tolerance for fragment masses (currently only controls Comets fragment_bin_tol) (default: 0.03)
-      --fragment_mass_tolerance_unit Da or ppm (default: Da)
-      --allowed_missed_cleavages    Allowed missed cleavages (default: 2)
-      --min_precursor_charge        Minimum precursor ion charge (default: 2)
-      --max_precursor_charge        Maximum precursor ion charge (default: 4)
-      --min_peptide_length          Minimum peptide length to consider (default: 6)
-      --max_peptide_length          Maximum peptide length to consider (default: 40)
-      --instrument                  Type of instrument that generated the data (currently only 'high_res' [default] and 'low_res' supported)
-      --protocol                    Used labeling or enrichment protocol (if any)
-      --fragment_method             Used fragmentation method (currently unused since we let the search engines consider all MS2 spectra and let them determine from the spectrum metadata)
-      --max_mods                    Maximum number of modifications per peptide. If this value is large, the search may take very long
-      --db_debug                    Debug level during database search
-
-      //TODO probably also still some options missing. Try to consolidate them whenever the two search engines share them
-
-    Peak picking:
-      --openms_peakpicking          Use the OpenMS PeakPicker to ADDITIONALLY pick the spectra before the search. This is usually done
-                                    during conversion already. Only activate if something goes wrong.
-      --peakpicking_inmemory        Perform OpenMS peakpicking in-memory. Needs at least the size of the mzML file as RAM but is faster. default: false
-      --peakpicking_ms_levels       Which MS levels to pick. default: [] which means auto-convert all non-centroided
-
-    Peptide Re-indexing:
-      --IL_equivalent               Should isoleucine and leucine be treated interchangeably? Default: true
-      --allow_unmatched             Ignore unmatched peptides (Default: false; only activate if you double-checked all other settings)
-
-    PSM Rescoring:
-      --posterior_probabilities     How to calculate posterior probabilities for PSMs:
-                                    "percolator" = Re-score based on PSM-feature-based SVM and transform distance
-                                        to hyperplane for posteriors
-                                    "fit_distributions" = Fit positive and negative distributions to scores
-                                        (similar to PeptideProphet)
-      --rescoring_debug             Debug level during PSM rescoring
-      --psm_pep_fdr_cutoff          FDR cutoff on PSM level (or potential peptide level; see Percolator options) before going into
-                                    feature finding, map alignment and inference.
-
-      Percolator specific:
-      --train_FDR                   False discovery rate threshold to define positive examples in training. Set to testFDR if 0
-      --test_FDR                    False discovery rate threshold for evaluating best cross validation result and reported end result
-      --percolator_fdr_level        Level of FDR calculation ('peptide-level-fdrs' or 'psm-level-fdrs')
-      --description_correct_features Description of correct features for Percolator (0, 1, 2, 4, 8, see Percolator retention time and calibration)
-      --generic_feature_set         Use only generic (i.e. not search engine specific) features. Generating search engine specific
-                                    features for common search engines by PSMFeatureExtractor will typically boost the identification rate significantly.
-      --subset_max_train            Only train an SVM on a subset of PSMs, and use the resulting score vector to evaluate the other
-                                    PSMs. Recommended when analyzing huge numbers (>1 million) of PSMs. When set to 0, all PSMs are used for training as normal.
-      --klammer                     Retention time features are calculated as in Klammer et al. instead of with Elude
-
-      Distribution specific:
-      --outlier_handling            How to handle outliers during fitting:
-                                    - ignore_iqr_outliers (default): ignore outliers outside of 3*IQR from Q1/Q3 for fitting
-                                    - set_iqr_to_closest_valid: set IQR-based outliers to the last valid value for fitting
-                                    - ignore_extreme_percentiles: ignore everything outside 99th and 1st percentile (also removes equal values like potential censored max values in XTandem)
-                                    - none: do nothing
-      --top_hits_only               Use only the top hits for fitting
-
-      //TODO add more options for rescoring part
-
-    ConsensusID:
-      --consensusid_algorithm       Choose method to combine probabilities from multiple search engines (if used). Valid: best, worst, average, rank, PEPMatrix, PEPIons (Default: best)
-      --min_consensus_support       Choose ratio of ADDITIONAL evidence for a peptide ID of a spectrum. Varies across methods. See documentation for further info. (Default: 0)
-      --consensusid_considered_top_hits Number of top hits per spectrum considered for consensus scoring. (Default: 0 = all)
-
-    Inference and Quantification:
-      --inf_quant_debug             Debug level during inference and quantification. (WARNING: Higher than 666 may produce a lot
-                                    of additional output files)
-      Inference:
-      --protein_inference           Infer proteins through:
-                                    "aggregation"  = aggregates all peptide scores across a protein (by calculating the maximum)
-                                    "bayesian"     = computes a posterior probability for every protein based on a Bayesian network
-                                    ("percolator" not yet supported)
-      --protein_level_fdr_cutoff    Protein level FDR cutoff (this affects and chooses the peptides used for quantification)
-
-      Quantification:
-      --quantification_method       Quantification method supported by proteomicslfq ('feature_intensity' or 'spectral_counting', default: 'feature_intensity')
-      --transfer_ids                Transfer IDs over aligned samples to increase # of quantifiable features (WARNING:
-                                    increased memory consumption). (default: false) TODO must specify true or false
-      --targeted_only               Only ID based quantification. (default: true) TODO must specify true or false
-      --mass_recalibration          Recalibrates masses to correct for instrument biases. (default: false) TODO must specify true
-                                    or false
-      --alignment_order             The order in which maps are aligned. Star = all vs. the reference with most IDs (default). TreeGuided = an alignment
-                                    tree is calculated first based on similarity measures of the IDs in the maps.
-      --quantify_decoys             Also quantify decoys? (Usually only needed for Triqler post-processing output with '--add_triqler_output')
-      
-      //TODO the following need to be passed still
-      --psm_pep_fdr_for_quant       PSM/peptide level FDR used for quantification (if filtering on protein level is not enough)
-                                    If Bayesian inference was chosen, this will be a peptide-level FDR and only the best PSMs per
-                                    peptide will be reported.
-                                    (default: off = 1.0)
-      --protein_quantification      Quantify proteins based on:
-                                    "unique_peptides" = use peptides mapping to single proteins or a group of indistinguishable proteins (according to the set of experimentally identified peptides)
-                                    "strictly_unique_peptides" = use peptides mapping to a unique single protein only
-                                    "shared_peptides" = use shared peptides only for its best group (by inference score)
-
-    Statistical post-processing (currently only for feature-based quant.):
-      --skip_post_msstats           Skip MSstats for statistical post-processing?
-      --ref_condition               Instead of all pairwise contrasts, uses the given condition number (corresponding to your experimental design) as a reference and
-                                    creates pairwise contrasts against it (TODO fully implement)
-      --contrasts                   Specify a set of contrasts in a semicolon seperated list of R-compatible contrasts with the
-                                    condition numbers as variables (e.g. "1-2;1-3;2-3"). Overwrites "--reference" (TODO fully implement)
-      --add_triqler_output          Also create an output in Triqler's format for an alternative manual post-processing with that tool
-
-    Quality control:
-      --ptxqc_report_layout         Specify a yaml file for the report layout (see PTXQC documentation) (TODO fully implement)
-
-    Other options:
-      --outdir [file]                 The output directory where the results will be saved
-      --publish_dir_mode [str]        Mode for publishing results in the output directory. Available: symlink, rellink, link, copy, copyNoFollow, move (Default: copy)
-      --email [email]                 Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits
-      --email_on_fail [email]         Same as --email, except only send mail if the workflow is not successful
-      --max_multiqc_email_size [str]  Threshold size for MultiQC report to be attached in notification email. If file generated by pipeline exceeds the threshold, it will not be attached (Default: 25MB)
-      -name [str]                     Name for the pipeline run. If not specified, Nextflow will automatically generate a random mnemonic
-
-    AWSBatch options:
-      --awsqueue [str]                The AWSBatch JobQueue that needs to be set when running on AWSBatch
-      --awsregion [str]               The AWS Region for your AWS Batch job to run on
-      --awscli [str]                  Path to the AWS CLI tool
-    """.stripIndent()
-}
-
-// Show help message
+////////////////////////////////////////////////////
+/* --               PRINT HELP                 -- */
+////////////////////////////////////////////////////
+def json_schema = "$projectDir/nextflow_schema.json"
 if (params.help) {
-    helpMessage()
+    def command = "nextflow run nf-core/proteomicslfq \
+  -profile <docker/singularity/conda/podman/charliecloud/institute> \
+  --input '*.mzml' \
+  --database 'myProteinDB.fasta' \
+  --expdesign 'myDesign.tsv'"
+    log.info NfcoreSchema.params_help(workflow, params, json_schema, command)
     exit 0
 }
 
-/*
- * SET UP CONFIGURATION VARIABLES
- */
+////////////////////////////////////////////////////
+/* --         VALIDATE PARAMETERS              -- */
+////////////////////////////////////////////////////+
+
+if (params.validate_params) {
+    NfcoreSchema.validateParameters(params, json_schema, log)
+}
+
+////////////////////////////////////////////////////
+/* --     Collect configuration parameters     -- */
+////////////////////////////////////////////////////
+
 
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
@@ -184,18 +48,19 @@ if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
 // Check AWS batch settings
 if (workflow.profile.contains('awsbatch')) {
     // AWSBatch sanity checking
-    if (!params.awsqueue || !params.awsregion) exit 1, "Specify correct --awsqueue and --awsregion parameters on AWSBatch!"
+    if (!params.awsqueue || !params.awsregion) exit 1, 'Specify correct --awsqueue and --awsregion parameters on AWSBatch!'
     // Check outdir paths to be S3 buckets if running on AWSBatch
     // related: https://github.com/nextflow-io/nextflow/issues/813
-    if (!params.outdir.startsWith('s3:')) exit 1, "Outdir not on S3 - specify S3 Bucket to run on AWSBatch!"
+    if (!params.outdir.startsWith('s3:')) exit 1, 'Outdir not on S3 - specify S3 Bucket to run on AWSBatch!'
     // Prevent trace files to be stored on S3 since S3 does not support rolling files.
-    if (params.tracedir.startsWith('s3:')) exit 1, "Specify a local tracedir or run without trace! S3 cannot be used for tracefiles."
+    if (params.tracedir.startsWith('s3:')) exit 1, 'Specify a local tracedir or run without trace! S3 cannot be used for tracefiles.'
 }
 
 // Stage config files
 ch_output_docs = file("$projectDir/docs/output.md", checkIfExists: true)
 ch_output_docs_images = file("$projectDir/docs/images/", checkIfExists: true)
 
+//TODO do this via schema if possible
 // Validate input
 if (isCollectionOrArray(params.input))
 {
@@ -218,7 +83,7 @@ params.database = params.database ?: { log.error "No protein database provided. 
 params.outdir = params.outdir ?: { log.warn "No output directory provided. Will put the results into './results'"; return "./results" }()
 
 /*
- * Create a channel for input read files
+ * Create a channel for input files
  */
 
  //Filename        FixedModifications      VariableModifications   Label   PrecursorMassTolerance  PrecursorMassToleranceUnit      FragmentMassTolerance   DissociationMethod      Enzyme
@@ -246,6 +111,7 @@ if (!sdrf_file)
                                     params.fragment_method)
                     mzmls: tuple(id,it)}
   .set{ch_sdrf_config}
+  Set enzymes = [params.enzyme]
 }
 else
 {
@@ -256,6 +122,7 @@ else
   process sdrf_parsing {
 
       publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+      publishDir "${params.outdir}/expdesign", mode: 'copy', pattern: '*.tsv'
 
       input:
        file sdrf from ch_sdrf
@@ -275,10 +142,26 @@ else
        """
   }
 
+  Set enzymes = []
+  Set files = []
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
-  .multiMap{ row -> id = file(row[0].toString()).name.take(file(row[0].toString()).name.lastIndexOf('.'))
+  .multiMap{ row -> filestr = row[0].toString()
+                    id = file(filestr).name.take(file(filestr).name.lastIndexOf('.'))
+                    enzymes += row[10]
+                    if (enzymes.size() > 1)
+                    {
+                      log.error "Currently only one enzyme is supported for the whole experiment. Specified was '${enzymes}'. Check or split your SDRF."
+                      exit 1
+                    }
+                    log.info filestr
+                    if (filestr in files)
+                    {
+                      log.error "Currently only one search engine setting per file is supported for the whole experiment. ${filestr} has multiple entries in your SDRF. Maybe you have a labelled experiment? Otherwise, consider splitting your SDRF in multiple experiments."
+                      exit 1
+                    }
+                    files += filestr
                     comet_settings: msgf_settings: xtandem_settings: tuple(id,
                                     row[2],
                                     row[3],
@@ -300,6 +183,7 @@ else
                                         row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
                                         row[1]))}
   .set{ch_sdrf_config}
+
 }
 
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
@@ -312,6 +196,7 @@ if (params.expdesign)
         .fromPath(params.expdesign)
         .set { ch_expdesign_pre }
 
+    // Fixing file endings only necessary if the experimental design is user-specified
     process expdesign_raw2mzml {
 
     label 'process_very_low'
@@ -329,6 +214,94 @@ if (params.expdesign)
     """
 
     }
+}
+
+//--------------------------------------------------------------- //
+//---------------------- Nextflow specifics --------------------- //
+//--------------------------------------------------------------- //
+
+def summary = [:]
+if (workflow.revision) summary['Pipeline Release'] = workflow.revision
+summary['Run Name']         = workflow.runName
+summary['Input']            = params.input
+summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
+if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
+summary['Output dir']       = params.outdir
+summary['Launch dir']       = workflow.launchDir
+summary['Working dir']      = workflow.workDir
+summary['Script dir']       = workflow.projectDir
+summary['User']             = workflow.userName
+if (workflow.profile.contains('awsbatch')) {
+    summary['AWS Region']   = params.awsregion
+    summary['AWS Queue']    = params.awsqueue
+    summary['AWS CLI']      = params.awscli
+}
+summary['Config Profile'] = workflow.profile
+if (params.config_profile_description) summary['Config Profile Description'] = params.config_profile_description
+if (params.config_profile_contact)     summary['Config Profile Contact']     = params.config_profile_contact
+if (params.config_profile_url)         summary['Config Profile URL']         = params.config_profile_url
+summary['Config Files'] = workflow.configFiles.join(', ')
+if (params.email || params.email_on_fail) {
+    summary['E-mail Address']    = params.email
+    summary['E-mail on failure'] = params.email_on_fail
+}
+
+// Check the hostnames against configured profiles
+checkHostname()
+
+Channel.from(summary.collect{ [it.key, it.value] })
+    .map { k,v -> "<dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }
+    .reduce { a, b -> return [a, b].join("\n            ") }
+    .map { x -> """
+    id: 'nf-core-proteomicslfq-summary'
+    description: " - this information is collected when the pipeline is started."
+    section_name: 'nf-core/proteomicslfq Workflow Summary'
+    section_href: 'https://github.com/nf-core/proteomicslfq'
+    plot_type: 'html'
+    data: |
+        <dl class=\"dl-horizontal\">
+            $x
+        </dl>
+    """.stripIndent() }
+    .set { ch_workflow_summary }
+
+/*
+ * Parse software version numbers
+ */
+process get_software_versions {
+    publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode,
+        saveAs: { filename ->
+                      if (filename.indexOf('.csv') > 0) filename
+                      else null
+        }
+
+    output:
+    file 'software_versions_mqc.yaml' into ch_software_versions_yaml
+    file 'software_versions.csv'
+
+    script:
+    """
+    echo $workflow.manifest.version > v_pipeline.txt
+    echo $workflow.nextflow.version > v_nextflow.txt
+    ThermoRawFileParser.sh --version &> v_thermorawfileparser.txt
+    echo \$(FileConverter 2>&1) > v_fileconverter.txt || true
+    echo \$(DecoyDatabase 2>&1) > v_decoydatabase.txt || true
+    echo \$(MSGFPlusAdapter 2>&1) > v_msgfplusadapter.txt || true
+    echo \$(msgf_plus 2>&1) > v_msgfplus.txt || true
+    echo \$(CometAdapter 2>&1) > v_cometadapter.txt || true
+    echo \$(comet 2>&1) > v_comet.txt || true
+    echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
+    echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
+    echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
+    percolator -h &> v_percolator.txt
+    echo \$(IDFilter 2>&1) > v_idfilter.txt || true
+    echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
+    echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
+    echo \$(IDPosteriorErrorProbability 2>&1) > v_idposteriorerrorprobability.txt || true
+    echo \$(ProteomicsLFQ 2>&1) > v_proteomicslfq.txt || true
+    echo $workflow.manifest.version &> v_msstats_plfq.txt
+    scrape_software_versions.py &> software_versions_mqc.yaml
+    """
 }
 
 ch_sdrf_config.mzmls
@@ -373,6 +346,7 @@ process raw_file_conversion {
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/mzMLs", mode: 'copy', pattern: '*.mzML'
 
     input:
      tuple mzml_id, path(rawfile) from branched_input.raw
@@ -453,6 +427,10 @@ process generate_decoy_database {
                  -out ${mydatabase.baseName}_decoy.fasta \\
                  -decoy_string ${params.decoy_affix} \\
                  -decoy_string_position ${params.affix_type} \\
+                 -method ${params.decoy_method} \\
+                 -shuffle_max_attempts ${params.shuffle_max_attempts} \\
+                 -shuffle_sequence_identity_threshold ${params.shuffle_sequence_identity_threshold} \\
+                 -enzyme ${enzymes[0]} \\
                  > ${mydatabase.baseName}_decoy_database.log
      """
 }
@@ -539,7 +517,7 @@ process search_engine_msgf {
       else if (enzyme == 'Asp-N') enzyme = 'Asp-N/B'
       else if (enzyme == 'Chymotrypsin') enzyme = 'Chymotrypsin/P'
       else if (enzyme == 'Lys-C') enzyme = 'Lys-C/P'
-      
+
       if (enzyme.toLowerCase() == "unspecific cleavage")
       {
         msgf_num_enzyme_termini = "non"
@@ -566,6 +544,7 @@ process search_engine_msgf {
                      -max_precursor_charge ${params.max_precursor_charge} \\
                      -min_peptide_length ${params.min_peptide_length} \\
                      -max_peptide_length ${params.max_peptide_length} \\
+                     -max_missed_cleavages ${params.allowed_missed_cleavages} \\
                      -enzyme "${enzyme}" \\
                      -tryptic ${msgf_num_enzyme_termini} \\
                      -precursor_mass_tolerance ${prec_tol} \\
@@ -635,7 +614,7 @@ process search_engine_comet {
     // ---------------------------------------------------------------------------------------------------------------------
     // This is probably true for other processes as well. See https://github.com/nextflow-io/nextflow/issues/1457
     //errorStrategy 'terminate'
-    
+
     input:
      tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
 
@@ -730,7 +709,6 @@ process index_peptides {
 
     script:
      def il = params.IL_equivalent ? '-IL_equivalent' : ''
-     def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
      // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying. But the auto-detection code in
      //  PeptideIndexer probably does not handle the combination through ConsensusID yet.
      if (params.search_engines.contains("msgf"))
@@ -760,7 +738,7 @@ process index_peptides {
                     -enzyme:name "${enzyme}" \\
                     -enzyme:specificity ${pepidx_num_enzyme_termini} \\
                     ${il} \\
-                    ${allow_um} \\
+                    -unmatched_action ${params.unmatched_action} \\
                     > ${id_file.baseName}_index_peptides.log
      """
 }
@@ -1241,99 +1219,6 @@ if (!params.enable_qc)
   ch_ptxqc_report = Channel.empty()
 }
 
-
-//--------------------------------------------------------------- //
-//---------------------- Nextflow specifics --------------------- //
-//--------------------------------------------------------------- //
-
-
-// Header log info
-log.info nfcoreHeader()
-def summary = [:]
-if (workflow.revision) summary['Pipeline Release'] = workflow.revision
-summary['Run Name']         = custom_runName ?: workflow.runName
-summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
-if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
-summary['Output dir']       = params.outdir
-summary['Launch dir']       = workflow.launchDir
-summary['Working dir']      = workflow.workDir
-summary['Script dir']       = workflow.projectDir
-summary['User']             = workflow.userName
-if (workflow.profile.contains('awsbatch')) {
-    summary['AWS Region']   = params.awsregion
-    summary['AWS Queue']    = params.awsqueue
-    summary['AWS CLI']      = params.awscli
-}
-summary['Config Profile'] = workflow.profile
-if (params.config_profile_description) summary['Config Profile Description'] = params.config_profile_description
-if (params.config_profile_contact)     summary['Config Profile Contact']     = params.config_profile_contact
-if (params.config_profile_url)         summary['Config Profile URL']         = params.config_profile_url
-summary['Config Files'] = workflow.configFiles.join(', ')
-if (params.email || params.email_on_fail) {
-    summary['E-mail Address']    = params.email
-    summary['E-mail on failure'] = params.email_on_fail
-}
-log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
-log.info "-\033[2m--------------------------------------------------\033[0m-"
-
-// Check the hostnames against configured profiles
-checkHostname()
-
-Channel.from(summary.collect{ [it.key, it.value] })
-    .map { k,v -> "<dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }
-    .reduce { a, b -> return [a, b].join("\n            ") }
-    .map { x -> """
-    id: 'nf-core-proteomicslfq-summary'
-    description: " - this information is collected when the pipeline is started."
-    section_name: 'nf-core/proteomicslfq Workflow Summary'
-    section_href: 'https://github.com/nf-core/proteomicslfq'
-    plot_type: 'html'
-    data: |
-        <dl class=\"dl-horizontal\">
-            $x
-        </dl>
-    """.stripIndent() }
-    .set { ch_workflow_summary }
-
-/*
- * Parse software version numbers
- */
-process get_software_versions {
-    publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode,
-        saveAs: { filename ->
-                      if (filename.indexOf(".csv") > 0) filename
-                      else null
-                }
-
-    output:
-    file 'software_versions_mqc.yaml' into ch_software_versions_yaml
-    file "software_versions.csv"
-
-    script:
-    """
-    echo $workflow.manifest.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    ThermoRawFileParser.sh --version &> v_thermorawfileparser.txt
-    echo \$(FileConverter 2>&1) > v_fileconverter.txt || true
-    echo \$(DecoyDatabase 2>&1) > v_decoydatabase.txt || true
-    echo \$(MSGFPlusAdapter 2>&1) > v_msgfplusadapter.txt || true
-    echo \$(msgf_plus 2>&1) > v_msgfplus.txt || true
-    echo \$(CometAdapter 2>&1) > v_cometadapter.txt || true
-    echo \$(comet 2>&1) > v_comet.txt || true
-    echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
-    echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
-    echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
-    percolator -h &> v_percolator.txt
-    echo \$(IDFilter 2>&1) > v_idfilter.txt || true
-    echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
-    echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
-    echo \$(IDPosteriorErrorProbability 2>&1) > v_idposteriorerrorprobability.txt || true
-    echo \$(ProteomicsLFQ 2>&1) > v_proteomicslfq.txt || true
-    echo $workflow.manifest.version &> v_msstats_plfq.txt
-    scrape_software_versions.py &> software_versions_mqc.yaml
-    """
-}
-
 /*
  * Output Description HTML
  */
@@ -1345,7 +1230,7 @@ process output_documentation {
     file images from ch_output_docs_images
 
     output:
-    file "results_description.html"
+    file 'results_description.html'
 
     script:
     """
@@ -1365,7 +1250,7 @@ workflow.onComplete {
     }
     def email_fields = [:]
     email_fields['version'] = workflow.manifest.version
-    email_fields['runName'] = custom_runName ?: workflow.runName
+    email_fields['runName'] = workflow.runName
     email_fields['success'] = workflow.success
     email_fields['dateComplete'] = workflow.complete
     email_fields['duration'] = workflow.duration
@@ -1474,28 +1359,9 @@ workflow.onComplete {
 
 }
 
-
-def nfcoreHeader() {
-    // Log colors ANSI codes
-    c_black = params.monochrome_logs ? '' : "\033[0;30m";
-    c_blue = params.monochrome_logs ? '' : "\033[0;34m";
-    c_cyan = params.monochrome_logs ? '' : "\033[0;36m";
-    c_dim = params.monochrome_logs ? '' : "\033[2m";
-    c_green = params.monochrome_logs ? '' : "\033[0;32m";
-    c_purple = params.monochrome_logs ? '' : "\033[0;35m";
-    c_reset = params.monochrome_logs ? '' : "\033[0m";
-    c_white = params.monochrome_logs ? '' : "\033[0;37m";
-    c_yellow = params.monochrome_logs ? '' : "\033[0;33m";
-
-    return """    -${c_dim}--------------------------------------------------${c_reset}-
-                                            ${c_green},--.${c_black}/${c_green},-.${c_reset}
-    ${c_blue}        ___     __   __   __   ___     ${c_green}/,-._.--~\'${c_reset}
-    ${c_blue}  |\\ | |__  __ /  ` /  \\ |__) |__         ${c_yellow}}  {${c_reset}
-    ${c_blue}  | \\| |       \\__, \\__/ |  \\ |___     ${c_green}\\`-._,-`-,${c_reset}
-                                            ${c_green}`._,._,\'${c_reset}
-    ${c_purple}  nf-core/proteomicslfq v${workflow.manifest.version}${c_reset}
-    -${c_dim}--------------------------------------------------${c_reset}-
-    """.stripIndent()
+workflow.onError {
+    // Print unexpected parameters - easiest is to just rerun validation
+    NfcoreSchema.validateParameters(params, json_schema, log)
 }
 
 def checkHostname() {
@@ -1504,15 +1370,15 @@ def checkHostname() {
     def c_red = params.monochrome_logs ? '' : "\033[1;91m"
     def c_yellow_bold = params.monochrome_logs ? '' : "\033[1;93m"
     if (params.hostnames) {
-        def hostname = "hostname".execute().text.trim()
+        def hostname = 'hostname'.execute().text.trim()
         params.hostnames.each { prof, hnames ->
             hnames.each { hname ->
                 if (hostname.contains(hname) && !workflow.profile.contains(prof)) {
-                    log.error "====================================================\n" +
+                    log.error '====================================================\n' +
                             "  ${c_red}WARNING!${c_reset} You are running with `-profile $workflow.profile`\n" +
                             "  but your machine hostname is ${c_white}'$hostname'${c_reset}\n" +
                             "  ${c_yellow_bold}It's highly recommended that you use `-profile $prof${c_reset}`\n" +
-                            "============================================================"
+                            '============================================================'
                 }
             }
         }

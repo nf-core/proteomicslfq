@@ -64,12 +64,12 @@
                         "move"
                     ]
                 },
-                "name": {
-                    "type": "string",
-                    "description": "Workflow name.",
-                    "fa_icon": "fas fa-fingerprint",
-                    "hidden": true,
-                    "help_text": "A custom name for the pipeline run. Unlike the core nextflow `-name` option with one hyphen this parameter can be reused multiple times, for example if using `-resume`. Passed through to steps such as MultiQC and used for things like report filenames and titles."
+                "validate_params": {
+                    "type": "boolean",
+                    "description": "Boolean whether to validate parameters against the schema at runtime",
+                    "default": true,
+                    "fa_icon": "fas fa-check-square",
+                    "hidden": true
                 },
                 "email_on_fail": {
                     "type": "string",
@@ -107,6 +107,13 @@
                     "default": "${params.outdir}/pipeline_info",
                     "fa_icon": "fas fa-cogs",
                     "hidden": true
+                },
+                "show_hidden_params": {
+                    "type": "boolean",
+                    "fa_icon": "far fa-eye-slash",
+                    "description": "Show all params when using `--help`",
+                    "hidden": true,
+                    "help_text": "By default, parameters set as _hidden_ in the schema are not shown on the command line when a user runs with `--help`. Specifying this option will tell the pipeline to show all parameters."
                 }
             }
         },
@@ -130,6 +137,7 @@
                     "description": "Maximum amount of memory that can be requested for any single job.",
                     "default": "128.GB",
                     "fa_icon": "fas fa-memory",
+                    "pattern": "^[\\d\\.]+\\s*.(K|M|G|T)?B$",
                     "hidden": true,
                     "help_text": "Use to set an upper-limit for the memory requirement for each process. Should be a string in the format integer-unit e.g. `--max_memory '8.GB'`"
                 },
@@ -138,6 +146,7 @@
                     "description": "Maximum amount of time that can be requested for any single job.",
                     "default": "240.h",
                     "fa_icon": "far fa-clock",
+                    "pattern": "^[\\d\\.]+\\.*(s|m|h|d)$",
                     "hidden": true,
                     "help_text": "Use to set an upper-limit for the time requirement for each process. Should be a string in the format integer-unit e.g. `--max_time '2.h'`"
                 }
@@ -169,6 +178,12 @@
                 "hostnames": {
                     "type": "string",
                     "description": "Institutional configs hostname.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-users-cog"
+                },
+                "config_profile_name": {
+                    "type": "string",
+                    "description": "Institutional config name.",
                     "hidden": true,
                     "fa_icon": "fas fa-users-cog"
                 },
@@ -258,6 +273,28 @@
                     "default": "prefix",
                     "fa_icon": "fas fa-list-ol",
                     "help_text": "Prefix is highly recommended. Only in case an external tool marked decoys with a suffix, e.g. `sp|Q12345|ProteinA_DECOY` change this parameter to suffix."
+                },
+                "decoy_method": {
+                    "type": "string",
+                    "description": "Choose the method to produce decoys from the input target database.",
+                    "default": "reverse",
+                    "fa_icon": "fas fa-list-ol",
+                    "enum": [
+                        "reverse",
+                        "shuffle"
+                    ]
+                },
+                "shuffle_max_attempts": {
+                    "type": "integer",
+                    "description": "Maximum nr. of attempts to lower the amino acid sequence identity between target and decoy for the shuffle algorithm.",
+                    "default": 30,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "shuffle_sequence_identity_threshold": {
+                    "type": "number",
+                    "description": "Target-decoy amino acid sequence identity threshold for the shuffle algorithm. If the sequence identity is above this threshold, shuffling is repeated. In case of repeated failure, individual amino acids are 'mutated' to produce a different amino acid sequence.",
+                    "default": 0.5,
+                    "fa_icon": "fas fa-sliders-h"
                 }
             },
             "fa_icon": "fas fa-database",
@@ -500,15 +537,17 @@
             "description": "",
             "default": "",
             "properties": {
-                "allow_unmatched": {
+                "unmatched_action": {
                     "type": "string",
-                    "description": "Do not fail if there are some unmatched peptides. Only activate as last resort, if you know that the rest of your settings are fine!",
-                    "default": "false",
-                    "fa_icon": "far fa-check-square",
+                    "description": "Action to be taken if peptide sequences cannot be matched to any protein: 1) raise an error; 2) warn (unmatched PepHits will miss target/decoy annotation with downstream problems); 3) remove the hit. (default: 'error' valid: 'error', 'warn', 'remove')",
+                    "default": "error",
+                    "fa_icon": "fas fa-list-ol",
                     "enum": [
-                        "false",
-                        "true"
-                    ]
+                        "error",
+                        "warn",
+                        "remove"
+                    ],
+                    "hidden": true
                 },
                 "IL_equivalent": {
                     "type": "string",
@@ -711,13 +750,18 @@
                     "fa_icon": "fas fa-list-ol"
                 },
                 "mass_recalibration": {
-                    "type": "boolean",
+                    "type": "string",
                     "description": "Recalibrates masses based on precursor mass deviations to correct for instrument biases. (default: 'false')",
+                    "default": "false",
+                    "enum": [
+                        "true",
+                        "false"
+                    ],
                     "fa_icon": "far fa-check-square"
                 },
                 "transfer_ids": {
                     "type": "string",
-                    "description": "Tries a targeted requantification in files where an ID is missing, based on aggregate properties (i.e. RT) of the features in other aligned files (e.g. 'mean' of RT). (**WARNING:** increased memory consumption and runtime). 'false' turns this feature off. (default: 'false')",
+                    "description": "Tries a targeted requantification in files where an ID is missing, based on aggregate properties (i.e. RT) of the features in other aligned files (e.g. 'mean' of RT). (**WARNING:** increased memory consumption and runtime. Only useful with multiple fraction groups/samples). 'false' turns this feature off. (default: 'false')",
                     "default": "false",
                     "enum": [
                         "false",
@@ -726,9 +770,13 @@
                     "fa_icon": "fas fa-list-ol"
                 },
                 "targeted_only": {
-                    "type": "boolean",
+                    "type": "string",
                     "description": "Only looks for quantifiable features at locations with an identified spectrum. Set to false to include unidentified features so they can be linked and matched to identified ones (= match between runs). (default: 'true')",
-                    "default": true,
+                    "default": "true",
+                    "enum": [
+                        "true",
+                        "false"
+                    ],
                     "fa_icon": "far fa-check-square"
                 },
                 "alignment_order": {
