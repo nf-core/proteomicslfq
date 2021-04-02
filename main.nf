@@ -101,6 +101,7 @@ if (!sdrf_file)
                                     params.fragment_method)
                     mzmls: tuple(id,it)}
   .set{ch_sdrf_config}
+  Set enzymes = [params.enzyme]
 }
 else
 {
@@ -111,6 +112,7 @@ else
   process sdrf_parsing {
 
       publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+      publishDir "${params.outdir}/expdesign", mode: 'copy', pattern: '*.tsv'
 
       input:
        file sdrf from ch_sdrf
@@ -130,10 +132,26 @@ else
        """
   }
 
+  Set enzymes = []
+  Set files = []
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
-  .multiMap{ row -> id = file(row[0].toString()).name.take(file(row[0].toString()).name.lastIndexOf('.'))
+  .multiMap{ row -> filestr = row[0].toString()
+                    id = file(filestr).name.take(file(filestr).name.lastIndexOf('.'))
+                    enzymes += row[10]
+                    if (enzymes.size() > 1)
+                    {
+                      log.error "Currently only one enzyme is supported for the whole experiment. Specified was '${enzymes}'. Check or split your SDRF."
+                      exit 1
+                    }
+                    log.info filestr
+                    if (filestr in files)
+                    {
+                      log.error "Currently only one search engine setting per file is supported for the whole experiment. ${filestr} has multiple entries in your SDRF. Maybe you have a labelled experiment? Otherwise, consider splitting your SDRF in multiple experiments."
+                      exit 1
+                    }
+                    files += filestr
                     comet_settings: msgf_settings: tuple(id,
                                     row[2],
                                     row[3],
@@ -155,6 +173,7 @@ else
                                         row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
                                         row[1]))}
   .set{ch_sdrf_config}
+
 }
 
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
@@ -167,6 +186,7 @@ if (params.expdesign)
         .fromPath(params.expdesign)
         .set { ch_expdesign_pre }
 
+    // Fixing file endings only necessary if the experimental design is user-specified
     process expdesign_raw2mzml {
 
     label 'process_very_low'
@@ -307,6 +327,10 @@ process generate_decoy_database {
                  -out ${mydatabase.baseName}_decoy.fasta \\
                  -decoy_string ${params.decoy_affix} \\
                  -decoy_string_position ${params.affix_type} \\
+                 -method ${params.decoy_method} \\
+                 -shuffle_max_attempts ${params.shuffle_max_attempts} \\
+                 -shuffle_sequence_identity_threshold ${params.shuffle_sequence_identity_threshold} \\
+                 -enzyme ${enzymes[0]} \\
                  > ${mydatabase.baseName}_decoy_database.log
      """
 }
