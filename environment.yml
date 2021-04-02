@@ -11,6 +11,7 @@ dependencies:
   - openms::openms-thirdparty=2.7.0pre # 08.02.2021
   - bioconda::bioconductor-msstats=3.20.1 # will include R
   - bioconda::sdrf-pipelines=0.0.13 # for SDRF conversion
+  - bioconda::thermorawfileparser=1.3.3
   - conda-forge::r-ptxqc=1.0.5 # for QC reports
   - conda-forge::xorg-libxt=1.2.0 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
   - conda-forge::fonts-conda-ecosystem=1 # for the fonts in QC reports
