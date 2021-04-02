@@ -636,7 +636,6 @@ process index_peptides {
 
     script:
      def il = params.IL_equivalent ? '-IL_equivalent' : ''
-     def allow_um = params.allow_unmatched ? '-allow_unmatched' : ''
      // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying. But the auto-detection code in
      //  PeptideIndexer probably does not handle the combination through ConsensusID yet.
      if (params.search_engines.contains("msgf"))
@@ -666,7 +665,6 @@ process index_peptides {
                     -enzyme:name "${enzyme}" \\
                     -enzyme:specificity ${pepidx_num_enzyme_termini} \\
                     ${il} \\
-                    ${allow_um} \\
                     -unmatched_action ${params.unmatched_action} \\
                     > ${id_file.baseName}_index_peptides.log
      """
