@@ -199,9 +199,6 @@ if (params.expdesign)
 //---------------------- Nextflow specifics --------------------- //
 //--------------------------------------------------------------- //
 
-
-// Header log info
-log.info nfcoreHeader()
 def summary = [:]
 if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Run Name']         = workflow.runName
