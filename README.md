@@ -32,7 +32,7 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
     ```bash
     nextflow run nf-core/proteomicslfq \
-      -profile <docker/singularity/podman/conda/institute> \
+      -profile <docker/singularity/podman/shifter/charliecloud/conda/institute> \
       --input '*.mzml' \
       --database 'myProteinDB.fasta' \
       --expdesign 'myDesign.tsv'
@@ -73,7 +73,7 @@ For further information or help, don't hesitate to get in touch on the [Slack `#
 
 ## Citations
 
-If you use  nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.4106005](https://doi.org/10.5281/zenodo.4106005)
+If you use nf-core/proteomicslfq for your analysis, please cite it using the following doi: [10.5281/zenodo.4106005](https://doi.org/10.5281/zenodo.4106005)
 
 You can cite the `nf-core` publication as follows:
 
