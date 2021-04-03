@@ -1131,8 +1131,16 @@ process msstats {
      file "*.log"
 
     script:
+     remove_one_feat_prot = params.msstats_remove_one_feat_prot ? "--removeOneFeatProts" : ""
      """
-     msstats_plfq.R ${csv} ${mztab} > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
+     msstats_plfq.R ${csv} \\
+                    --mzTab ${mztab} \\
+                    --contrasts "pairwise" \\
+                    --referenceCondition "${params.ref_condition}" \\
+                    ${remove_one_feat_prot} \\
+                    --featureSubsetPerProtein ${params.msstats_feature_subset_protein} \\
+                    --summaryMethod ${params.msstats_quant_summary_method} \\
+                    > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
      """
 }
 
