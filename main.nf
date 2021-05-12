@@ -88,6 +88,9 @@ params.outdir = params.outdir ?: { log.warn "No output directory provided. Will 
  //Filename        FixedModifications      VariableModifications   Label   PrecursorMassTolerance  PrecursorMassToleranceUnit      FragmentMassTolerance   DissociationMethod      Enzyme
 
 
+Set enzymes = []
+Set files = []
+
 if (!sdrf_file)
 {
   ch_spectra = Channel.fromPath(spectra_files, checkIfExists: true)
@@ -110,7 +113,7 @@ if (!sdrf_file)
                                     params.fragment_method)
                     mzmls: tuple(id,it)}
   .set{ch_sdrf_config}
-  Set enzymes = [params.enzyme]
+  enzymes = [params.enzyme]
 }
 else
 {
@@ -141,8 +144,6 @@ else
        """
   }
 
-  Set enzymes = []
-  Set files = []
   //TODO use header and reference by col name instead of index
   ch_sdrf_config_file
   .splitCsv(skip: 1, sep: '\t')
