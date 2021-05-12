@@ -348,6 +348,8 @@ process raw_file_conversion {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/mzMLs", mode: 'copy', pattern: '*.mzML'
 
+    stageInMode = 'link' //trfp (or the underlying Thermo Lib has problems with symlinks)
+    
     input:
      tuple mzml_id, path(rawfile) from branched_input.raw
 
