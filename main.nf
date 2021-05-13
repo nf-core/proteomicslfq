@@ -171,7 +171,7 @@ else
                                     row[8],
                                     row[9],
                                     row[10])
-                    idx_settings: tuple(id, row[10])
+                    idx_settings: tuple(id, params.add_decoys ? row[10] : "provided", row[10])
                     enzyme_settings: row[10]
                     luciphor_settings: tuple(id, row[9])
                     mzmls: tuple(id, !params.root_folder ?
@@ -655,7 +655,7 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), val(enzyme), file(database) from id_files_msgf.mix(id_files_comet).combine(ch_sdrf_config.idx_settings, by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+     tuple mzml_id, db_enzyme, enzyme, file(id_file), file(database) from ch_sdrf_config.idx_settings.combine(id_files_msgf.mix(id_files_comet), by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy), by: 1)
 
     output:
      tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
