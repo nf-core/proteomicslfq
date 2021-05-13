@@ -557,8 +557,6 @@ process search_engine_msgf {
      """
 }
 
-
-//[/Users/pfeuffer/git/nftest/plfq_nf_tests/work/17/81d18e08dd4cebb3d1293df7d0cc6e/pools_crap_targetdecoy_decoy.fasta, Trypsin, SF_200217_pPeptideLibrary_pool1_HCDOT_rep2, /Users/pfeuffer/git/nftest/plfq_nf_tests/work/97/a85a6a443c1f03a5d7e58b6ae7a783/SF_200217_pPeptideLibrary_pool1_HCDOT_rep2.mzML, Trypsin, Carbamidomethyl (C), Acetyl (N-term),Deamidated (N),Deamidated (Q),Oxidation (M),Phospho (S),Phospho (T),Phospho (Y), label free sample, 10, ppm, 0.6, Da, HCD, Trypsin]
 process search_engine_comet {
 
     label 'process_medium'
