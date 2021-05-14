@@ -97,6 +97,7 @@ if (!sdrf_file)
   ch_spectra
   .multiMap{ it -> id = file(it).name.take(file(it).name.lastIndexOf('.'))
                     comet_settings: msgf_settings: tuple(id,
+                                    params.add_decoys ? row[10] : "provided", // either provided or one generated specifically for that enzyme
                                     params.fixed_mods,
                                     params.variable_mods,
                                     "", //labelling modifications currently not supported
@@ -106,14 +107,11 @@ if (!sdrf_file)
                                     params.fragment_mass_tolerance_unit,
                                     params.fragment_method,
                                     params.enzyme)
-                    idx_settings: tuple(id,
-                                    params.enzyme)
-                    luciphor_settings:
-                                  tuple(id,
-                                    params.fragment_method)
+                    idx_settings: tuple(id, params.enzyme)
+                    enzyme_settings: params.enzyme
+                    luciphor_settings: tuple(id, params.fragment_method)
                     mzmls: tuple(id,it)}
   .set{ch_sdrf_config}
-  enzymes = [params.enzyme]
 }
 else
 {
@@ -163,6 +161,7 @@ else
                     }
                     files += filestr
                     comet_settings: msgf_settings: tuple(id,
+                                    params.add_decoys ? row[10] : "provided", // either provided or one generated specifically for that enzyme
                                     row[2],
                                     row[3],
                                     row[4],
@@ -172,19 +171,21 @@ else
                                     row[8],
                                     row[9],
                                     row[10])
-                    idx_settings: tuple(id,
-                                    row[10])
-                    luciphor_settings:
-                                  tuple(id,
-                                    row[9])
+                    idx_settings: tuple(id, params.add_decoys ? row[10] : "provided", row[10])
+                    enzyme_settings: row[10]
+                    luciphor_settings: tuple(id, row[9])
                     mzmls: tuple(id, !params.root_folder ?
                                     row[0] :
                                     params.root_folder + "/" + (params.local_input_type ?
                                         row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
                                         row[1]))}
   .set{ch_sdrf_config}
-
+  
 }
+
+Set foo = []
+//ch_enzymes = ch_sdrf_config.enzyme_settings.collect().map(it -> it.toSet())
+ch_enzymes = ch_sdrf_config.enzyme_settings.reduce(foo){a,b -> return a+b}.flatten()
 
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
 
@@ -348,7 +349,7 @@ process raw_file_conversion {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
     publishDir "${params.outdir}/mzMLs", mode: 'copy', pattern: '*.mzML'
 
-    stageInMode = 'link' //trfp (or the underlying Thermo Lib has problems with symlinks)
+    stageInMode {task.attempt == 1 ? 'link' : (task.attempt == 2 ? 'symlink' : 'copy')}  //trfp (or the underlying Thermo Lib has problems with symlinks)
     
     input:
      tuple mzml_id, path(rawfile) from branched_input.raw
@@ -359,6 +360,7 @@ process raw_file_conversion {
     script:
      """
      ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
+     ls -la *.mzML && exit \$? || exit 1
      """
 }
 
@@ -401,7 +403,7 @@ else
 //Fill the channels with empty Channels in case that we want to add decoys. Otherwise fill with output from database.
 (searchengine_in_db_msgf, searchengine_in_db_comet, pepidx_in_db, plfq_in_db) = ( params.add_decoys
                     ? [ Channel.empty(), Channel.empty(), Channel.empty(), Channel.empty() ]
-                    : [ Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database), Channel.fromPath(params.database) ] )
+                    : [ Channel.fromPath(params.database).combine(Channel.from("provided")), Channel.fromPath(params.database).combine(Channel.from("provided")), Channel.fromPath(params.database).combine(Channel.from("provided")), Channel.fromPath(params.database).combine(Channel.from("provided")) ] )
 
 //Add decoys if params.add_decoys is set appropriately
 process generate_decoy_database {
@@ -412,10 +414,10 @@ process generate_decoy_database {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     file(mydatabase) from ch_db_for_decoy_creation
+     tuple file(mydatabase), enzyme from ch_db_for_decoy_creation.combine(ch_enzymes)
 
     output:
-     file "${mydatabase.baseName}_decoy.fasta" into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
+     tuple file("${mydatabase.baseName}_decoy.fasta"), enzyme into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
      file "*.log"
 
     when:
@@ -430,7 +432,7 @@ process generate_decoy_database {
                  -method ${params.decoy_method} \\
                  -shuffle_max_attempts ${params.shuffle_max_attempts} \\
                  -shuffle_sequence_identity_threshold ${params.shuffle_sequence_identity_threshold} \\
-                 -enzyme ${enzymes[0]} \\
+                 -enzyme ${enzyme} \\
                  > ${mydatabase.baseName}_decoy_database.log
      """
 }
@@ -498,8 +500,7 @@ process search_engine_msgf {
     // errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf).combine(mzmls_msgf.mix(mzmls_msgf_picked).join(ch_sdrf_config.msgf_settings))
-
+     tuple db_enzyme, mzml_id, fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme, file(mzml_file), file(database)  from ch_sdrf_config.msgf_settings.join(mzmls_msgf.mix(mzmls_msgf_picked)).combine(searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf), by: 1)
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      //each file(mzml_file) from mzmls
@@ -570,8 +571,8 @@ process search_engine_comet {
     //errorStrategy 'terminate'
 
     input:
-     tuple file(database), mzml_id, path(mzml_file), fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme from searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet).combine(mzmls_comet.mix(mzmls_comet_picked).join(ch_sdrf_config.comet_settings))
-
+      tuple db_enzyme, mzml_id, fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme, file(mzml_file), file(database)  from ch_sdrf_config.comet_settings.join(mzmls_comet.mix(mzmls_comet_picked)).combine(searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet), by: 1)
+    
     when:
       params.search_engines.contains("comet")
 
@@ -655,7 +656,7 @@ process index_peptides {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(id_file), val(enzyme), file(database) from id_files_msgf.mix(id_files_comet).combine(ch_sdrf_config.idx_settings, by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy))
+     tuple mzml_id, db_enzyme, enzyme, file(id_file), file(database) from ch_sdrf_config.idx_settings.combine(id_files_msgf.mix(id_files_comet), by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy), by: 1)
 
     output:
      tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
