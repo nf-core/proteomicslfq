@@ -360,6 +360,7 @@ process raw_file_conversion {
     script:
      """
      ThermoRawFileParser.sh -i=${rawfile} -f=2 -o=./ > ${rawfile}_conversion.log
+     ls -la *.mzML && exit \$? || exit 1
      """
 }
 
