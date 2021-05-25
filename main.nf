@@ -123,6 +123,7 @@ else
 
       publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
       publishDir "${params.outdir}/expdesign", mode: 'copy', pattern: '*.tsv'
+      publishDir "${params.outdir}/expdesign", mode: 'copy', pattern: '*.tsv'
 
       input:
        file sdrf from ch_sdrf
@@ -136,6 +137,8 @@ else
 
       script:
        """
+       ## copy the sdrf to have a specific extension and to be able to be published
+       cp ${sdrf} ${sdrf.basename}.sdrf.tsv 
        ## -t2 since the one-table format parser is broken in OpenMS2.5
        ## -l for legacy behavior to always add sample columns
        parse_sdrf convert-openms -t2 -l -s ${sdrf} > sdrf_parsing.log
