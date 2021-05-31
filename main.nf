@@ -97,7 +97,7 @@ if (!sdrf_file)
   ch_spectra
   .multiMap{ it -> id = file(it).name.take(file(it).name.lastIndexOf('.'))
                     comet_settings: msgf_settings: tuple(id,
-                                    params.add_decoys ? row[10] : "provided", // either provided or one generated specifically for that enzyme
+                                    params.add_decoys ? params.enzyme : "provided", // either provided or one generated specifically for that enzyme
                                     params.fixed_mods,
                                     params.variable_mods,
                                     "", //labelling modifications currently not supported
@@ -107,7 +107,7 @@ if (!sdrf_file)
                                     params.fragment_mass_tolerance_unit,
                                     params.fragment_method,
                                     params.enzyme)
-                    idx_settings: tuple(id, params.enzyme)
+                    idx_settings: tuple(id, params.add_decoys ? params.enzyme : "provided", params.enzyme)
                     enzyme_settings: params.enzyme
                     luciphor_settings: tuple(id, params.fragment_method)
                     mzmls: tuple(id,it)}
@@ -655,8 +655,10 @@ process index_peptides {
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
+    // [provided, FKL2920-S18-A-6, /local/scratch/springtails_data_plfq_nf_debug/nf/work/fb/6fd52ab18fd6bebc0daaf80369662b/FKL2920-S18-A-6_comet.idXML, /local/scratch/springtails_data_plfq_nf_debug/Folsomia_candida_original_comp_proteome_with_contaminants_and_decoys.fasta]
+    
     input:
-     tuple mzml_id, db_enzyme, enzyme, file(id_file), file(database) from ch_sdrf_config.idx_settings.combine(id_files_msgf.mix(id_files_comet), by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy), by: 1)
+     tuple db_enzyme, mzml_id, enzyme, file(id_file), file(database) from ch_sdrf_config.idx_settings.combine(id_files_msgf.mix(id_files_comet), by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy), by: 1)
 
     output:
      tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
@@ -1063,8 +1065,8 @@ process proteomicslfq {
     input:
      file(mzmls) from ch_plfq.mzmls.collect()
      file(id_files) from ch_plfq.ids.collect()
-     file expdes from ch_expdesign
-     file fasta from plfq_in_db.mix(plfq_in_db_decoy)
+     file(expdes) from ch_expdesign
+     tuple file(fasta), enzyme from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
      file "out.mzTab" into out_mztab_plfq, out_mztab_msstats
