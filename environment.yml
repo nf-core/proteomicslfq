@@ -19,3 +19,5 @@ dependencies:
   - conda-forge::markdown=3.3.4
   - conda-forge::pymdown-extensions=8.2
   - conda-forge::pygments=2.9.0
+  - conda-forge::mono=5.14.0.177 # had to downgrade because of errors with opening softlinks in TRFP
+  - conda-forge::pandoc=2.11.4 # had to downgrade because of errors with PTXQC (and its rmarkdown)
