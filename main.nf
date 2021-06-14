@@ -1136,11 +1136,12 @@ process msstats {
 
     script:
      remove_one_feat_prot = params.msstats_remove_one_feat_prot ? "--removeOneFeatProts" : ""
+     ref_con = params.ref_condition ?: ""
      """
      msstats_plfq.R ${csv} \\
                     --mzTab ${mztab} \\
                     --contrasts "pairwise" \\
-                    --referenceCondition "${params.ref_condition}" \\
+                    --referenceCondition "${ref_con}" \\
                     ${remove_one_feat_prot} \\
                     --featureSubsetPerProtein ${params.msstats_feature_subset_protein} \\
                     --summaryMethod ${params.msstats_quant_summary_method} \\
