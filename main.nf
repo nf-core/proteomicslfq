@@ -130,12 +130,15 @@ else
       output:
        file "experimental_design.tsv" into ch_expdesign
        file "openms.tsv" into ch_sdrf_config_file
+       file "${sdrf.baseName}.sdrf.tsv"
 
       when:
         sdrf_file
 
       script:
        """
+       ## copy the sdrf to have a specific extension and to be able to be published
+       cp ${sdrf} ${sdrf.baseName}.sdrf.tsv 
        ## -t2 since the one-table format parser is broken in OpenMS2.5
        ## -l for legacy behavior to always add sample columns
        parse_sdrf convert-openms -t2 -l -s ${sdrf} > sdrf_parsing.log
