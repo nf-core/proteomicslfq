@@ -210,7 +210,6 @@
             "title": "Main parameters (SDRF)",
             "type": "object",
             "description": "In case your input was an SDRF files, the following optional parameters can be set.",
-            "default": "",
             "properties": {
                 "root_folder": {
                     "type": "string",
@@ -231,7 +230,6 @@
             "title": "Main parameters (spectra files)",
             "type": "object",
             "description": "In case your input was a globbing pattern to spectrum files in Thermo RAW or mzML format you can specify a manual OpenMS-style experimental design file here.",
-            "default": "",
             "properties": {
                 "expdesign": {
                     "type": "string",
@@ -245,7 +243,6 @@
             "title": "Protein database",
             "type": "object",
             "description": "Settings that relate to the mandatory protein database and the optional generation of decoy entries.",
-            "default": "",
             "properties": {
                 "database": {
                     "type": "string",
@@ -305,7 +302,6 @@
             "title": "Spectrum preprocessing",
             "type": "object",
             "description": "In case you start from profile mode mzMLs or the internal preprocessing during conversion with the ThermoRawFileParser fails (e.g. due to new instrument types), preprocessing has to be performed with OpenMS. Use this section to configure.",
-            "default": "",
             "properties": {
                 "openms_peakpicking": {
                     "type": "boolean",
@@ -332,7 +328,6 @@
             "title": "Database search",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "search_engines": {
                     "type": "string",
@@ -488,7 +483,6 @@
             "title": "Modification localization",
             "type": "object",
             "description": "Settings for calculating a localization probability with LucXor for modifications with multiple candidate amino acids in a peptide.",
-            "default": "",
             "properties": {
                 "enable_mod_localization": {
                     "type": "boolean",
@@ -534,7 +528,6 @@
             "title": "Peptide re-indexing",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "unmatched_action": {
                     "type": "string",
@@ -565,7 +558,6 @@
             "title": "PSM re-scoring (general)",
             "type": "object",
             "description": "Choose between different rescoring/posterior probability calculation methods and set them up.",
-            "default": "",
             "properties": {
                 "posterior_probabilities": {
                     "type": "string",
@@ -595,7 +587,6 @@
             "title": "PSM re-scoring (Percolator)",
             "type": "object",
             "description": "In the following you can find help for the Percolator specific options that are only used if [`--posterior_probabilities`](#--posterior_probabilities) was set to 'percolator'.\nNote that there are currently some restrictions to the original options of Percolator:\n\n* no Percolator protein FDR possible (currently OpenMS' FDR is used on protein level)\n* no support for separate target and decoy databases (i.e. no min-max q-value calculation or target-decoy competition strategy)\n* no support for combined or experiment-wide peptide re-scoring. Currently search results per input file are submitted to Percolator independently.",
-            "default": "",
             "properties": {
                 "FDR_level": {
                     "type": "string",
@@ -644,7 +635,6 @@
             "title": "PSM re-scoring (distribution fitting)",
             "type": "object",
             "description": "Use this instead of Percolator if there are problems with Percolator (e.g. due to bad separation) or for performance",
-            "default": "",
             "properties": {
                 "outlier_handling": {
                     "type": "string",
@@ -665,7 +655,6 @@
             "title": "Consensus ID",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "consensusid_algorithm": {
                     "type": "string",
@@ -698,7 +687,6 @@
             "title": "Protein inference ",
             "type": "object",
             "description": "To group proteins, calculate scores on the protein (group) level and to potentially modify associations from peptides to proteins.",
-            "default": "",
             "properties": {
                 "protein_inference": {
                     "type": "string",
@@ -725,7 +713,6 @@
             "title": "Protein Quantification",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "protein_quant": {
                     "type": "string",
@@ -806,7 +793,6 @@
             "title": "Statistical post-processing",
             "type": "object",
             "description": "Parameters for statistical post processing and quantification visualization. Currently only possible with `quantification_method = feature_based`.",
-            "default": "",
             "properties": {
                 "skip_post_msstats": {
                     "type": "boolean",
@@ -842,8 +828,7 @@
                 "ref_condition": {
                     "type": "string",
                     "description": "Instead of all pairwise contrasts (default), uses the given condition name/number (corresponding to your experimental design) as a reference and creates pairwise contrasts against it.",
-                    "fa_icon": "fas fa-font",
-                    "default": ""
+                    "fa_icon": "fas fa-font"
                 },
                 "contrasts": {
                     "type": "string",
@@ -863,7 +848,6 @@
             "title": "Quality control",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "enable_qc": {
                     "type": "boolean",
