@@ -18,8 +18,7 @@
                     "type": "string",
                     "fa_icon": "fas fa-vials",
                     "description": "URI/path to an [SDRF](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) file **OR** globbing pattern for URIs/paths of mzML or Thermo RAW files",
-                    "help_text": "The input to the pipeline can be specified in two **mutually exclusive** ways:\n  - using a path or URI to a PRIDE Sample to Data Relation Format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see [here](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) for examples). Input files will be downloaded and cached from the URIs specified in the SDRF file.\nAn OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the\nfollowing parameters will currently be overwritten by the ones specified in the SDRF:\n\n    * `fixed_mods`,\n    * `variable_mods`,\n    * `precursor_mass_tolerance`,\n    * `precursor_mass_tolerance_unit`,\n    * `fragment_mass_tolerance`,\n    * `fragment_mass_tolerance_unit`,\n    * `fragment_method`,\n    * `enzyme`\n  - by specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format (e.g. `/data/experiment{1,2,3}_rep*.mzML`). An experimental design should be provided with the `expdesign` parameter."
-                },
+                    "help_text": "The input to the pipeline can be specified in two **mutually exclusive** ways:\n  - using a path or URI to a PRIDE Sample to Data Relation Format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see [here](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) for examples). Input files will be downloaded and cached from the URIs specified in the SDRF file.\nAn OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the\nfollowing parameters will currently be overwritten by the ones specified in the SDRF:\n\n    * `fixed_mods`,\n    * `variable_mods`,\n    * `precursor_mass_tolerance`,\n    * `precursor_mass_tolerance_unit`,\n    * `fragment_mass_tolerance`,\n    * `fragment_mass_tolerance_unit`,\n    * `fragment_method`,\n    * `enzyme`\n  - by specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format (e.g. `/data/experiment{1,2,3}_rep*.mzML`). An experimental design should be provided with the `expdesign` parameter."},
                 "outdir": {
                     "type": "string",
                     "description": "The output directory where the results will be saved.",
@@ -137,7 +136,7 @@
                     "description": "Maximum amount of memory that can be requested for any single job.",
                     "default": "128.GB",
                     "fa_icon": "fas fa-memory",
-                    "pattern": "^[\\d\\.]+\\s*.(K|M|G|T)?B$",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
                     "hidden": true,
                     "help_text": "Use to set an upper-limit for the memory requirement for each process. Should be a string in the format integer-unit e.g. `--max_memory '8.GB'`"
                 },
@@ -146,7 +145,7 @@
                     "description": "Maximum amount of time that can be requested for any single job.",
                     "default": "240.h",
                     "fa_icon": "far fa-clock",
-                    "pattern": "^[\\d\\.]+\\.*(s|m|h|d)$",
+                    "pattern": "^(\\d+\\.?\\s*(s|m|h|day)\\s*)+$",
                     "hidden": true,
                     "help_text": "Use to set an upper-limit for the time requirement for each process. Should be a string in the format integer-unit e.g. `--max_time '2.h'`"
                 }
@@ -211,7 +210,6 @@
             "title": "Main parameters (SDRF)",
             "type": "object",
             "description": "In case your input was an SDRF files, the following optional parameters can be set.",
-            "default": "",
             "properties": {
                 "root_folder": {
                     "type": "string",
@@ -232,7 +230,6 @@
             "title": "Main parameters (spectra files)",
             "type": "object",
             "description": "In case your input was a globbing pattern to spectrum files in Thermo RAW or mzML format you can specify a manual OpenMS-style experimental design file here.",
-            "default": "",
             "properties": {
                 "expdesign": {
                     "type": "string",
@@ -246,7 +243,6 @@
             "title": "Protein database",
             "type": "object",
             "description": "Settings that relate to the mandatory protein database and the optional generation of decoy entries.",
-            "default": "",
             "properties": {
                 "database": {
                     "type": "string",
@@ -306,7 +302,6 @@
             "title": "Spectrum preprocessing",
             "type": "object",
             "description": "In case you start from profile mode mzMLs or the internal preprocessing during conversion with the ThermoRawFileParser fails (e.g. due to new instrument types), preprocessing has to be performed with OpenMS. Use this section to configure.",
-            "default": "",
             "properties": {
                 "openms_peakpicking": {
                     "type": "boolean",
@@ -333,7 +328,6 @@
             "title": "Database search",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "search_engines": {
                     "type": "string",
@@ -489,7 +483,6 @@
             "title": "Modification localization",
             "type": "object",
             "description": "Settings for calculating a localization probability with LucXor for modifications with multiple candidate amino acids in a peptide.",
-            "default": "",
             "properties": {
                 "enable_mod_localization": {
                     "type": "boolean",
@@ -535,7 +528,6 @@
             "title": "Peptide re-indexing",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "unmatched_action": {
                     "type": "string",
@@ -566,7 +558,6 @@
             "title": "PSM re-scoring (general)",
             "type": "object",
             "description": "Choose between different rescoring/posterior probability calculation methods and set them up.",
-            "default": "",
             "properties": {
                 "posterior_probabilities": {
                     "type": "string",
@@ -596,7 +587,6 @@
             "title": "PSM re-scoring (Percolator)",
             "type": "object",
             "description": "In the following you can find help for the Percolator specific options that are only used if [`--posterior_probabilities`](#--posterior_probabilities) was set to 'percolator'.\nNote that there are currently some restrictions to the original options of Percolator:\n\n* no Percolator protein FDR possible (currently OpenMS' FDR is used on protein level)\n* no support for separate target and decoy databases (i.e. no min-max q-value calculation or target-decoy competition strategy)\n* no support for combined or experiment-wide peptide re-scoring. Currently search results per input file are submitted to Percolator independently.",
-            "default": "",
             "properties": {
                 "FDR_level": {
                     "type": "string",
@@ -645,7 +635,6 @@
             "title": "PSM re-scoring (distribution fitting)",
             "type": "object",
             "description": "Use this instead of Percolator if there are problems with Percolator (e.g. due to bad separation) or for performance",
-            "default": "",
             "properties": {
                 "outlier_handling": {
                     "type": "string",
@@ -666,7 +655,6 @@
             "title": "Consensus ID",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "consensusid_algorithm": {
                     "type": "string",
@@ -699,7 +687,6 @@
             "title": "Protein inference ",
             "type": "object",
             "description": "To group proteins, calculate scores on the protein (group) level and to potentially modify associations from peptides to proteins.",
-            "default": "",
             "properties": {
                 "protein_inference": {
                     "type": "string",
@@ -726,7 +713,6 @@
             "title": "Protein Quantification",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "protein_quant": {
                     "type": "string",
@@ -807,7 +793,6 @@
             "title": "Statistical post-processing",
             "type": "object",
             "description": "Parameters for statistical post processing and quantification visualization. Currently only possible with `quantification_method = feature_based`.",
-            "default": "",
             "properties": {
                 "skip_post_msstats": {
                     "type": "boolean",
@@ -843,8 +828,7 @@
                 "ref_condition": {
                     "type": "string",
                     "description": "Instead of all pairwise contrasts (default), uses the given condition name/number (corresponding to your experimental design) as a reference and creates pairwise contrasts against it.",
-                    "fa_icon": "fas fa-font",
-                    "default": ""
+                    "fa_icon": "fas fa-font"
                 },
                 "contrasts": {
                     "type": "string",
@@ -864,7 +848,6 @@
             "title": "Quality control",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "enable_qc": {
                     "type": "boolean",

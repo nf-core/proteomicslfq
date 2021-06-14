@@ -1138,11 +1138,12 @@ process msstats {
 
     script:
      remove_one_feat_prot = params.msstats_remove_one_feat_prot ? "--removeOneFeatProts" : ""
+     ref_con = params.ref_condition ?: ""
      """
      msstats_plfq.R ${csv} \\
                     --mzTab ${mztab} \\
                     --contrasts "pairwise" \\
-                    --referenceCondition "${params.ref_condition}" \\
+                    --referenceCondition "${ref_con}" \\
                     ${remove_one_feat_prot} \\
                     --featureSubsetPerProtein ${params.msstats_feature_subset_protein} \\
                     --summaryMethod ${params.msstats_quant_summary_method} \\
@@ -1339,11 +1340,11 @@ def checkHostname() {
         params.hostnames.each { prof, hnames ->
             hnames.each { hname ->
                 if (hostname.contains(hname) && !workflow.profile.contains(prof)) {
-                    log.error '====================================================\n' +
+                    log.error "${c_red}====================================================${c_reset}\n" +
                             "  ${c_red}WARNING!${c_reset} You are running with `-profile $workflow.profile`\n" +
                             "  but your machine hostname is ${c_white}'$hostname'${c_reset}\n" +
                             "  ${c_yellow_bold}It's highly recommended that you use `-profile $prof${c_reset}`\n" +
-                            '============================================================'
+                            "${c_red}====================================================${c_reset}\n"
                 }
             }
         }
