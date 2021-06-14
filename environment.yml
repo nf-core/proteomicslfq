@@ -9,7 +9,7 @@ channels:
 dependencies:
   - openms::openms=2.7.0pre
   - openms::openms-thirdparty=2.7.0pre # 08.02.2021
-  - bioconda::bioconductor-msstats=4.0.0 # will include R
+  - bioconda::bioconductor-msstats=3.22.1 # will include R
   - bioconda::sdrf-pipelines=0.0.14 # for SDRF conversion
   - conda-forge::r-ptxqc=1.0.9 # for QC reports
   - conda-forge::r-argparser=0.7.1 # for argument parsing in our Rscripts
