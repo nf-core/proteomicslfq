@@ -123,7 +123,6 @@ else
 
       publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
       publishDir "${params.outdir}/expdesign", mode: 'copy', pattern: '*.tsv'
-      publishDir "${params.outdir}/expdesign", mode: 'copy', pattern: '*.tsv'
 
       input:
        file sdrf from ch_sdrf
