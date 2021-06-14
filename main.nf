@@ -130,6 +130,7 @@ else
       output:
        file "experimental_design.tsv" into ch_expdesign
        file "openms.tsv" into ch_sdrf_config_file
+       file "${sdrf.baseName}.sdrf.tsv"
 
       when:
         sdrf_file
