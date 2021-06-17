@@ -1055,7 +1055,7 @@ mzmls_plfq.mix(mzmls_plfq_picked)
       mzmls: it[1]
       ids: it[2]
   }
-  .set{ch_plfq}
+  .into{ch_plfq; ch_multiqc}
 
 process proteomicslfq {
 
@@ -1072,10 +1072,10 @@ process proteomicslfq {
      tuple file(fasta), enzyme from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
-     file "out.mzTab" into out_mztab_plfq, out_mztab_msstats
-     file "out.consensusXML" into out_consensusXML
-     file "out_msstats.csv" optional true into out_msstats
-     file "out_triqler.tsv" optional true into out_triqler
+     file "out.mzTab" into out_mztab_plfq, out_mztab_msstats, ch_out_mzTab_multiqc
+     file "out.consensusXML" into out_consensusXML, ch_out_consensusXML_multiqc
+     file "out_msstats.csv" optional true into out_msstats, ch_out_msstats_multiqc
+     file "out_triqler.tsv" optional true into out_triqler, ch_out_triqler_multiqc
      file "debug_mergedIDs.idXML" optional true
      file "debug_mergedIDs_inference.idXML" optional true
      file "debug_mergedIDsGreedyResolved.idXML" optional true
@@ -1186,6 +1186,35 @@ process ptxqc {
 if (!params.enable_qc)
 {
   ch_ptxqc_report = Channel.empty()
+}
+
+
+process multiqc {
+
+    label 'process_low'
+    label 'process_single_thread'
+
+    publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
+    publishDir "${params.outdir}/ptxqc", mode: 'copy'
+
+    input:
+     file design from ch_design_multiqc
+     file 'mzMLs/*' from ch_multiqc.mzmls
+     file 'proteomicslfq/*' from ch_out_mzTab_multiqc.mix(ch_out_consensusXML_multiqc).mix(ch_out_msstats_multiqc).mix(ch_out_triqler_multiqc)
+     file 'raw_ids/*' from ch_multiqc.ids
+
+    output:
+     file "*.html" into ch_multiqc_report
+
+    script:
+     """
+     multiqc \
+       --exp_design ${design} \
+       --mzMLs ./mzMLs \
+       --raw_ids ./raw_ids \
+       ./proteomics_lfq \
+       -o .
+     """
 }
 
 /*
