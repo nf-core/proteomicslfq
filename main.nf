@@ -1052,10 +1052,10 @@ process luciphor {
 mzmls_plfq.mix(mzmls_plfq_picked)
   .join(plfq_in_id.mix(plfq_in_id_luciphor))
   .multiMap{ it ->
-      mzmls: it[1]
-      ids: it[2]
+      mzmls: multiqc_mzmls: it[1]
+      ids: multiqc_ids: it[2]
   }
-  .into{ch_plfq; ch_multiqc}
+  .set{ch_plfq}
 
 process proteomicslfq {
 
@@ -1199,9 +1199,9 @@ process multiqc {
 
     input:
      file design from ch_design_multiqc
-     file 'mzMLs/*' from ch_multiqc.mzmls
+     file 'mzMLs/*' from ch_plfq.multiqc_mzmls
      file 'proteomicslfq/*' from ch_out_mzTab_multiqc.mix(ch_out_consensusXML_multiqc).mix(ch_out_msstats_multiqc).mix(ch_out_triqler_multiqc)
-     file 'raw_ids/*' from ch_multiqc.ids
+     file 'raw_ids/*' from ch_plfq.multiqc_ids
 
     output:
      file "*.html" into ch_multiqc_report
