@@ -1212,7 +1212,7 @@ process pmultiqc {
        --exp_design ${design} \\
        --mzMLs ./mzMLs \\
        --raw_ids ./raw_ids \\
-       ./proteomics_lfq \\
+       ./proteomicslfq \\
        -o .
      """
 }
