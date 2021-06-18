@@ -128,7 +128,7 @@ else
        file sdrf from ch_sdrf
 
       output:
-       file("experimental_design.tsv") into ch_expdesign, ch_expdesign_multiqc
+       file("experimental_design.tsv") into (ch_expdesign, ch_expdesign_multiqc)
        file("openms.tsv") into ch_sdrf_config_file
        file("${sdrf.baseName}.sdrf.tsv")
 
@@ -210,7 +210,7 @@ if (params.expdesign)
      path(design) from ch_expdesign_pre
 
     output:
-     file("experimental_design.tsv") into ch_expdesign, ch_expdesign_multiqc
+     file("experimental_design.tsv") into (ch_expdesign, ch_expdesign_multiqc)
 
     script:
     """
@@ -420,7 +420,7 @@ process generate_decoy_database {
      tuple file(mydatabase), enzyme from ch_db_for_decoy_creation.combine(ch_enzymes)
 
     output:
-     tuple file("${mydatabase.baseName}_decoy.fasta"), enzyme into searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy
+     tuple file("${mydatabase.baseName}_decoy.fasta"), enzyme into (searchengine_in_db_decoy_msgf, searchengine_in_db_decoy_comet, pepidx_in_db_decoy, plfq_in_db_decoy)
      file "*.log"
 
     when:
@@ -472,7 +472,7 @@ process openms_peakpicker {
       params.openms_peakpicking
 
     output:
-     tuple mzml_id, file("out/${mzml_file.baseName}.mzML") into mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked
+     tuple mzml_id, file("out/${mzml_file.baseName}.mzML") into (mzmls_comet_picked, mzmls_msgf_picked, mzmls_plfq_picked)
      file "*.log"
 
     script:
@@ -664,7 +664,7 @@ process index_peptides {
      tuple db_enzyme, mzml_id, enzyme, file(id_file), file(database) from ch_sdrf_config.idx_settings.combine(id_files_msgf.mix(id_files_comet), by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy), by: 1)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_idx.idXML") into id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR
+     tuple mzml_id, file("${id_file.baseName}_idx.idXML") into (id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR)
      file "*.log"
 
     script:
@@ -751,7 +751,7 @@ process percolator {
      tuple mzml_id, file(id_file) from id_files_idx_feat
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491") into id_files_perc, id_files_perc_consID
+     tuple mzml_id, file("${id_file.baseName}_perc.idXML"), val("MS:1001491") into (id_files_perc, id_files_perc_consID)
      file "*.log"
 
     when:
@@ -830,7 +830,7 @@ process idpep {
      tuple mzml_id, file(id_file) from id_files_idx_ForIDPEP_FDR.mix(id_files_idx_ForIDPEP_noFDR)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score") into id_files_idpep, id_files_idpep_consID
+     tuple mzml_id, file("${id_file.baseName}_idpep.idXML"), val("q-value_score") into (id_files_idpep, id_files_idpep_consID)
      file "*.log"
 
     when:
@@ -957,7 +957,7 @@ process idfilter {
      tuple mzml_id, file(id_file) from id_files_noConsID_qval.mix(consensusids_fdr)
 
     output:
-     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into id_filtered, id_filtered_luciphor
+     tuple mzml_id, file("${id_file.baseName}_filter.idXML") into (id_filtered, id_filtered_luciphor)
      file "*.log"
 
     script:
@@ -1072,10 +1072,10 @@ process proteomicslfq {
      tuple file(fasta), enzyme from plfq_in_db.mix(plfq_in_db_decoy)
 
     output:
-     file "out.mzTab" into out_mztab_plfq, out_mztab_msstats, ch_out_mzTab_multiqc
-     file "out.consensusXML" into out_consensusXML, ch_out_consensusXML_multiqc
-     file "out_msstats.csv" optional true into out_msstats, ch_out_msstats_multiqc
-     file "out_triqler.tsv" optional true into out_triqler, ch_out_triqler_multiqc
+     file "out.mzTab" into (out_mztab_plfq, out_mztab_msstats, ch_out_mzTab_multiqc)
+     file "out.consensusXML" into (out_consensusXML, ch_out_consensusXML_multiqc)
+     file "out_msstats.csv" optional true into (out_msstats, ch_out_msstats_multiqc)
+     file "out_triqler.tsv" optional true into (out_triqler, ch_out_triqler_multiqc)
      file "debug_mergedIDs.idXML" optional true
      file "debug_mergedIDs_inference.idXML" optional true
      file "debug_mergedIDsGreedyResolved.idXML" optional true
