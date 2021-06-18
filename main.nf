@@ -1195,7 +1195,7 @@ process multiqc {
     label 'process_single_thread'
 
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
-    publishDir "${params.outdir}/ptxqc", mode: 'copy'
+    publishDir "${params.outdir}/multiqc", mode: 'copy'
 
     input:
      file design from ch_expdesign_multiqc
@@ -1204,15 +1204,15 @@ process multiqc {
      file 'raw_ids/*' from ch_plfq.multiqc_ids
 
     output:
-     file "*.html" into ch_multiqc_report
+     file '*.html' into ch_multiqc_report
 
     script:
      """
-     multiqc \
-       --exp_design ${design} \
-       --mzMLs ./mzMLs \
-       --raw_ids ./raw_ids \
-       ./proteomics_lfq \
+     multiqc \\
+       --exp_design ${design} \\
+       --mzMLs ./mzMLs \\
+       --raw_ids ./raw_ids \\
+       ./proteomics_lfq \\
        -o .
      """
 }
