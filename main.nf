@@ -128,9 +128,9 @@ else
        file sdrf from ch_sdrf
 
       output:
-       file "experimental_design.tsv" into ch_expdesign, ch_expdesign_multiqc
-       file "openms.tsv" into ch_sdrf_config_file
-       file "${sdrf.baseName}.sdrf.tsv"
+       file("experimental_design.tsv") into ch_expdesign, ch_expdesign_multiqc
+       file("openms.tsv") into ch_sdrf_config_file
+       file("${sdrf.baseName}.sdrf.tsv")
 
       when:
         sdrf_file
@@ -207,14 +207,14 @@ if (params.expdesign)
     label 'process_single_thread'
 
     input:
-     path (design) from ch_expdesign_pre
+     path(design) from ch_expdesign_pre
 
     output:
-     file("expdesign.tsv") into ch_expdesign, ch_expdesign_multiqc
+     file("experimental_design.tsv") into ch_expdesign, ch_expdesign_multiqc
 
     script:
     """
-      sed 's/.raw\\t/.mzML\\t/I' $design > expdesign.tsv
+      sed 's/.raw\\t/.mzML\\t/I' $design > experimental_design.tsv
     """
 
     }
