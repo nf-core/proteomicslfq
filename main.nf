@@ -128,7 +128,7 @@ else
        file sdrf from ch_sdrf
 
       output:
-       file "experimental_design.tsv" into ch_expdesign
+       file "experimental_design.tsv" into ch_expdesign, ch_expdesign_multiqc
        file "openms.tsv" into ch_sdrf_config_file
        file "${sdrf.baseName}.sdrf.tsv"
 
@@ -210,7 +210,7 @@ if (params.expdesign)
      path (design) from ch_expdesign_pre
 
     output:
-     file("expdesign.tsv") into ch_expdesign
+     file("expdesign.tsv") into ch_expdesign, ch_expdesign_multiqc
 
     script:
     """
@@ -1198,7 +1198,7 @@ process multiqc {
     publishDir "${params.outdir}/ptxqc", mode: 'copy'
 
     input:
-     file design from ch_design_multiqc
+     file design from ch_expdesign_multiqc
      file 'mzMLs/*' from ch_plfq.multiqc_mzmls
      file 'proteomicslfq/*' from ch_out_mzTab_multiqc.mix(ch_out_consensusXML_multiqc).mix(ch_out_msstats_multiqc).mix(ch_out_triqler_multiqc)
      file 'raw_ids/*' from ch_plfq.multiqc_ids
