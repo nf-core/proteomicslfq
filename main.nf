@@ -1189,7 +1189,7 @@ if (!params.enable_qc)
 }
 
 
-process multiqc {
+process pmultiqc {
 
     label 'process_low'
     label 'process_single_thread'
