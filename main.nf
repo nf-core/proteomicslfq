@@ -668,7 +668,12 @@ process index_peptides {
      file "*.log"
 
     script:
-     def il = params.IL_equivalent ? '-IL_equivalent' : ''
+     def il_differentiating_enzyme = (enzyme ==~ /.*[cC]hymo.*/ || enzyme ==~ /.*[pP]epsin.*/) && !(enzyme ==~ /.*[eE]lastase.*/)
+     def il = params.IL_equivalent && !il_differentiating_enzyme ? '-IL_equivalent' : ''
+     if (params.IL_equivalent && il_differentiating_enzyme)
+     {
+      log.warn('Warning: IL_equivalent was activated but (one of) the chosen enzyme(s) (e.g. Chymotrypsin) may distinguish between those amino acids. Equivalence will be deactivated.') 
+     }
      // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying. But the auto-detection code in
      //  PeptideIndexer probably does not handle the combination through ConsensusID yet.
      if (params.search_engines.contains("msgf"))
