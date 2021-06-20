@@ -1,5 +1,5 @@
 {
-    "$schema": "https://json-schema.org/draft-07/schema",
+    "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/nf-core/proteomicslfq/master/nextflow_schema.json",
     "title": "nf-core/proteomicslfq pipeline parameters",
     "description": "Proteomics label-free quantification (LFQ) analysis pipeline using OpenMS and MSstats, with feature quantification, feature summarization, quality control and group-based statistical analysis.",
@@ -18,12 +18,11 @@
                     "type": "string",
                     "fa_icon": "fas fa-vials",
                     "description": "URI/path to an [SDRF](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) file **OR** globbing pattern for URIs/paths of mzML or Thermo RAW files",
-                    "help_text": "The input to the pipeline can be specified in two **mutually exclusive** ways:\n  - using a path or URI to a PRIDE Sample to Data Relation Format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see [here](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) for examples). Input files will be downloaded and cached from the URIs specified in the SDRF file.\nAn OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the\nfollowing parameters will currently be overwritten by the ones specified in the SDRF:\n\n    * `fixed_mods`,\n    * `variable_mods`,\n    * `precursor_mass_tolerance`,\n    * `precursor_mass_tolerance_unit`,\n    * `fragment_mass_tolerance`,\n    * `fragment_mass_tolerance_unit`,\n    * `fragment_method`,\n    * `enzyme`\n  - by specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format (e.g. `/data/experiment{1,2,3}_rep*.mzML`). An experimental design should be provided with the `expdesign` parameter."
-                },
+                    "help_text": "The input to the pipeline can be specified in two **mutually exclusive** ways:\n  - using a path or URI to a PRIDE Sample to Data Relation Format file (SDRF), e.g. as part of a submitted and\nannotated PRIDE experiment (see [here](https://github.com/bigbio/proteomics-metadata-standard/tree/master/annotated-projects) for examples). Input files will be downloaded and cached from the URIs specified in the SDRF file.\nAn OpenMS-style experimental design will be generated based on the factor columns of the SDRF. The settings for the\nfollowing parameters will currently be overwritten by the ones specified in the SDRF:\n\n    * `fixed_mods`,\n    * `variable_mods`,\n    * `precursor_mass_tolerance`,\n    * `precursor_mass_tolerance_unit`,\n    * `fragment_mass_tolerance`,\n    * `fragment_mass_tolerance_unit`,\n    * `fragment_method`,\n    * `enzyme`\n  - by specifying globbing patterns to the input spectrum files in Thermo RAW or mzML format (e.g. `/data/experiment{1,2,3}_rep*.mzML`). An experimental design should be provided with the `expdesign` parameter."},
                 "outdir": {
                     "type": "string",
                     "description": "The output directory where the results will be saved.",
-                    "default": ".&#x2F;results",
+                    "default": "./results",
                     "fa_icon": "fas fa-folder-open"
                 },
                 "email": {
@@ -61,15 +60,15 @@
                         "link",
                         "copy",
                         "copyNoFollow",
-                        "mov"
+                        "move"
                     ]
                 },
-                "name": {
-                    "type": "string",
-                    "description": "Workflow name.",
-                    "fa_icon": "fas fa-fingerprint",
-                    "hidden": true,
-                    "help_text": "A custom name for the pipeline run. Unlike the core nextflow `-name` option with one hyphen this parameter can be reused multiple times, for example if using `-resume`. Passed through to steps such as MultiQC and used for things like report filenames and titles."
+                "validate_params": {
+                    "type": "boolean",
+                    "description": "Boolean whether to validate parameters against the schema at runtime",
+                    "default": true,
+                    "fa_icon": "fas fa-check-square",
+                    "hidden": true
                 },
                 "email_on_fail": {
                     "type": "string",
@@ -88,11 +87,11 @@
                 },
                 "max_multiqc_email_size": {
                     "type": "string",
-                    "default": "25 MB",
+                    "description": "File size limit when attaching MultiQC reports to summary emails.",
+                    "default": "25.MB",
                     "fa_icon": "fas fa-file-upload",
-                    "description": "File size limit when attaching QC reports to summary emails.",
-                    "help_text": "If file generated by pipeline exceeds the threshold, it will not be attached.",
-                    "hidden": true
+                    "hidden": true,
+                    "help_text": "If file generated by pipeline exceeds the threshold, it will not be attached."
                 },
                 "monochrome_logs": {
                     "type": "boolean",
@@ -104,9 +103,16 @@
                 "tracedir": {
                     "type": "string",
                     "description": "Directory to keep pipeline Nextflow logs and reports.",
-                    "default": "${params.outdir}&#x2F;pipeline_info",
+                    "default": "${params.outdir}/pipeline_info",
                     "fa_icon": "fas fa-cogs",
                     "hidden": true
+                },
+                "show_hidden_params": {
+                    "type": "boolean",
+                    "fa_icon": "far fa-eye-slash",
+                    "description": "Show all params when using `--help`",
+                    "hidden": true,
+                    "help_text": "By default, parameters set as _hidden_ in the schema are not shown on the command line when a user runs with `--help`. Specifying this option will tell the pipeline to show all parameters."
                 }
             }
         },
@@ -130,6 +136,7 @@
                     "description": "Maximum amount of memory that can be requested for any single job.",
                     "default": "128.GB",
                     "fa_icon": "fas fa-memory",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
                     "hidden": true,
                     "help_text": "Use to set an upper-limit for the memory requirement for each process. Should be a string in the format integer-unit e.g. `--max_memory '8.GB'`"
                 },
@@ -138,6 +145,7 @@
                     "description": "Maximum amount of time that can be requested for any single job.",
                     "default": "240.h",
                     "fa_icon": "far fa-clock",
+                    "pattern": "^(\\d+\\.?\\s*(s|m|h|day)\\s*)+$",
                     "hidden": true,
                     "help_text": "Use to set an upper-limit for the time requirement for each process. Should be a string in the format integer-unit e.g. `--max_time '2.h'`"
                 }
@@ -161,7 +169,7 @@
                 "custom_config_base": {
                     "type": "string",
                     "description": "Base directory for Institutional configs.",
-                    "default": "https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;nf-core&#x2F;configs&#x2F;master",
+                    "default": "https://raw.githubusercontent.com/nf-core/configs/master",
                     "hidden": true,
                     "help_text": "If you're running offline, nextflow will not be able to fetch the institutional config files from the internet. If you don't need them, then this is not a problem. If you do need them, you should download the files from the repo and tell nextflow where to find them with the `custom_config_base` option. For example:\n\n```bash\n## Download and unzip the config files\ncd /path/to/my/configs\nwget https://github.com/nf-core/configs/archive/master.zip\nunzip master.zip\n\n## Run the pipeline\ncd /path/to/my/data\nnextflow run /path/to/pipeline/ --custom_config_base /path/to/my/configs/configs-master/\n```\n\n> Note that the nf-core/tools helper package has a `download` command to download all required pipeline files + singularity containers + institutional configs in one go for you, to make this process easier.",
                     "fa_icon": "fas fa-users-cog"
@@ -169,6 +177,12 @@
                 "hostnames": {
                     "type": "string",
                     "description": "Institutional configs hostname.",
+                    "hidden": true,
+                    "fa_icon": "fas fa-users-cog"
+                },
+                "config_profile_name": {
+                    "type": "string",
+                    "description": "Institutional config name.",
                     "hidden": true,
                     "fa_icon": "fas fa-users-cog"
                 },
@@ -196,7 +210,6 @@
             "title": "Main parameters (SDRF)",
             "type": "object",
             "description": "In case your input was an SDRF files, the following optional parameters can be set.",
-            "default": "",
             "properties": {
                 "root_folder": {
                     "type": "string",
@@ -217,11 +230,10 @@
             "title": "Main parameters (spectra files)",
             "type": "object",
             "description": "In case your input was a globbing pattern to spectrum files in Thermo RAW or mzML format you can specify a manual OpenMS-style experimental design file here.",
-            "default": "",
             "properties": {
                 "expdesign": {
                     "type": "string",
-                    "description": "A tab-separated experimental design file in OpenMS' own format (TODO link). All input files need to be present as a row with exactly the same names. If no design is given, unrelated, unfractionated runs are assumed.",
+                    "description": "A tab-separated experimental design file in OpenMS' own [format](http://www.openms.de/doxygen/release/latest/html/classOpenMS_1_1ExperimentalDesign.html#details). All input files need to be present as a row with exactly the same names. If no design is given, unrelated, unfractionated runs are assumed.",
                     "fa_icon": "fas fa-file-csv"
                 }
             },
@@ -231,7 +243,6 @@
             "title": "Protein database",
             "type": "object",
             "description": "Settings that relate to the mandatory protein database and the optional generation of decoy entries.",
-            "default": "",
             "properties": {
                 "database": {
                     "type": "string",
@@ -258,6 +269,28 @@
                     "default": "prefix",
                     "fa_icon": "fas fa-list-ol",
                     "help_text": "Prefix is highly recommended. Only in case an external tool marked decoys with a suffix, e.g. `sp|Q12345|ProteinA_DECOY` change this parameter to suffix."
+                },
+                "decoy_method": {
+                    "type": "string",
+                    "description": "Choose the method to produce decoys from the input target database.",
+                    "default": "reverse",
+                    "fa_icon": "fas fa-list-ol",
+                    "enum": [
+                        "reverse",
+                        "shuffle"
+                    ]
+                },
+                "shuffle_max_attempts": {
+                    "type": "integer",
+                    "description": "Maximum nr. of attempts to lower the amino acid sequence identity between target and decoy for the shuffle algorithm.",
+                    "default": 30,
+                    "fa_icon": "fas fa-sliders-h"
+                },
+                "shuffle_sequence_identity_threshold": {
+                    "type": "number",
+                    "description": "Target-decoy amino acid sequence identity threshold for the shuffle algorithm. If the sequence identity is above this threshold, shuffling is repeated. In case of repeated failure, individual amino acids are 'mutated' to produce a different amino acid sequence.",
+                    "default": 0.5,
+                    "fa_icon": "fas fa-sliders-h"
                 }
             },
             "fa_icon": "fas fa-database",
@@ -269,7 +302,6 @@
             "title": "Spectrum preprocessing",
             "type": "object",
             "description": "In case you start from profile mode mzMLs or the internal preprocessing during conversion with the ThermoRawFileParser fails (e.g. due to new instrument types), preprocessing has to be performed with OpenMS. Use this section to configure.",
-            "default": "",
             "properties": {
                 "openms_peakpicking": {
                     "type": "boolean",
@@ -296,7 +328,6 @@
             "title": "Database search",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "search_engines": {
                     "type": "string",
@@ -452,7 +483,6 @@
             "title": "Modification localization",
             "type": "object",
             "description": "Settings for calculating a localization probability with LucXor for modifications with multiple candidate amino acids in a peptide.",
-            "default": "",
             "properties": {
                 "enable_mod_localization": {
                     "type": "boolean",
@@ -498,17 +528,18 @@
             "title": "Peptide re-indexing",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
-                "allow_unmatched": {
+                "unmatched_action": {
                     "type": "string",
-                    "description": "Do not fail if there are some unmatched peptides. Only activate as last resort, if you know that the rest of your settings are fine!",
-                    "default": "false",
-                    "fa_icon": "far fa-check-square",
+                    "description": "Action to be taken if peptide sequences cannot be matched to any protein: 1) raise an error; 2) warn (unmatched PepHits will miss target/decoy annotation with downstream problems); 3) remove the hit. (default: 'error' valid: 'error', 'warn', 'remove')",
+                    "default": "error",
+                    "fa_icon": "fas fa-list-ol",
                     "enum": [
-                        "false",
-                        "true"
-                    ]
+                        "error",
+                        "warn",
+                        "remove"
+                    ],
+                    "hidden": true
                 },
                 "IL_equivalent": {
                     "type": "string",
@@ -527,7 +558,6 @@
             "title": "PSM re-scoring (general)",
             "type": "object",
             "description": "Choose between different rescoring/posterior probability calculation methods and set them up.",
-            "default": "",
             "properties": {
                 "posterior_probabilities": {
                     "type": "string",
@@ -557,7 +587,6 @@
             "title": "PSM re-scoring (Percolator)",
             "type": "object",
             "description": "In the following you can find help for the Percolator specific options that are only used if [`--posterior_probabilities`](#--posterior_probabilities) was set to 'percolator'.\nNote that there are currently some restrictions to the original options of Percolator:\n\n* no Percolator protein FDR possible (currently OpenMS' FDR is used on protein level)\n* no support for separate target and decoy databases (i.e. no min-max q-value calculation or target-decoy competition strategy)\n* no support for combined or experiment-wide peptide re-scoring. Currently search results per input file are submitted to Percolator independently.",
-            "default": "",
             "properties": {
                 "FDR_level": {
                     "type": "string",
@@ -606,7 +635,6 @@
             "title": "PSM re-scoring (distribution fitting)",
             "type": "object",
             "description": "Use this instead of Percolator if there are problems with Percolator (e.g. due to bad separation) or for performance",
-            "default": "",
             "properties": {
                 "outlier_handling": {
                     "type": "string",
@@ -627,7 +655,6 @@
             "title": "Consensus ID",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "consensusid_algorithm": {
                     "type": "string",
@@ -660,7 +687,6 @@
             "title": "Protein inference ",
             "type": "object",
             "description": "To group proteins, calculate scores on the protein (group) level and to potentially modify associations from peptides to proteins.",
-            "default": "",
             "properties": {
                 "protein_inference": {
                     "type": "string",
@@ -687,7 +713,6 @@
             "title": "Protein Quantification",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "protein_quant": {
                     "type": "string",
@@ -702,7 +727,7 @@
                 },
                 "quantification_method": {
                     "type": "string",
-                    "description": "Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs ('spectral_counting'). WARNING: 'spectral_counting' is not compatible with our MSstats step yet. MSstats will therefore be disabled automatically with that choice.",
+                    "description": "Choose between feature-based quantification based on integrated MS1 signals ('feature_intensity'; default) or spectral counting of PSMs ('spectral_counting'). **WARNING:** 'spectral_counting' is not compatible with our MSstats step yet. MSstats will therefore be disabled automatically with that choice.",
                     "default": "feature_intensity",
                     "enum": [
                         "feature_intensity",
@@ -711,19 +736,49 @@
                     "fa_icon": "fas fa-list-ol"
                 },
                 "mass_recalibration": {
-                    "type": "boolean",
+                    "type": "string",
                     "description": "Recalibrates masses based on precursor mass deviations to correct for instrument biases. (default: 'false')",
+                    "default": "false",
+                    "enum": [
+                        "true",
+                        "false"
+                    ],
                     "fa_icon": "far fa-check-square"
                 },
                 "transfer_ids": {
-                    "type": "boolean",
-                    "description": "Transfer IDs over aligned samples to increase the number of quantifiable features (WARNING: increased memory consumption). (default: 'false')",
-                    "fa_icon": "far fa-check-square"
+                    "type": "string",
+                    "description": "Tries a targeted requantification in files where an ID is missing, based on aggregate properties (i.e. RT) of the features in other aligned files (e.g. 'mean' of RT). (**WARNING:** increased memory consumption and runtime. Only useful with multiple fraction groups/samples). 'false' turns this feature off. (default: 'false')",
+                    "default": "false",
+                    "enum": [
+                        "false",
+                        "mean"
+                    ],
+                    "fa_icon": "fas fa-list-ol"
                 },
                 "targeted_only": {
+                    "type": "string",
+                    "description": "Only looks for quantifiable features at locations with an identified spectrum. Set to false to include unidentified features so they can be linked and matched to identified ones (= match between runs). (default: 'true')",
+                    "default": "true",
+                    "enum": [
+                        "true",
+                        "false"
+                    ],
+                    "fa_icon": "far fa-check-square"
+                },
+                "alignment_order": {
+                    "type": "string",
+                    "description": "The order in which maps are aligned. Star = all vs. the reference with most IDs (default). TreeGuided = an alignment tree is calculated first based on similarity measures of the IDs in the maps.",
+                    "default": "star",
+                    "enum": [
+                        "star",
+                        "treeguided"
+                    ],
+                    "fa_icon": "far fa-list-ol"
+                },
+                "quantify_decoys": {
                     "type": "boolean",
-                    "description": "Only looks for quantifiable features at locations with an identified spectrum. Set to false to include unidentified features so they can be linked to identified ones (=match between runs)",
-                    "default": true,
+                    "description": "Also quantify decoys? (Usually only needed for Triqler post-processing output with `--add_triqler_output`, where it is auto-enabled)",
+                    "default": false,
                     "fa_icon": "far fa-check-square"
                 },
                 "inf_quant_debug": {
@@ -737,23 +792,54 @@
         "statistical_post_processing": {
             "title": "Statistical post-processing",
             "type": "object",
-            "description": "",
-            "default": "Parameters for the R script using MSstats for statistical post processing and quantification visualization.",
+            "description": "Parameters for statistical post processing and quantification visualization. Currently only possible with `quantification_method = feature_based`.",
             "properties": {
                 "skip_post_msstats": {
                     "type": "boolean",
-                    "description": "Skip MSstats for statistical post-processing?",
+                    "description": "Skip the MSstats Rscripts for automated statistical post-processing?",
                     "fa_icon": "fas fa-forward"
+                },
+                "msstats_feature_subset_protein": {
+                    "type": "string",
+                    "description": "Which features to use for quantification per protein: 'top3' or 'highQuality' which removes outliers only",
+                    "fa_icon": "far fa-list-ol",
+                    "default": "top3",
+                    "enum": [
+                        "top3",
+                        "highQuality"
+                    ]
+                },
+                "msstats_quant_summary_method": {
+                    "type": "string",
+                    "description": "which summary method to use: 'TMP' (Tukey's median polish) or 'linear' (linear mixed model)",
+                    "fa_icon": "far fa-list-ol",
+                    "default": "TMP",
+                    "enum": [
+                        "TMP",
+                        "linear"
+                    ]
+                },
+                "msstats_remove_one_feat_prot": {
+                    "type": "boolean",
+                    "description": "Omit proteins with only one quantified feature?",
+                    "fa_icon": "far fa-check-square",
+                    "default": true
                 },
                 "ref_condition": {
                     "type": "string",
-                    "description": "Instead of all pairwise contrasts (default), uses the given condition name/number (corresponding to your experimental design) as a reference and creates pairwise contrasts against it. (TODO not yet fully implemented)",
+                    "description": "Instead of all pairwise contrasts (default), uses the given condition name/number (corresponding to your experimental design) as a reference and creates pairwise contrasts against it.",
                     "fa_icon": "fas fa-font"
                 },
                 "contrasts": {
                     "type": "string",
                     "description": "Allows full control over contrasts by specifying a set of contrasts in a semicolon seperated list of R-compatible contrasts with the condition names/numbers as variables (e.g. `1-2;1-3;2-3`). Overwrites '--ref_condition' (TODO not yet fully implemented)",
                     "fa_icon": "fas fa-font"
+                },
+                "add_triqler_output": {
+                    "type": "boolean",
+                    "description": "Also create an output in Triqler's format for an alternative manual post-processing with that tool",
+                    "default": false,
+                    "fa_icon": "far fa-check-square"
                 }
             },
             "fa_icon": "fab fa-r-project"
@@ -762,7 +848,6 @@
             "title": "Quality control",
             "type": "object",
             "description": "",
-            "default": "",
             "properties": {
                 "enable_qc": {
                     "type": "boolean",

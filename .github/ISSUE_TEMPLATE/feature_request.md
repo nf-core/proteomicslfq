@@ -1,3 +1,9 @@
+---
+name: Feature request
+about: Suggest an idea for the nf-core/proteomicslfq pipeline
+labels: enhancement
+---
+
 <!--
 # nf-core/proteomicslfq feature request
 

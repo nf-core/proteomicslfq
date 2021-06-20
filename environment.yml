@@ -1,25 +1,23 @@
 # You can use this file to create a conda environment for this pipeline:
 #   conda env create -f environment.yml
-name: nf-core-proteomicslfq-1.0dev
+name: nf-core-proteomicslfq-1.1.0dev
 channels:
   - openms
   - conda-forge
   - bioconda
+  - defaults
 dependencies:
-  # TODO fix versions for release (and also for develop, as soon as we have official nightly conda packages, with e.g. a date as version)
-  - openms::openms=2.6.0pre # nightly version of 2.6
-  - bioconda::thermorawfileparser=1.2.3
-  - bioconda::msgf_plus=2020.08.05
-  - bioconda::comet-ms=2019015
-  - bioconda::luciphor2=2020_04_03
-  - bioconda::percolator=3.5
-  - bioconda::bioconductor-msstats=3.20.1 # will include R
-  - bioconda::sdrf-pipelines=0.0.9 # for SDRF conversion
-  - conda-forge::r-ptxqc=1.0.5 # for QC reports
-  - conda-forge::xorg-libxt=1.2.0 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
+  - openms::openms=2.7.0pre
+  - openms::openms-thirdparty=2.7.0pre # 08.02.2021
+  - bioconda::bioconductor-msstats=3.22.1 # will include R
+  - bioconda::sdrf-pipelines=0.0.14 # for SDRF conversion
+  - conda-forge::r-ptxqc=1.0.9 # for QC reports
+  - conda-forge::r-argparser=0.7.1 # for argument parsing in our Rscripts
+  - conda-forge::xorg-libxt=1.2.1 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
   - conda-forge::fonts-conda-ecosystem=1 # for the fonts in QC reports
-  - conda-forge::python=3.8.1
-  - conda-forge::markdown=3.2.1
-  - conda-forge::pymdown-extensions=7.1
-  - conda-forge::pygments=2.5.2
-
+  - conda-forge::python=3.9.4
+  - conda-forge::markdown=3.3.4
+  - conda-forge::pymdown-extensions=8.2
+  - conda-forge::pygments=2.9.0
+  - conda-forge::mono=5.14.0.177 # had to downgrade because of errors with opening softlinks in TRFP
+  - conda-forge::pandoc=2.11.4 # had to downgrade because of errors with PTXQC (and its rmarkdown)
