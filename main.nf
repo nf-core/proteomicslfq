@@ -668,12 +668,7 @@ process index_peptides {
      file "*.log"
 
     script:
-     def il_differentiating_enzyme = (enzyme ==~ /.*[cC]hymo.*/ || enzyme ==~ /.*[pP]epsin.*/) && !(enzyme ==~ /.*[eE]lastase.*/)
-     def il = params.IL_equivalent && !il_differentiating_enzyme ? '-IL_equivalent' : ''
-     if (params.IL_equivalent && il_differentiating_enzyme)
-     {
-      log.warn('Warning: IL_equivalent was activated but (one of) the chosen enzyme(s) (e.g. Chymotrypsin) may distinguish between those amino acids. Equivalence will be deactivated.') 
-     }
+     def il = params.IL_equivalent ? '-IL_equivalent' : ''
      // see comment in CometAdapter. Alternative here in PeptideIndexer is to let it auto-detect the enzyme by not specifying. But the auto-detection code in
      //  PeptideIndexer probably does not handle the combination through ConsensusID yet.
      if (params.search_engines.contains("msgf"))
@@ -1204,12 +1199,13 @@ process pmultiqc {
 
     input:
      file design from ch_expdesign_multiqc
-     file 'mzMLs/*' from ch_plfq.multiqc_mzmls
-     file 'proteomicslfq/*' from ch_out_mzTab_multiqc.mix(ch_out_consensusXML_multiqc).mix(ch_out_msstats_multiqc).mix(ch_out_triqler_multiqc)
-     file 'raw_ids/*' from ch_plfq.multiqc_ids
+     file 'mzMLs/*' from ch_plfq.multiqc_mzmls.collect()
+	 file 'proteomicslfq/*' from ch_out_mzTab_multiqc.merge(ch_out_consensusXML_multiqc).merge(ch_out_msstats_multiqc).merge(ch_out_triqler_multiqc)
+     file 'raw_ids/*' from ch_plfq.multiqc_ids.collect()
 
     output:
      file '*.html' into ch_multiqc_report
+	 file '*.db'
 
     script:
      """

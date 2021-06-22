@@ -11,7 +11,7 @@ dependencies:
   - openms::openms-thirdparty=2.7.0pre # 08.02.2021
   - bioconda::bioconductor-msstats=3.22.1 # will include R
   - bioconda::sdrf-pipelines=0.0.14 # for SDRF conversion
-  - bioconda::pmultiqc=0.0.4 # for proteomics plugin of multiqc
+  - bioconda::pmultiqc=0.0.5 # for proteomics plugin of multiqc
   - conda-forge::r-ptxqc=1.0.9 # for QC reports
   - conda-forge::r-argparser=0.7.1 # for argument parsing in our Rscripts
   - conda-forge::xorg-libxt=1.2.1 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
