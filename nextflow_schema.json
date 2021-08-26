@@ -418,7 +418,7 @@
                 },
                 "isotope_error_range": {
                     "type": "string",
-                    "description": "Comma-separated range of integers with allowed isotope peak errors for precursor tolerance (MS-GF+ parameter '-ti'). E.g. -1,2",
+                    "description": "Comma-separated range of integers with allowed isotope peak errors for precursor tolerance (e.g. MS-GF+ parameter '-ti'). E.g. -1,3",
                     "default": "0,1",
                     "fa_icon": "fas fa-tasks",
                     "help_text": "Range of integers with allowed isotope peak errors (MS-GF+ parameter '-ti'). Takes into account the error introduced by choosing a non-monoisotopic peak for fragmentation. Combined with 'precursor_mass_tolerance'/'precursor_error_units', this determines the actual precursor mass tolerance. E.g. for experimental mass 'exp' and calculated mass 'calc', '-precursor_mass_tolerance 20 -precursor_error_units ppm -isotope_error_range -1,2' tests '|exp - calc - n * 1.00335 Da| < 20 ppm' for n = -1, 0, 1, 2."
