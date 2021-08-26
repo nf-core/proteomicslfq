@@ -630,7 +630,7 @@ process search_engine_comet {
      def isoSlashComet = "0/1"
      if (params.isotope_error_range)
      {
-        def isoRangeComet = params.isotope_error_range.split[0]
+        def isoRangeComet = params.isotope_error_range.split()
         isoSlashComet = ""
         for (c in isoRangeComet[0].toInteger()..isoRangeComet[1].toInteger()-1)
         {
