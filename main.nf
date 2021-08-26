@@ -33,6 +33,20 @@ if (params.validate_params) {
 }
 
 ////////////////////////////////////////////////////
+/* --       MORE COMPLEX VALIDATIONS           -- */
+////////////////////////////////////////////////////+
+if (params.isotope_error_range)
+{
+    def isoRange = params.isotope_error_range.split(",")
+    if (params.search_engines.contains("comet") && ((params.isoRange[0] < 0 || isoRange[1] > 3) && !(params.isoRange[0] == -1 && isoRange[1] == 3)))
+    {
+        log.error "Specified isotope_error_range " + params.isotope_error_range + " not supported by Comet. Either use MSGF only, or change the parameter."
+        exit 1
+    }
+}
+
+
+////////////////////////////////////////////////////
 /* --     Collect configuration parameters     -- */
 ////////////////////////////////////////////////////
 
@@ -542,6 +556,7 @@ process search_engine_msgf {
                      -java_memory ${task.memory.toMega()} \\
                      -database "${database}" \\
                      -instrument ${inst} \\
+                     -isotope_error_range ${params.isotope_error_range} \\
                      -protocol "${params.protocol}" \\
                      -matches_per_spec ${params.num_hits} \\
                      -min_precursor_charge ${params.min_precursor_charge} \\
@@ -612,6 +627,17 @@ process search_engine_comet {
          inst = params.instrument
        }
      }
+     def isoSlashComet = "0/1"
+     if (params.isotope_error_range)
+     {
+        def isoRangeComet = params.isotope_error_range.split[0]
+        isoSlashComet = ""
+        for (c in isoRangeComet[0].toInteger()..isoRangeComet[1].toInteger()-1)
+        {
+            isoSlashComet += c + "/"
+        }
+        isoSlashComet += isoRangeComet[1]
+     }
 
      // For consensusID the cutting rules need to be the same. So we adapt to the loosest rules from MSGF (if enabled)
      // TODO find another solution. In ProteomicsLFQ we re-run PeptideIndexer (remove??) and if we
@@ -637,6 +663,7 @@ process search_engine_comet {
                    -num_hits ${params.num_hits} \\
                    -num_enzyme_termini ${params.num_enzyme_termini} \\
                    -enzyme "${enzyme}" \\
+                   -isotope_error ${isoSlashComet} \\
                    -precursor_charge ${params.min_precursor_charge}:${params.max_precursor_charge} \\
                    -fixed_modifications ${fixed.tokenize(',').collect { "'${it}'" }.join(" ") } \\
                    -variable_modifications ${variable.tokenize(',').collect { "'${it}'" }.join(" ") } \\
