@@ -38,7 +38,7 @@ if (params.validate_params) {
 if (params.isotope_error_range)
 {
     def isoRange = params.isotope_error_range.split(",")
-    if (params.search_engines.contains("comet") && ((params.isoRange[0] < 0 || isoRange[1] > 3) && !(params.isoRange[0] == -1 && isoRange[1] == 3)))
+    if (params.search_engines.contains("comet") && ((isoRange[0] < 0 || isoRange[1] > 3) && !(isoRange[0] == -1 && isoRange[1] == 3)))
     {
         log.error "Specified isotope_error_range " + params.isotope_error_range + " not supported by Comet. Either use MSGF only, or change the parameter."
         exit 1
