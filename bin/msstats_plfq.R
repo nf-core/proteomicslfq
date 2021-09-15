@@ -89,7 +89,7 @@ processed.quant <- dataProcess(quant, censoredInt = 'NA', featureSubset = argv$f
 
 lvls <- levels(as.factor(data$Condition))
 l <- length(lvls)
-if (length(lvls) == 1)
+if (l == 1)
 {
   print("Only one condition found. No contrasts to be tested. If this is not the case, please check your experimental design.")
 } else {
@@ -97,7 +97,7 @@ if (length(lvls) == 1)
   {
     if (control_str == "")
     {
-      contrast_mat <- matrix(nrow = l * (l-1) / 2, ncol = l, dimnames=list(Contrasts=rep(NA, l * (l-1) / 2)),Levels=lvls)
+      contrast_mat <- matrix(nrow = l * (l-1) / 2, ncol = l, dimnames=list(Contrasts=rep(NA, l * (l-1) / 2), Levels=lvls))
       c <- 1
       for (i in 1:(l-1))
       {
@@ -118,7 +118,7 @@ if (length(lvls) == 1)
         stop("Control condition not part of found levels.n", call.=FALSE)
       }
       
-      contrast_mat <- matrix(nrow = l-1, ncol = l, dimnames=list(Contrasts=rep(NA, l-1),Levels=lvls)
+      contrast_mat <- matrix(nrow = l-1, ncol = l, dimnames=list(Contrasts=rep(NA, l-1),Levels=lvls))
       c <- 1
       for (j in setdiff(1:l,control))
       {
