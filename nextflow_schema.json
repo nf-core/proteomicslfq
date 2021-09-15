@@ -832,8 +832,9 @@
                 },
                 "contrasts": {
                     "type": "string",
-                    "description": "Allows full control over contrasts by specifying a set of contrasts in a semicolon seperated list of R-compatible contrasts with the condition names/numbers as variables (e.g. `1-2;1-3;2-3`). Overwrites '--ref_condition' (TODO not yet fully implemented)",
-                    "fa_icon": "fas fa-font"
+                    "description": "Allows full control over contrasts by specifying a set of contrasts in a semicolon seperated list of R-compatible limma-style contrasts\nwith the condition names/numbers as variables (e.g. `1-2;1-3;2-3`).\nOverwrites '--ref_condition\nDefault is 'pairwise', a keyword to create all pairwise contrasts.",
+                    "fa_icon": "fas fa-font",
+                    "default": "pairwise"
                 },
                 "add_triqler_output": {
                     "type": "boolean",

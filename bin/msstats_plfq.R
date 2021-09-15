@@ -36,6 +36,49 @@ require(MSstats)
 require(dplyr)
 require(tidyr)
 
+# helper functions
+make_contrasts <- function(contrasts, levels)
+{
+  #helper function
+  indicatorRow <- function(pos,len)
+  {
+    row <- rep(0,len)
+    row[pos] <- 1
+    return(row)
+  }
+
+  if (is.factor(levels)) levels <- levels(levels)
+  if (!is.character(levels)) levels <- colnames(levels)
+
+  l <- length(levels)
+  if (l < 1)
+  {
+    stop("No levels given")
+  }
+
+  ncontr <- length(charcontr)
+  if (ncontr < 1)
+  {
+    stop("No contrasts given")
+  }
+
+  levelsenv <- new.env()
+  for (i in 1:l)
+  {
+    assign(levels[i], indicatorRow(i,l), pos=levelsenv)
+  } 
+  
+  charcontr <- as.character(contrasts)
+  
+  contrastmat <- matrix(0, l, ncontr, dimnames=list(Levels=levels,Contrasts=contrasts))
+  for (j in 1:ncontr)
+  {
+      contrastsj <- parse(text=contrasts[j])
+      contrastmat[,j] <- eval(contrastsj, envir=levelsenv)
+  }
+  return(t(contrastmat))
+}
+
 # read dataframe into MSstats
 data <- read.csv(csv_input)
 quant <- OpenMStoMSstatsFormat(data,
@@ -45,6 +88,7 @@ quant <- OpenMStoMSstatsFormat(data,
 processed.quant <- dataProcess(quant, censoredInt = 'NA', featureSubset = argv$featureSubsetPerProtein, summaryMethod = argv$summaryMethod)
 
 lvls <- levels(as.factor(data$Condition))
+l <- length(lvls)
 if (length(lvls) == 1)
 {
   print("Only one condition found. No contrasts to be tested. If this is not the case, please check your experimental design.")
@@ -53,10 +97,7 @@ if (length(lvls) == 1)
   {
     if (control_str == "")
     {
-      l <- length(lvls)
-      contrast_mat <- matrix(nrow = l * (l-1) / 2, ncol = l)
-      rownames(contrast_mat) <- rep(NA, l * (l-1) / 2)
-      colnames(contrast_mat) <- lvls
+      contrast_mat <- matrix(nrow = l * (l-1) / 2, ncol = l, dimnames=list(Contrasts=rep(NA, l * (l-1) / 2)),Levels=lvls)
       c <- 1
       for (i in 1:(l-1))
       {
@@ -77,10 +118,7 @@ if (length(lvls) == 1)
         stop("Control condition not part of found levels.n", call.=FALSE)
       }
       
-      l <- length(lvls)
-      contrast_mat <- matrix(nrow = l-1, ncol = l)
-      rownames(contrast_mat) <- rep(NA, l-1)
-      colnames(contrast_mat) <- lvls
+      contrast_mat <- matrix(nrow = l-1, ncol = l, dimnames=list(Contrasts=rep(NA, l-1),Levels=lvls)
       c <- 1
       for (j in setdiff(1:l,control))
       {
@@ -93,8 +131,8 @@ if (length(lvls) == 1)
       }
     }
   } else {
-    print("Specific contrasts not supported yet.")
-    exit(1)
+    contrast_lst <- unlist(strsplit(contrast_str,";"))
+    contrast_mat <- make_contrasts(contrast_lst, lvls)
   }
   
   print ("Contrasts to be tested:")
