@@ -14,6 +14,7 @@ Patch update, mainly for documentation fixes.
 * Link to description of the OpenMS experimental design format in the parameter usage docs
 * Output for post-processing with Triqler including an option to quantify decoys
 * Refinement of alignment and linking tolerances across runs
+* Many more options for the MSstats step incl. user-specified contrasts.
 
 ### `Known issues`
 
