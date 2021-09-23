@@ -865,10 +865,7 @@
             "$ref": "#/definitions/institutional_config_options"
         },
         {
-            "$ref": "#/definitions/main_parameters__sdrf_"
-        },
-        {
-            "$ref": "#/definitions/main_parameters__spectra_files_"
+            "$ref": "#/definitions/staging"
         },
         {
             "$ref": "#/definitions/protein_database"
