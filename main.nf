@@ -18,9 +18,8 @@ def json_schema = "$projectDir/nextflow_schema.json"
 if (params.help) {
     def command = "nextflow run nf-core/proteomicslfq \
   -profile <docker/singularity/conda/podman/charliecloud/institute> \
-  --input '*.mzml' \
-  --database 'myProteinDB.fasta' \
-  --expdesign 'myDesign.tsv'"
+  --input 'myDesign.tsv' \
+  --database 'myProteinDB.fasta'"
     log.info NfcoreSchema.params_help(workflow, params, json_schema, command)
     exit 0
 }
@@ -84,12 +83,12 @@ if (isCollectionOrArray(params.input))
 
 sdrf_file = null
 
-if (tocheck.toLowerCase().endsWith("sdrf") || tocheck.toLowerCase().endsWith("tsv")) {
+if (tocheck.toLowerCase().endsWith("sdrf") || tocheck.toLowerCase().endsWith("sdrf.tsv")) {
   sdrf_file = params.input
-} else if (tocheck.toLowerCase().endsWith("mzml") || tocheck.toLowerCase().endsWith("raw")) {
-  spectra_files = params.input
+} else if (tocheck.toLowerCase().endsWith("tsv") {
+  expdesign_file = params.input
 } else {
-  log.error "EITHER spectra data (mzML/raw) OR an SDRF needs to be provided as input."; exit 1
+  log.error "EITHER an OpenMS-style experimental design OR an SDRF needs to be provided as input."; exit 1
 }
 
 params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
@@ -107,9 +106,10 @@ Set files = []
 
 if (!sdrf_file)
 {
-  ch_spectra = Channel.fromPath(spectra_files, checkIfExists: true)
-  ch_spectra
-  .multiMap{ it -> id = file(it).name.take(file(it).name.lastIndexOf('.'))
+  Channel.fromPath(expdesign_file, checkIfExists: true)
+  .splitCsv(header: true, sep: '\t')
+  .multiMap{ row -> filestr = row.Spectra_Filepath.toString()
+                    id = file(filestr).name.take(file(filestr).name.lastIndexOf('.'))
                     comet_settings: msgf_settings: tuple(id,
                                     params.add_decoys ? params.enzyme : "provided", // either provided or one generated specifically for that enzyme
                                     params.fixed_mods,
@@ -124,14 +124,14 @@ if (!sdrf_file)
                     idx_settings: tuple(id, params.add_decoys ? params.enzyme : "provided", params.enzyme)
                     enzyme_settings: params.enzyme
                     luciphor_settings: tuple(id, params.fragment_method)
-                    mzmls: tuple(id,it)}
-  .set{ch_sdrf_config}
+                    mzmls: tuple(id,row.Spectra_Filepath)}
+  .set{ch_config}
 }
 else
 {
   ch_sdrf = Channel.fromPath(sdrf_file, checkIfExists: true)
   /*
-   * STEP 0 - SDRF parsing
+   * STEP 0 - SDRF conversion to own format
    */
   process sdrf_parsing {
 
@@ -196,22 +196,18 @@ else
                                     params.root_folder + "/" + (params.local_input_type ?
                                         row[1].take(row[1].lastIndexOf('.')) + '.' + params.local_input_type :
                                         row[1]))}
-  .set{ch_sdrf_config}
-  
+  .set{ch_config}
 }
 
-Set foo = []
-//ch_enzymes = ch_sdrf_config.enzyme_settings.collect().map(it -> it.toSet())
-ch_enzymes = ch_sdrf_config.enzyme_settings.reduce(foo){a,b -> return a+b}.flatten()
+Set emptyset = []
+ch_enzymes = ch_config.enzyme_settings.reduce(emptyset){a,b -> return a+b}.flatten()
 
 ch_db_for_decoy_creation = Channel.fromPath(params.database)
 
-// overwrite experimental design if given additionally to SDRF
-//TODO think about that
-if (params.expdesign)
+if (expdesign_file)
 {
     Channel
-        .fromPath(params.expdesign)
+        .fromPath(params.input)
         .set { ch_expdesign_pre }
 
     // Fixing file endings only necessary if the experimental design is user-specified
@@ -322,7 +318,7 @@ process get_software_versions {
     """
 }
 
-ch_sdrf_config.mzmls
+ch_config.mzmls
 .branch {
         raw: hasExtension(it[1], 'raw')
         mzML: hasExtension(it[1], 'mzML')
@@ -517,7 +513,7 @@ process search_engine_msgf {
     // errorStrategy 'terminate'
 
     input:
-     tuple db_enzyme, mzml_id, fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme, file(mzml_file), file(database)  from ch_sdrf_config.msgf_settings.join(mzmls_msgf.mix(mzmls_msgf_picked)).combine(searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf), by: 1)
+     tuple db_enzyme, mzml_id, fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme, file(mzml_file), file(database)  from ch_config.msgf_settings.join(mzmls_msgf.mix(mzmls_msgf_picked)).combine(searchengine_in_db_msgf.mix(searchengine_in_db_decoy_msgf), by: 1)
      // This was another way of handling the combination
      //file database from searchengine_in_db.mix(searchengine_in_db_decoy)
      //each file(mzml_file) from mzmls
@@ -589,7 +585,7 @@ process search_engine_comet {
     //errorStrategy 'terminate'
 
     input:
-      tuple db_enzyme, mzml_id, fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme, file(mzml_file), file(database)  from ch_sdrf_config.comet_settings.join(mzmls_comet.mix(mzmls_comet_picked)).combine(searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet), by: 1)
+      tuple db_enzyme, mzml_id, fixed, variable, label, prec_tol, prec_tol_unit, frag_tol, frag_tol_unit, diss_meth, enzyme, file(mzml_file), file(database)  from ch_config.comet_settings.join(mzmls_comet.mix(mzmls_comet_picked)).combine(searchengine_in_db_comet.mix(searchengine_in_db_decoy_comet), by: 1)
     
     when:
       params.search_engines.contains("comet")
@@ -688,7 +684,7 @@ process index_peptides {
     // [provided, FKL2920-S18-A-6, /local/scratch/springtails_data_plfq_nf_debug/nf/work/fb/6fd52ab18fd6bebc0daaf80369662b/FKL2920-S18-A-6_comet.idXML, /local/scratch/springtails_data_plfq_nf_debug/Folsomia_candida_original_comp_proteome_with_contaminants_and_decoys.fasta]
     
     input:
-     tuple db_enzyme, mzml_id, enzyme, file(id_file), file(database) from ch_sdrf_config.idx_settings.combine(id_files_msgf.mix(id_files_comet), by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy), by: 1)
+     tuple db_enzyme, mzml_id, enzyme, file(id_file), file(database) from ch_config.idx_settings.combine(id_files_msgf.mix(id_files_comet), by: 0).combine(pepidx_in_db.mix(pepidx_in_db_decoy), by: 1)
 
     output:
      tuple mzml_id, file("${id_file.baseName}_idx.idXML") into (id_files_idx_ForPerc, id_files_idx_ForIDPEP, id_files_idx_ForIDPEP_noFDR)
@@ -1040,7 +1036,7 @@ process luciphor {
     publishDir "${params.outdir}/logs", mode: 'copy', pattern: '*.log'
 
     input:
-     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_filtered_luciphor_pep).join(ch_sdrf_config.luciphor_settings)
+     tuple mzml_id, file(mzml_file), file(id_file), frag_method from mzmls_luciphor.join(id_filtered_luciphor_pep).join(ch_config.luciphor_settings)
 
     output:
      set mzml_id, file("${id_file.baseName}_luciphor.idXML") into plfq_in_id_luciphor
