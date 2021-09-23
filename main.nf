@@ -82,6 +82,7 @@ if (isCollectionOrArray(params.input))
 }
 
 sdrf_file = null
+expdesign_file = null
 
 if (tocheck.toLowerCase().endsWith("sdrf") || tocheck.toLowerCase().endsWith("sdrf.tsv")) {
   sdrf_file = params.input
