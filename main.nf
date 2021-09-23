@@ -85,10 +85,10 @@ sdrf_file = null
 
 if (tocheck.toLowerCase().endsWith("sdrf") || tocheck.toLowerCase().endsWith("sdrf.tsv")) {
   sdrf_file = params.input
-} else if (tocheck.toLowerCase().endsWith("tsv") {
+} else if (tocheck.toLowerCase().endsWith("tsv")) {
   expdesign_file = params.input
 } else {
-  log.error "EITHER an OpenMS-style experimental design OR an SDRF needs to be provided as input."; exit 1
+  log.error "EITHER an OpenMS-style experimental design (.tsv) OR an SDRF (.sdrf/.sdrf.tsv) needs to be provided as input."; exit 1
 }
 
 params.database = params.database ?: { log.error "No protein database provided. Make sure you have used the '--database' option."; exit 1 }()
