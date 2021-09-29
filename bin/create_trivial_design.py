@@ -18,7 +18,7 @@ def natural_keys(text):
 
 if not len(sys.argv) == 3:
   print("Usage: MZML_FOLDER LABEL_PER_FILE")
-  exit()
+  exit(2)
 
 in_path = sys.argv[1]
 label_per_file = int(sys.argv[2])
