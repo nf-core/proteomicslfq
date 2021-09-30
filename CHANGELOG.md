@@ -17,7 +17,7 @@ New OpenMS and thirdparty versions. New pipeline features (especially for downst
 * Output for post-processing with Triqler including an option to quantify decoys
 * Refinement of alignment and linking tolerances across runs
 * Many more options for the MSstats step incl. user-specified contrasts.
-* PMultiQC as additional QC tool/step 
+* PMultiQC as additional QC tool/step
 
 ### `Known issues`
 
