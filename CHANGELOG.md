@@ -3,18 +3,21 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.1.0 - Best Batman [TBD]
+## v2.0.0 - Best Batman [TBD]
 
-Patch update, mainly for documentation fixes.
+Major update with slightly different interface (experimental designs are the main source of input now). Following the newest nfcore schemata.
+New OpenMS and thirdparty versions. New pipeline features (especially for downstream processing and QC) and a few fixed bugs.
 
 ### `Added`
 
 * Speed improvements and multithreading of proteomicslfq process
 * Option for tree-guided map alignment
 * Link to description of the OpenMS experimental design format in the parameter usage docs
+* **IMPORTANT**: `input` has to be an experimental design file now that includes all file paths.
 * Output for post-processing with Triqler including an option to quantify decoys
 * Refinement of alignment and linking tolerances across runs
 * Many more options for the MSstats step incl. user-specified contrasts.
+* PMultiQC as additional QC tool/step 
 
 ### `Known issues`
 
