@@ -3,27 +3,27 @@ from __future__ import print_function
 from collections import OrderedDict
 import re
 
-openms_version_regex = r"([0-9][.][0-9][.][0-9])"
+semver_regex = r"((?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)"
 
 regexes = {
     'nf-core/proteomicslfq': ['v_pipeline.txt', r"(\S+)"],
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
     'ThermorawfileParser': ['v_thermorawfileparser.txt', r"(\S+)"],
-    'FileConverter': ['v_fileconverter.txt', openms_version_regex],
-    'DecoyDatabase': ['v_decoydatabase.txt', openms_version_regex],
-    'MSGFPlusAdapter': ['v_msgfplusadapter.txt', openms_version_regex],
+    'FileConverter': ['v_fileconverter.txt', semver_regex],
+    'DecoyDatabase': ['v_decoydatabase.txt', semver_regex],
+    'MSGFPlusAdapter': ['v_msgfplusadapter.txt', semver_regex],
     'MSGFPlus': ['v_msgfplus.txt', r"\(([^v)]+)\)"],
-    'CometAdapter': ['v_cometadapter.txt', openms_version_regex],
+    'CometAdapter': ['v_cometadapter.txt', semver_regex],
     'Comet': ['v_comet.txt', r"\"(.*)\""],
-    'PeptideIndexer': ['v_peptideindexer.txt', openms_version_regex],
-    'PSMFeatureExtractor': ['v_psmfeatureextractor.txt', openms_version_regex],
-    'PercolatorAdapter': ['v_percolatoradapter.txt', openms_version_regex],
+    'PeptideIndexer': ['v_peptideindexer.txt', semver_regex],
+    'PSMFeatureExtractor': ['v_psmfeatureextractor.txt', semver_regex],
+    'PercolatorAdapter': ['v_percolatoradapter.txt', semver_regex],
     'Percolator': ['v_percolator.txt', r"([0-9].[0-9]{2}.[0-9])"],
-    'IDFilter': ['v_idfilter.txt', openms_version_regex],
-    'IDScoreSwitcher': ['v_idscoreswitcher.txt', openms_version_regex],
-    'FalseDiscoveryRate': ['v_falsediscoveryrate.txt', openms_version_regex],
-    'IDPosteriorErrorProbability': ['v_idposteriorerrorprobability.txt', openms_version_regex],
-    'ProteomicsLFQ': ['v_proteomicslfq.txt', openms_version_regex],
+    'IDFilter': ['v_idfilter.txt', semver_regex],
+    'IDScoreSwitcher': ['v_idscoreswitcher.txt', semver_regex],
+    'FalseDiscoveryRate': ['v_falsediscoveryrate.txt', semver_regex],
+    'IDPosteriorErrorProbability': ['v_idposteriorerrorprobability.txt', semver_regex],
+    'ProteomicsLFQ': ['v_proteomicslfq.txt', semver_regex],
     'MSstats': ['v_msstats_plfq.txt', r"(\S+)"]
 }
 results = OrderedDict()
