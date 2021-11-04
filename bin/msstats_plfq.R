@@ -39,44 +39,42 @@ require(tidyr)
 # helper functions
 make_contrasts <- function(contrasts, levels)
 {
-  #helper function
-  indicatorRow <- function(pos,len)
-  {
-    row <- rep(0,len)
-    row[pos] <- 1
-    return(row)
-  }
-
-  if (is.factor(levels)) levels <- levels(levels)
-  if (!is.character(levels)) levels <- colnames(levels)
-
-  l <- length(levels)
-  if (l < 1)
-  {
-    stop("No levels given")
-  }
-
-  ncontr <- length(charcontr)
-  if (ncontr < 1)
-  {
-    stop("No contrasts given")
-  }
-
-  levelsenv <- new.env()
-  for (i in 1:l)
-  {
-    assign(levels[i], indicatorRow(i,l), pos=levelsenv)
-  } 
-  
-  charcontr <- as.character(contrasts)
-  
-  contrastmat <- matrix(0, l, ncontr, dimnames=list(Levels=levels,Contrasts=contrasts))
-  for (j in 1:ncontr)
-  {
-      contrastsj <- parse(text=contrasts[j])
-      contrastmat[,j] <- eval(contrastsj, envir=levelsenv)
-  }
-  return(t(contrastmat))
+    #helper function
+    indicatorRow <- function(pos,len)
+    {
+        row <- rep(0,len)
+        row[pos] <- 1
+        return(row)
+    }
+    
+    if (is.factor(levels)) levels <- levels(levels)
+    if (!is.character(levels)) levels <- colnames(levels)
+    
+    l <- length(levels)
+    if (l < 1)
+    {
+        stop("No levels given")
+    }
+    
+    ncontr <- length(contrasts)
+    if (ncontr < 1)
+    {
+        stop("No contrasts given")
+    }
+    
+    levelsenv <- new.env()
+    for (i in 1:l)
+    {
+        assign(levels[i], indicatorRow(i,l), pos=levelsenv)
+    } 
+    
+    contrastmat <- matrix(0, l, ncontr, dimnames=list(Levels=levels,Contrasts=contrasts))
+    for (j in 1:ncontr)
+    {
+        contrastsj <- parse(text=contrasts[j])
+        contrastmat[,j] <- eval(contrastsj, envir=levelsenv)
+    }
+    return(t(contrastmat))
 }
 
 # read dataframe into MSstats
