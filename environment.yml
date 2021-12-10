@@ -14,6 +14,8 @@ dependencies:
   - bioconda::pmultiqc=0.0.5 # for proteomics plugin of multiqc
   - conda-forge::r-ptxqc=1.0.10 # for QC reports
   - conda-forge::r-argparser=0.7.1 # for argument parsing in our Rscripts
+  - conda-forge::r-tidyr=1.1.4
+  - conda-forge::r-dplyr=1.0.7
   - conda-forge::xorg-libxt=1.2.1 # until this R fix is merged: https://github.com/conda-forge/r-base-feedstock/pull/128
   - conda-forge::fonts-conda-ecosystem=1 # for the fonts in QC reports
   - conda-forge::python=3.9.4
