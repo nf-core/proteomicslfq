@@ -7,8 +7,9 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - openms::openms=2.7.0pre
-  - openms::openms-thirdparty=2.7.0pre # 29.09.2021
+  - openms::openms=2.7.0
+  - bioconda::comet-ms=2021010-0
+  - bioconda::msgfplus=2021.09.06-0
   - bioconda::bioconductor-msstats=3.22.1 # will include R
   - bioconda::sdrf-pipelines=0.0.14 # for SDRF conversion
   - bioconda::pmultiqc=0.0.5 # for proteomics plugin of multiqc
