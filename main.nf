@@ -298,7 +298,7 @@ process get_software_versions {
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    ThermoRawFileParser.sh --version &> v_thermorawfileparser.txt
+    ThermoRawFileParser.sh --version &> v_thermorawfileparser.txt || true
     echo \$(FileConverter 2>&1) > v_fileconverter.txt || true
     echo \$(DecoyDatabase 2>&1) > v_decoydatabase.txt || true
     echo \$(MSGFPlusAdapter 2>&1) > v_msgfplusadapter.txt || true
@@ -308,7 +308,7 @@ process get_software_versions {
     echo \$(PeptideIndexer 2>&1) > v_peptideindexer.txt || true
     echo \$(PSMFeatureExtractor 2>&1) > v_psmfeatureextractor.txt || true
     echo \$(PercolatorAdapter 2>&1) > v_percolatoradapter.txt || true
-    percolator -h &> v_percolator.txt
+    percolator -h &> v_percolator.txt || true
     echo \$(IDFilter 2>&1) > v_idfilter.txt || true
     echo \$(IDScoreSwitcher 2>&1) > v_idscoreswitcher.txt || true
     echo \$(FalseDiscoveryRate 2>&1) > v_falsediscoveryrate.txt || true
