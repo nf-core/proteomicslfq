@@ -83,9 +83,7 @@ data <- read.csv(csv_input)
 if (argv$keepFeatsWithFewMeasurements)
 {
     keep_remove <- 'keep'
-}
-else
-{
+} else {
     keep_remove <- 'remove'
 }
 
