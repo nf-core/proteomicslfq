@@ -1099,7 +1099,7 @@ process proteomicslfq {
      file "out.mzTab" into (out_mztab_plfq, out_mztab_msstats, ch_out_mzTab_multiqc)
      file "out.consensusXML" into (out_consensusXML, ch_out_consensusXML_multiqc)
      file "out_msstats.csv" optional true into (out_msstats, ch_out_msstats_multiqc)
-     file "out_triqler.tsv" optional true into (out_triqler, ch_out_triqler_multiqc)
+     file "out_triqler.tsv" optional true into out_triqler
      file "debug_mergedIDs.idXML" optional true
      file "debug_mergedIDs_inference.idXML" optional true
      file "debug_mergedIDsGreedyResolved.idXML" optional true
@@ -1224,7 +1224,7 @@ process pmultiqc {
     input:
      file design from ch_expdesign_multiqc
      file 'mzMLs/*' from ch_plfq.multiqc_mzmls.collect()
-	 file 'proteomicslfq/*' from ch_out_mzTab_multiqc.merge(ch_out_consensusXML_multiqc).merge(ch_out_msstats_multiqc).merge(ch_out_triqler_multiqc)
+	 file 'proteomicslfq/*' from ch_out_mzTab_multiqc.merge(ch_out_consensusXML_multiqc).merge(ch_out_msstats_multiqc)
      file 'raw_ids/*' from ch_plfq.multiqc_ids.collect()
 
     output:
