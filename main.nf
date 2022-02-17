@@ -1165,6 +1165,7 @@ process msstats {
 
     script:
      remove_one_feat_prot = params.msstats_remove_one_feat_prot ? "--removeOneFeatProts" : ""
+     keep_feats_with_few_measurements = params.msstats_keep_feats_with_few_measurements ? "--keepFeatsWithFewMeasurements" : ""
      ref_con = params.ref_condition ?: ""
      """
      msstats_plfq.R ${csv} \\
@@ -1172,6 +1173,7 @@ process msstats {
                     --contrasts ${params.contrasts} \\
                     --referenceCondition "${ref_con}" \\
                     ${remove_one_feat_prot} \\
+                    ${keep_feats_with_few_measurements} \\
                     --featureSubsetPerProtein ${params.msstats_feature_subset_protein} \\
                     --summaryMethod ${params.msstats_quant_summary_method} \\
                     > msstats.log || echo "Optional MSstats step failed. Please check logs and re-run or do a manual statistical analysis."
