@@ -11,7 +11,7 @@ p <- add_argument(p, "--mzTab", help="OpenMS mzTab output to be annotated", type
 p <- add_argument(p, "--contrasts", help="contrasts to test", default="pairwise")
 p <- add_argument(p, "--referenceCondition", help="reference condition when using pairwise contrasts. Leave empty for none", default="")
 p <- add_argument(p, "--removeOneFeatProts", help="remove proteins with only one quantified feature", flag=T)
-p <- add_argument(p, "--keepFeatsWithFewMeasurements", help="keep features with only one or two measurements across runs", flag=T)
+p <- add_argument(p, "--keepFeatsWithFewMeasurements", help="keeps features with only one or two measurements across runs", flag=T)
 p <- add_argument(p, "--featureSubsetPerProtein", help="which features to use for quantification per protein: 'top3' or 'highQuality' which removes outliers only", default="top3")
 p <- add_argument(p, "--summaryMethod", help="which summary method to use: 'TMP' (Tukey's median polish) or 'linear' (linear mixed model)", default="TMP")
 p <- add_argument(p, "--outputPrefix", help="outputPrefix", default="./msstats")
