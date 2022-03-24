@@ -812,6 +812,12 @@
                     "fa_icon": "far fa-check-square",
                     "default": true
                 },
+                "msstats_keep_feats_with_few_measurements": {
+                    "type": "boolean",
+                    "description": "Keep features with only one or two measurements across runs?",
+                    "fa_icon": "far fa-check-square",
+                    "default": false
+                },
                 "ref_condition": {
                     "type": "string",
                     "description": "Instead of all pairwise contrasts (default), uses the given condition name/number (corresponding to your experimental design) as a reference and creates pairwise contrasts against it.",
