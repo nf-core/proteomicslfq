@@ -1227,7 +1227,7 @@ process pmultiqc {
      file design from ch_expdesign_multiqc
      file 'mzMLs/*' from ch_plfq.multiqc_mzmls.collect()
      file 'proteomicslfq/*' from ch_out_mzTab_multiqc.merge(ch_out_consensusXML_multiqc).merge(ch_out_msstats_multiqc)
-     file 'raw_ids/*' from id_files_idpep_multiqc.mix(id_files_perc_multiqc)
+     file 'raw_ids/*' from id_files_idpep_multiqc.mix(id_files_perc_multiqc).view()
 
     output:
      file '*.html' into ch_multiqc_report
