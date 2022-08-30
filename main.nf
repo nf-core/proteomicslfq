@@ -4,7 +4,7 @@
     nf-core/proteomicslfq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Github : https://github.com/nf-core/proteomicslfq
-    Website: https://nf-co.re/proteomicslfq
+Website: https://nf-co.re/proteomicslfq
     Slack  : https://nfcore.slack.com/channels/proteomicslfq
 ----------------------------------------------------------------------------------------
 */
