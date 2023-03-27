@@ -221,7 +221,7 @@
             "properties": {
                 "expdesign": {
                     "type": "string",
-                    "description": "A tab-separated experimental design file in OpenMS' own format (TODO link). All input files need to be present as a row with exactly the same names. If no design is given, unrelated, unfractionated runs are assumed.",
+                    "description": "A tab-separated experimental design file in [OpenMS'](https://abibuilder.cs.uni-tuebingen.de/archive/openms/Documentation/release/latest/html/classOpenMS_1_1OpenSwathTSVWriter.html) own format. All input files need to be present as a row with exactly the same names. If no design is given, unrelated, unfractionated runs are assumed.",
                     "fa_icon": "fas fa-file-csv"
                 }
             },
