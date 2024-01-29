@@ -4,7 +4,7 @@
   |\\ | |__  __ /  ` /  \\ |__) |__         }  {
   | \\| |       \\__, \\__/ |  \\ |___     \\`-._,-`-,
                                         `._,._,'
-  nf-core/proteomicslfq v${version}
+  nf-core/proteomicslfq ${version}
 ----------------------------------------------------
 Run Name: $runName
 
